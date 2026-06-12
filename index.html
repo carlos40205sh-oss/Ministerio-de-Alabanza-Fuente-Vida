@@ -443,6 +443,7 @@ document.getElementById('login-pass').addEventListener('keydown', e => { if (e.k
 let canciones=[], musicos=[], eventos=[], cantantes=[];
 let evAssigned=[], evSetlist=[], editingEvId=null;
 let calY, calM;
+let calDates = [];
 
 // ── HELPERS ──
 window.toast = m => {
@@ -915,7 +916,7 @@ window.renderCalendar=()=>{
   document.getElementById('cal-hdr').innerHTML=DNS.map(d=>'<div class="cal-dn">'+d+'</div>').join('');
   const first=new Date(calY,calM,1).getDay(), days=new Date(calY,calM+1,0).getDate(), todayStr=now.toISOString().slice(0,10);
   let html='';
-  const calDates=[];
+  calDates=[];
   for(let i=0;i<first;i++) html+='<div></div>';
   for(let d=1;d<=days;d++){
     const ds=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
