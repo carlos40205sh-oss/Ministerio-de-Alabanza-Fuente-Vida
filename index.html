@@ -209,8 +209,8 @@ input::placeholder{color:var(--muted);}
   </div>
   <input id="can-search" placeholder="🔍 Buscar por título, artista o etiqueta..." oninput="renderCanciones()"/>
   <div style="display:flex;gap:8px;margin-bottom:12px">
-    <button id="btn-sort-az" class="btn btn-accent btn-sm" onclick="setSortMode('az')">A-Z</button>
-    <button id="btn-sort-artist" class="btn btn-ghost btn-sm" onclick="setSortMode('artist')">Por artista</button>
+    <button id="btn-sort-az" class="btn btn-ghost btn-sm" onclick="setSortMode('az')">A-Z</button>
+    <button id="btn-sort-artist" class="btn btn-accent btn-sm" onclick="setSortMode('artist')">Por artista</button>
   </div>
   <div id="canciones-list"></div>
 </div>
@@ -252,8 +252,8 @@ input::placeholder{color:var(--muted);}
   </div>
   <input id="mus-search" placeholder="🔍 Buscar músico..." oninput="renderMusicos()" style="margin-bottom:8px"/>
   <div style="display:flex;gap:8px;margin-bottom:12px">
-    <button id="btn-mus-az" class="btn btn-accent btn-sm" onclick="setMusMode('az')">A-Z</button>
-    <button id="btn-mus-rol" class="btn btn-ghost btn-sm" onclick="setMusMode('rol')">Por rol</button>
+    <button id="btn-mus-az" class="btn btn-ghost btn-sm" onclick="setMusMode('az')">A-Z</button>
+    <button id="btn-mus-rol" class="btn btn-accent btn-sm" onclick="setMusMode('rol')">Por rol</button>
   </div>
   <div id="musicos-list"></div>
 </div>
@@ -440,7 +440,7 @@ window.goTab = (tab, btn) => {
 };
 
 // ── CANCIONES ──
-let sortMode = 'az';
+let sortMode = 'artist';
 window.setSortMode = mode => {
   sortMode = mode;
   document.getElementById('btn-sort-az').className = mode==='az' ? 'btn btn-accent btn-sm' : 'btn btn-ghost btn-sm';
@@ -548,7 +548,7 @@ window.toggleGrp = id => {
   list.style.display = isOpen ? 'none' : 'block';
   if(arr) arr.textContent = isOpen ? '▸' : '▾';
 };
-let musMode = 'az';
+let musMode = 'rol';
 window.setMusMode = mode => {
   musMode = mode;
   const az = document.getElementById('btn-mus-az');
