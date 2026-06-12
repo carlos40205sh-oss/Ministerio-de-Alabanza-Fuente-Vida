@@ -594,3 +594,296 @@ const renderMusicos = () => {
     }).join('');
   }
 };
+
+// ── CANTANTES ──
+window.toggleCantForm = () => { const f=document.getElementById('cant-form'); f.style.display=f.style.display==='none'?'block':'none'; };
+window.saveCantante = async () => {
+  const n = document.getElementById('cant-nombre').value.trim(); if (!n) return;
+  await addDoc(collection(db,'cantantes'), { nombre:n, notas:document.getElementById('cant-notas').value.trim(), creadoEn:Date.now() });
+  ['cant-nombre','cant-notas'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cant-form').style.display='none'; toast('✅ Cantante guardado');
+};
+window.deleteCantante = async id => { if(confirm('¿Eliminar?')){ await deleteDoc(doc(db,'cantantes',id)); toast('🗑️ Eliminado'); }};
+window.editCantante = id => {
+  const c = cantantes.find(x=>x.id===id); if (!c) return;
+  document.getElementById('cant-edit-id').value=id;
+  document.getElementById('cant-edit-nombre').value=c.nombre||'';
+  document.getElementById('cant-edit-notas').value=c.notas||'';
+  document.getElementById('cant-edit-modal').style.display='flex';
+};
+window.closeCantEdit = () => document.getElementById('cant-edit-modal').style.display='none';
+window.saveCantEdit = async () => {
+  const id = document.getElementById('cant-edit-id').value;
+  await updateDoc(doc(db,'cantantes',id), { nombre:document.getElementById('cant-edit-nombre').value.trim(), notas:document.getElementById('cant-edit-notas').value.trim() });
+  closeCantEdit(); toast('✅ Cantante actualizado');
+};
+const renderCantantes = () => {
+  const el = document.getElementById('cantantes-list');
+  if (!cantantes.length){ el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No hay cantantes</div>'; return; }
+  el.innerHTML = cantantes.map(c => {
+    const btns = CU&&CU.admin ? '<div style="display:flex;gap:4px"><button class="btn btn-accent btn-sm" onclick="editCantante(\"'+c.id+'\")">✏️ Editar</button><button class="btn btn-danger btn-sm" onclick="deleteCantante(\"'+c.id+'\")">✕</button></div>' : '';
+    return '<div class="card row"><div class="avatar">🎤</div><div style="flex:1"><div style="font-weight:600;font-size:14px">'+c.nombre+'</div>'+(c.notas?'<div style="color:var(--muted);font-size:12px">'+c.notas+'</div>':'')+'</div>'+btns+'</div>';
+  }).join('');
+};
+
+// ── DIRECTOR SELECT ──
+const populateDirectorSelect = (selectedVal) => {
+  const sel = document.getElementById('ev-director');
+  if (!sel) return;
+  let html = '<option value="">-- Seleccionar director --</option>';
+  if (musicos.length) html += '<optgroup label="Músicos">' + musicos.map(m=>'<option value="m_'+m.id+'"'+((selectedVal==='m_'+m.id)?' selected':'')+'>'+m.nombre+' ('+m.rol+')</option>').join('') + '</optgroup>';
+  if (cantantes.length) html += '<optgroup label="Cantantes">' + cantantes.map(c=>'<option value="c_'+c.id+'"'+((selectedVal==='c_'+c.id)?' selected':'')+'>'+c.nombre+'</option>').join('') + '</optgroup>';
+  sel.innerHTML = html;
+};
+const resolveDirector = val => {
+  if (!val) return null;
+  if (val.startsWith('c_')) return cantantes.find(x=>x.id===val.slice(2));
+  if (val.startsWith('m_')) return musicos.find(x=>x.id===val.slice(2));
+  return musicos.find(x=>x.id===val);
+};
+const directorRolStr = val => {
+  if (!val) return '';
+  if (val.startsWith('c_')){ const c=cantantes.find(x=>x.id===val.slice(2)); return c?(c.notas||'Cantante'):''; }
+  const m = musicos.find(x=>x.id===(val.startsWith('m_')?val.slice(2):val));
+  return m?(m.rol||''):'';
+};
+
+// ── EVENTOS FORM ──
+window.onTipoChange = () => { document.getElementById('ev-extra').style.display=document.getElementById('ev-tipo').value==='Ayuno'?'none':'block'; };
+window.showEvForm = (evId) => {
+  editingEvId = evId;
+  const ev = evId ? eventos.find(e=>e.id===evId) : null;
+  evAssigned = ev ? [...(ev.asignados||[])] : [];
+  evSetlist = ev ? [...(ev.setlist||[])] : [];
+  document.getElementById('ev-titulo').value = ev?ev.titulo:'';
+  document.getElementById('ev-fecha').value = ev?ev.fecha:'';
+  document.getElementById('ev-tipo').value = ev?ev.tipo:'Servicio';
+  document.getElementById('ev-hora-ini').value = ev?ev.horaIni:'';
+  document.getElementById('ev-hora-fin').value = ev?ev.horaFin:'';
+  document.getElementById('ev-notas').value = ev?ev.notas:'';
+  document.getElementById('ev-form-title').textContent = ev?'Editar evento':'Nuevo evento';
+  document.getElementById('ev-extra').style.display = (ev&&ev.tipo==='Ayuno')?'none':'block';
+  populateDirectorSelect(ev?ev.director:'');
+  renderEvMusTags(); renderEvCanTags();
+  document.getElementById('ev-list-view').style.display='none';
+  document.getElementById('ev-form-view').style.display='block';
+  document.getElementById('ev-detail-view').style.display='none';
+};
+window.hideEvForm = () => {
+  document.getElementById('ev-list-view').style.display='block';
+  document.getElementById('ev-form-view').style.display='none';
+  document.getElementById('ev-detail-view').style.display='none';
+  editingEvId=null;
+};
+const renderEvMusTags = () => {
+  const ids = evAssigned.map(a=>a.musId);
+  document.getElementById('ev-mus-tags').innerHTML = musicos.map(m=>
+    '<span class="tag '+(ids.includes(m.id)?'sel-accent':'')+'" onclick="toggleEvMus(\"'+m.id+'\")">'+roleIcon(m.rol)+' '+m.nombre+'</span>'
+  ).join('');
+  document.getElementById('ev-assigned-list').innerHTML = evAssigned.map((a,i)=>{
+    const m = musicos.find(x=>x.id===a.musId);
+    return '<div class="assigned-item"><span style="font-size:15px">'+roleIcon(m?m.rol:'')+'</span><span style="flex:1;font-size:13px;font-weight:600">'+(m?m.nombre:'')+'</span><select onchange="updEvMus('+i+',this.value)" style="width:auto;margin:0;padding:4px 8px;font-size:11px">'+ROLES_EV.map(r=>'<option'+(a.rol===r?' selected':'')+'>'+r+'</option>').join('')+'</select><button class="btn btn-danger btn-sm" onclick="rmEvMus('+i+')">✕</button></div>';
+  }).join('');
+};
+window.toggleEvMus = id => {
+  const idx = evAssigned.findIndex(a=>a.musId===id);
+  if (idx>=0) evAssigned.splice(idx,1);
+  else { const m=musicos.find(x=>x.id===id); evAssigned.push({musId:id, rol:m?m.rol:'Voz'}); }
+  renderEvMusTags();
+};
+window.updEvMus = (i, rol) => { evAssigned[i].rol=rol; };
+window.rmEvMus = i => { evAssigned.splice(i,1); renderEvMusTags(); };
+const renderEvCanTags = () => {
+  document.getElementById('ev-can-tags').innerHTML = canciones.map(c=>
+    '<span class="tag '+(evSetlist.includes(c.id)?'sel-gold':'')+'" onclick="toggleEvCan(\"'+c.id+'\")">'+c.titulo+'</span>'
+  ).join('');
+};
+window.toggleEvCan = id => { const i=evSetlist.indexOf(id); if(i>=0) evSetlist.splice(i,1); else evSetlist.push(id); renderEvCanTags(); };
+window.saveEvento = async () => {
+  const titulo = document.getElementById('ev-titulo').value.trim();
+  const fecha = document.getElementById('ev-fecha').value;
+  if (!titulo||!fecha){ alert('Título y fecha son requeridos'); return; }
+  const tipo = document.getElementById('ev-tipo').value;
+  const data = { titulo, fecha, tipo, horaIni:document.getElementById('ev-hora-ini').value, horaFin:document.getElementById('ev-hora-fin').value, notas:document.getElementById('ev-notas').value.trim(), director:tipo!=='Ayuno'?document.getElementById('ev-director').value:'', asignados:tipo!=='Ayuno'?evAssigned:[], setlist:tipo!=='Ayuno'?evSetlist:[] };
+  if (editingEvId) { await updateDoc(doc(db,'eventos',editingEvId), data); toast('✅ Evento actualizado'); }
+  else { await addDoc(collection(db,'eventos'), {...data, creadoEn:Date.now()}); toast('✅ Evento guardado'); }
+  editingEvId=null; hideEvForm();
+};
+
+// ── ASISTENCIA ──
+window.marcarAsist = async (evId, musId, estado) => {
+  const ev = eventos.find(e=>e.id===evId); if (!ev) return;
+  const asistencia = ev.asistencia||{};
+  asistencia[musId] = estado;
+  await updateDoc(doc(db,'eventos',evId), {asistencia});
+  toast(estado==='llego'?'✅ Marcado':'❌ Marcado');
+};
+
+// ── COMENTARIOS ──
+window.addComentario = async (evId) => {
+  const inp = document.getElementById('com-inp-'+evId);
+  const txt = inp?inp.value.trim():''; if (!txt) return;
+  const ev = eventos.find(e=>e.id===evId); if (!ev) return;
+  const comentarios = [...(ev.comentarios||[])];
+  comentarios.push({texto:txt, autor:CU.nombre, fecha:new Date().toLocaleDateString('es-CR'), ts:Date.now()});
+  await updateDoc(doc(db,'eventos',evId), {comentarios});
+  if (inp) inp.value='';
+  toast('💬 Comentario agregado');
+};
+window.delComentario = async (evId, idx) => {
+  const ev = eventos.find(e=>e.id===evId); if (!ev) return;
+  const comentarios = [...(ev.comentarios||[])];
+  comentarios.splice(idx,1);
+  await updateDoc(doc(db,'eventos',evId), {comentarios});
+  toast('🗑️ Eliminado');
+};
+
+// ── EVENTO DETAIL ──
+window.showEvDetail = id => {
+  const ev = eventos.find(e=>e.id===id); if (!ev) return;
+  const evCans = canciones.filter(c=>(ev.setlist||[]).includes(c.id));
+  const director = resolveDirector(ev.director);
+  const dirRol = directorRolStr(ev.director);
+  const horaStr = (ev.horaIni||ev.horaFin) ? ' · '+(ev.horaIni||'')+(ev.horaFin?' - '+ev.horaFin:'') : '';
+  let html = '<div class="row" style="margin-bottom:14px">';
+  html += '<button class="btn btn-ghost btn-sm" onclick="hideEvForm()">← Volver</button>';
+  html += '<h2 style="color:var(--gold);font-size:15px;margin:0;flex:1">'+ev.titulo+'</h2>';
+  if (CU&&CU.admin) html += '<div style="display:flex;gap:6px"><button class="btn btn-accent btn-sm" onclick="showEvForm(\"'+ev.id+'\")">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteEvento(\"'+ev.id+'\")">🗑️</button></div>';
+  html += '</div>';
+  html += '<div class="ev-sec"><div style="display:flex;gap:6px;flex-wrap:wrap">';
+  html += '<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">📅 '+fmt(ev.fecha)+horaStr+'</span>';
+  html += '<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>';
+  html += '</div>'+(ev.notas?'<p style="color:var(--muted);font-size:13px;margin-top:8px">'+ev.notas+'</p>':'')+'</div>';
+  if (ev.tipo==='Ayuno') {
+    html += '<div class="ev-sec" style="text-align:center;padding:32px"><div style="font-size:48px">🙏</div><div style="color:var(--success);font-size:16px;font-weight:700;margin-top:12px">Día de Ayuno</div></div>';
+  } else {
+    if (director) html += '<div class="ev-sec"><h4>🎤 Director</h4><div class="row"><div class="avatar">'+roleIcon(dirRol)+'</div><div style="font-weight:600;font-size:14px">'+director.nombre+'</div><span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+dirRol+'</span></div></div>';
+    if ((ev.asignados||[]).length) {
+      const asist = ev.asistencia||{};
+      html += '<div class="ev-sec"><h4>🎸 Equipo ('+ev.asignados.length+')</h4>';
+      ev.asignados.forEach(a => {
+        const m = musicos.find(x=>x.id===a.musId); if (!m) return;
+        const est = asist[m.id]||'pendiente';
+        const estColor = est==='llego'?'var(--success)':est==='no-llego'?'var(--danger)':'var(--muted)';
+        const estLabel = est==='llego'?'✅ Llegó':est==='no-llego'?'❌ No llegó':'⏳ Pendiente';
+        const esMio = CU && !CU.admin && CU.key === m.username;
+        const puedeMarcar = (CU&&CU.admin) || esMio;
+        let btnHtml = '';
+        if (puedeMarcar) {
+          const bg1=est==='llego'?'#7EC8A0':'#7EC8A022', c1=est==='llego'?'#0F0E1A':'var(--success)';
+          const bg2=est==='no-llego'?'#E06C75':'#E06C7522', c2=est==='no-llego'?'#fff':'var(--danger)';
+          const lbl1=CU&&CU.admin?'✅':'✅ Voy', lbl2=CU&&CU.admin?'❌':'❌ No voy';
+          btnHtml='<div style="display:flex;gap:3px"><button class="btn btn-sm" style="padding:3px 7px;font-size:11px;background:'+bg1+';color:'+c1+'" onclick="marcarAsist(\"'+ev.id+'\",\"'+m.id+'\",\"llego\")">'+lbl1+'</button><button class="btn btn-sm" style="padding:3px 7px;font-size:11px;background:'+bg2+';color:'+c2+'" onclick="marcarAsist(\"'+ev.id+'\",\"'+m.id+'\",\"no-llego\")">'+lbl2+'</button></div>';
+        } else btnHtml='<span style="font-size:11px;color:'+estColor+'">'+estLabel+'</span>';
+        html += '<div class="rol-row"><div class="avatar" style="width:30px;height:30px;font-size:13px">'+roleIcon(m.rol)+'</div><div style="flex:1;font-size:13px;font-weight:600">'+m.nombre+'</div><span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444;margin-right:4px">'+a.rol+'</span>'+btnHtml+'</div>';
+      });
+      const presentes=Object.values(asist).filter(v=>v==='llego').length, ausentes=Object.values(asist).filter(v=>v==='no-llego').length;
+      if(presentes||ausentes) html+='<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;gap:10px"><span style="font-size:12px;color:var(--success)">✅ '+presentes+' presentes</span><span style="font-size:12px;color:var(--danger)">❌ '+ausentes+' ausentes</span></div>';
+      html += '</div>';
+    }
+    if (evCans.length) {
+      html += '<div class="ev-sec"><h4>🎵 Repertorio ('+evCans.length+')</h4>';
+      evCans.forEach((c,i) => {
+        html += '<div class="rol-row"><span style="color:var(--gold-dim);font-weight:700;width:18px;font-size:12px">'+(i+1)+'</span><div style="flex:1"><div style="font-weight:600;font-size:13px">'+c.titulo+'</div><div style="color:var(--muted);font-size:11px">'+(c.artista||'')+'</div></div><span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">'+c.tono+'</span></div>';
+        if(c.linkLetra||c.linkAcordes) html+='<div style="display:flex;gap:6px;padding:4px 0 6px 22px">'+(c.linkLetra?'<a href="'+c.linkLetra+'" target="_blank" class="link-btn">📄 Letra</a>':'')+(c.linkAcordes?' <a href="'+c.linkAcordes+'" target="_blank" class="link-btn">🎼 Acordes</a>':'')+'</div>';
+      });
+      html += '</div>';
+    }
+  }
+  const coms = ev.comentarios||[];
+  html += '<div class="ev-sec"><h4>💬 Comentarios ('+coms.length+')</h4>';
+  coms.forEach((c,i) => { html += '<div style="background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:600;color:var(--accent)">'+c.autor+'</span><div style="display:flex;gap:6px;align-items:center"><span style="font-size:10px;color:var(--muted)">'+c.fecha+'</span>'+(CU&&CU.admin?'<button onclick="delComentario(\"'+ev.id+'\",'+i+')" style="border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:12px">✕</button>':'')+'</div></div><div style="font-size:13px;color:var(--text);margin-top:4px">'+c.texto+'</div></div>'; });
+  html += '<div style="display:flex;gap:6px;margin-top:8px"><input id="com-inp-'+ev.id+'" placeholder="Escribí un comentario..." style="flex:1;margin:0;padding:8px 10px;font-size:12px"/><button onclick="addComentario(\"'+ev.id+'\")" style="border:none;background:var(--accent);color:#fff;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">Enviar</button></div></div>';
+  document.getElementById('ev-detail-view').innerHTML = html;
+  document.getElementById('ev-list-view').style.display='none';
+  document.getElementById('ev-form-view').style.display='none';
+  document.getElementById('ev-detail-view').style.display='block';
+};
+window.deleteEvento = async id => { if(confirm('¿Eliminar?')){ await deleteDoc(doc(db,'eventos',id)); hideEvForm(); toast('🗑️ Eliminado'); }};
+
+const renderEventos = () => {
+  const el = document.getElementById('eventos-list');
+  const sorted = [...eventos].sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+  if (!sorted.length){ el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No hay eventos</div>'; return; }
+  el.innerHTML = sorted.map(ev => {
+    const horaStr = ev.horaIni?'<div style="color:var(--muted);font-size:11px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'';
+    const badges = '<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>'+(ev.tipo!=='Ayuno'?' <span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">'+(ev.setlist||[]).length+'🎵</span> <span class="badge" style="background:#9590B022;color:var(--muted);border:1px solid #9590B044">'+(ev.asignados||[]).length+'🎸</span>':'');
+    return '<div class="card row" style="cursor:pointer" onclick="showEvDetail(\"'+ev.id+'\')"><div style="width:42px;height:42px;border-radius:10px;background:'+tipoBg(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:8px;color:var(--muted)">'+(ev.fecha||'').slice(5,7)+'/'+(ev.fecha||'').slice(2,4)+'</span><span style="font-size:17px;font-weight:800;color:'+tipoColor(ev.tipo)+';line-height:1">'+(ev.fecha||'?').slice(8)+'</span></div><div style="flex:1"><div style="font-weight:700;font-size:14px">'+ev.titulo+'</div>'+horaStr+'<div style="margin-top:3px">'+badges+'</div></div><span style="color:var(--muted)">›</span></div>';
+  }).join('');
+};
+
+// ── DASHBOARD ──
+const renderDashboard = () => {
+  document.getElementById('st-c').textContent = canciones.length;
+  document.getElementById('st-m').textContent = musicos.length;
+  document.getElementById('st-e').textContent = eventos.length;
+  const hoy = new Date().toISOString().slice(0,10);
+  const prox = [...eventos].filter(e=>e.fecha>=hoy).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(0,4);
+  document.getElementById('proximos-list').innerHTML = prox.length ? prox.map(ev=>
+    '<div class="card row" style="cursor:pointer;padding:10px 12px;margin-bottom:8px" onclick="goTab(&apos;eventos&apos;,document.querySelectorAll(&apos;.nav-btn&apos;)[2]);showEvDetail(\"'+ev.id+'\")"><span style="font-size:18px">'+(ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':'🎵')+'</span><div style="flex:1"><div style="font-weight:600;font-size:13px">'+ev.titulo+'</div><div style="color:var(--muted);font-size:11px">'+fmt(ev.fecha)+(ev.horaIni?' · '+ev.horaIni:'')+' · '+ev.tipo+'</div></div><span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span></div>'
+  ).join('') : '<div style="color:var(--muted);font-size:13px">No hay eventos próximos</div>';
+
+  // Cumpleaños
+  const hoyDate = new Date(), hoyM=hoyDate.getMonth()+1, hoyD=hoyDate.getDate();
+  const bdayHoy = musicos.filter(m=>{ if(!m.bday) return false; const [y,mm,dd]=m.bday.split('-'); return parseInt(mm)===hoyM&&parseInt(dd)===hoyD; });
+  const bdayMes = musicos.filter(m=>{ if(!m.bday) return false; const [y,mm]=m.bday.split('-'); return parseInt(mm)===hoyM; }).sort((a,b)=>parseInt(a.bday.split('-')[2])-parseInt(b.bday.split('-')[2]));
+  const bdayHoyEl=document.getElementById('bday-hoy');
+  if(bdayHoy.length){ bdayHoyEl.style.display='block'; bdayHoyEl.innerHTML='<div style="font-size:20px;margin-bottom:6px">🎉🎂🎉</div><div style="font-weight:700;color:var(--gold);font-size:14px;margin-bottom:6px">¡Cumpleaños hoy!</div>'+bdayHoy.map(m=>'<div style="font-size:13px;color:var(--text)">🎂 '+m.nombre+'</div>').join(''); }
+  else if(bdayHoyEl) bdayHoyEl.style.display='none';
+  const bdayMesEl=document.getElementById('bday-mes');
+  if(bdayMesEl){ if(!bdayMes.length){ bdayMesEl.innerHTML='<div style="color:var(--muted);font-size:13px">No hay cumpleaños este mes</div>'; }
+  else { bdayMesEl.innerHTML=bdayMes.map(m=>{ const [y,mm,dd]=m.bday.split('-'); const esHoy=parseInt(mm)===hoyM&&parseInt(dd)===hoyD; return '<div class="card row" style="padding:10px 12px;margin-bottom:8px"><div class="avatar">'+roleIcon(m.rol)+'</div><div style="flex:1"><div style="font-weight:600;font-size:13px">'+m.nombre+'</div><div style="color:var(--muted);font-size:11px">'+m.rol+'</div></div><span class="badge" style="background:'+(esHoy?'#E8C96A33':'#7B6FD422')+';color:'+(esHoy?'var(--gold)':'var(--accent)')+';border:1px solid '+(esHoy?'var(--gold)':'var(--accent)')+'44">'+(esHoy?'🎂 Hoy':'📅 '+dd+'/'+mm)+'</span></div>'; }).join(''); }}
+
+  const statsEl = document.getElementById('stats-section');
+  if (statsEl) {
+    const musCount={}, canCount={};
+    eventos.forEach(ev=>{ (ev.asignados||[]).forEach(a=>{ musCount[a.musId]=(musCount[a.musId]||0)+1; }); (ev.setlist||[]).forEach(id=>{ canCount[id]=(canCount[id]||0)+1; }); });
+    const topMus=Object.entries(musCount).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,n])=>{ const m=musicos.find(x=>x.id===id); if(!m) return ''; return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span>'+roleIcon(m.rol)+'</span><span style="flex:1;font-size:13px">'+m.nombre+'</span><span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+n+' eventos</span></div>'; }).join('');
+    const topCan=Object.entries(canCount).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,n])=>{ const c=canciones.find(x=>x.id===id); if(!c) return ''; return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span>🎵</span><span style="flex:1;font-size:13px">'+c.titulo+'</span><span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">'+n+' veces</span></div>'; }).join('');
+    const nuevas=canciones.filter(c=>c.nueva);
+    statsEl.innerHTML='<div class="card" style="margin-bottom:10px"><div style="font-weight:700;font-size:12px;color:var(--muted);margin-bottom:8px">🎸 MÚSICOS MÁS ACTIVOS</div>'+(topMus||'<div style="color:var(--muted);font-size:12px">Sin datos aún</div>')+'</div>'+'<div class="card" style="margin-bottom:10px"><div style="font-weight:700;font-size:12px;color:var(--muted);margin-bottom:8px">🎵 CANCIONES MÁS CANTADAS</div>'+(topCan||'<div style="color:var(--muted);font-size:12px">Sin datos aún</div>')+'</div>'+(nuevas.length?'<div class="card" style="margin-bottom:10px"><div style="font-weight:700;font-size:12px;color:var(--muted);margin-bottom:8px">🆕 CANCIONES NUEVAS</div>'+nuevas.map(c=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span>🎵</span><span style="flex:1;font-size:13px">'+c.titulo+'</span></div>').join('')+'</div>':'');
+  }
+};
+
+// ── CALENDAR ──
+const MESES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DNS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+window.calPrev=()=>{calM--;if(calM<0){calM=11;calY--;}renderCalendar();};
+window.calNext=()=>{calM++;if(calM>11){calM=0;calY++;}renderCalendar();};
+window.renderCalendar=()=>{
+  const now=new Date();
+  if(calY===undefined){calY=now.getFullYear();calM=now.getMonth();}
+  document.getElementById('cal-title').textContent=MESES[calM]+' '+calY;
+  document.getElementById('cal-hdr').innerHTML=DNS.map(d=>'<div class="cal-dn">'+d+'</div>').join('');
+  const first=new Date(calY,calM,1).getDay(), days=new Date(calY,calM+1,0).getDate(), todayStr=now.toISOString().slice(0,10);
+  let html='';
+  for(let i=0;i<first;i++) html+='<div></div>';
+  for(let d=1;d<=days;d++){
+    const ds=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const devs=eventos.filter(e=>e.fecha===ds);
+    html+='<div class="cal-day '+(devs.length?'has-ev ':'')+' '+(ds===todayStr?'today':'')+'" onclick="calClick(\"'+ds+'\')"><div class="cal-day-num">'+d+'</div>'+devs.map(e=>'<div class="cal-dot" style="background:'+tipoColor(e.tipo)+'"></div>').join('')+'</div>';
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+  renderCalList(todayStr);
+};
+window.calClick=date=>renderCalList(date);
+const renderCalList=date=>{
+  const devs=eventos.filter(e=>e.fecha===date);
+  const el=document.getElementById('cal-ev-list');
+  if(!devs.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">'+fmt(date)+' — Sin eventos</div>';return;}
+  el.innerHTML='<div style="color:var(--muted);font-size:12px;margin-bottom:6px;padding-top:4px">'+fmt(date)+'</div>'+devs.map(ev=>'<div class="card row" style="cursor:pointer;padding:10px 12px" onclick="goTab(&apos;eventos&apos;,document.querySelectorAll(&apos;.nav-btn&apos;)[2]);showEvDetail(\"'+ev.id+'\")"><div style="flex:1"><div style="font-weight:700;font-size:13px">'+ev.titulo+'</div>'+(ev.horaIni?'<div style="color:var(--muted);font-size:11px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'')+'<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;margin-top:4px">'+ev.tipo+'</span></div><span style="color:var(--muted)">›</span></div>').join('');
+};
+
+// ── FIRESTORE ──
+onSnapshot(collection(db,'cantantes'),snap=>{ cantantes=snap.docs.map(d=>({id:d.id,...d.data()})); renderCantantes(); populateDirectorSelect(); });
+onSnapshot(collection(db,'canciones'),snap=>{ canciones=snap.docs.map(d=>({id:d.id,...d.data()})); renderCanciones(); renderDashboard(); });
+onSnapshot(collection(db,'musicos'),snap=>{ musicos=snap.docs.map(d=>({id:d.id,...d.data()})); allUsers=musicos; renderMusicos(); renderDashboard(); });
+onSnapshot(collection(db,'eventos'),snap=>{
+  const hoy=new Date().toISOString().slice(0,10);
+  eventos=snap.docs.map(d=>({id:d.id,...d.data()})).filter(ev=>{ if(ev.fecha&&ev.fecha<hoy){ deleteDoc(doc(db,'eventos',ev.id)); return false; } return true; });
+  renderEventos(); renderDashboard(); renderCalendar();
+});
+
+</script>
+</body>
+</html>
