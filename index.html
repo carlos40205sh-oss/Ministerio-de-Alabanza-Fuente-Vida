@@ -547,7 +547,18 @@ window.toggleGrp = id => {
   el.dataset.open = isOpen ? 'false' : 'true';
   list.style.display = isOpen ? 'none' : 'block';
   if(arr) arr.textContent = isOpen ? '▸' : '▾';
-};const musCard = m => {
+};
+let musMode = 'az';
+window.setMusMode = mode => {
+  musMode = mode;
+  const az = document.getElementById('btn-mus-az');
+  const rol = document.getElementById('btn-mus-rol');
+  if(az) az.className = mode==='az' ? 'btn btn-accent btn-sm' : 'btn btn-ghost btn-sm';
+  if(rol) rol.className = mode==='rol' ? 'btn btn-accent btn-sm' : 'btn btn-ghost btn-sm';
+  renderMusicos();
+};
+window.toggleMusForm = () => { const f=document.getElementById('mus-form'); f.style.display=f.style.display==='none'?'block':'none'; };
+const musCard = m => {
   const rolesBadges = (m.roles||[m.rol]).map(r=>'<span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+roleIcon(r)+' '+r+'</span>').join(' ');
   const dispBadge = '<span class="badge" style="background:'+(m.disponible?'#7EC8A022':'#E06C7522')+';color:'+(m.disponible?'var(--success)':'var(--danger)')+';border:1px solid '+(m.disponible?'#7EC8A044':'#E06C7544')+'">'+(m.disponible?'Disponible':'No disponible')+'</span>';
   const btns = CU&&CU.admin ? '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0"><button class="btn btn-accent btn-sm" onclick="editMusico(this.dataset.mid)" data-mid="'+m.id+'">✏️ Editar</button><button class="btn btn-ghost btn-sm" onclick="toggleDisp(this.dataset.mid," data-mid="'+m.id+'"'+m.disponible+')">'+(m.disponible?'🔴 Ocupado':'🟢 Disponible')+'</button><button class="btn btn-danger btn-sm" onclick="deleteMusico(this.dataset.mid)" data-mid2="'+m.id+'">✕ Borrar</button></div>' : '';
