@@ -868,11 +868,12 @@ window.renderCalendar=()=>{
   document.getElementById('cal-hdr').innerHTML=DNS.map(d=>'<div class="cal-dn">'+d+'</div>').join('');
   const first=new Date(calY,calM,1).getDay(), days=new Date(calY,calM+1,0).getDate(), todayStr=now.toISOString().slice(0,10);
   let html='';
+  const calDates=[];
   for(let i=0;i<first;i++) html+='<div></div>';
   for(let d=1;d<=days;d++){
     const ds=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const devs=eventos.filter(e=>e.fecha===ds);
-    html+='<div class="cal-day '+(devs.length?'has-ev ':'')+' '+(ds===todayStr?'today':'')+'" onclick="calClick(\"'+ds+'\')"><div class="cal-day-num">'+d+'</div>'+devs.map(e=>'<div class="cal-dot" style="background:'+tipoColor(e.tipo)+'"></div>').join('')+'</div>';
+    const dayIdx=calDates.length; calDates.push(ds); html+='<div class="cal-day '+(devs.length?'has-ev ':'')+' '+(ds===todayStr?'today':'')+'" onclick="calClick(calDates['+dayIdx+'])" style="cursor:pointer"><div class="cal-day-num">'+d+'</div>'+devs.map(e=>'<div class="cal-dot" style="background:'+tipoColor(e.tipo)+';"></div>').join('')+'</div>';
   }
   document.getElementById('cal-grid').innerHTML=html;
   renderCalList(todayStr);
