@@ -86,6 +86,7 @@ input::placeholder{color:var(--muted);}
     <input id="login-user" placeholder="Usuario" autocomplete="off"/>
     <input id="login-pass" type="password" placeholder="Contraseña"/>
     <div id="login-err" style="color:var(--danger);font-size:12px;margin-bottom:8px;display:none">Usuario o contraseña incorrectos</div>
+    <label class="chk-lbl" style="justify-content:center;margin-bottom:8px"><input type="checkbox" id="remember-me"/> Recordarme</label>
     <button class="btn btn-primary btn-full" onclick="doLogin()">Entrar</button>
   </div>
 </div>
@@ -388,12 +389,35 @@ const findUser = (u, p) => {
   return null;
 };
 
+const autoLogin = () => {
+  try {
+    const saved = localStorage.getItem('min_user');
+    if (saved) {
+      const {u, p} = JSON.parse(saved);
+      const user = findUser(u, p);
+      if (user) {
+        CU = user;
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('hdr-user').textContent = CU.nombre + ' · Salir';
+        document.getElementById('welcome-msg').textContent = 'Bienvenido, ' + CU.nombre;
+        if (CU.admin) ['btn-new-ev','btn-add-can','btn-add-mus','btn-add-cant'].forEach(id => document.getElementById(id).style.display = 'inline-block');
+        renderCalendar();
+        return true;
+      }
+    }
+  } catch(e) {}
+  return false;
+};
+
 window.doLogin = () => {
   const u = document.getElementById('login-user').value.trim();
   const p = document.getElementById('login-pass').value.trim();
   const user = findUser(u, p);
   if (user) {
     CU = user;
+    if (document.getElementById('remember-me').checked) {
+      try { localStorage.setItem('min_user', JSON.stringify({u, p})); } catch(e) {}
+    }
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('hdr-user').textContent = CU.nombre + ' · Salir';
     document.getElementById('welcome-msg').textContent = 'Bienvenido, ' + CU.nombre;
@@ -407,7 +431,12 @@ window.doLogin = () => {
     document.getElementById('login-err').style.display = 'block';
   }
 };
-window.doLogout = () => { if (confirm('¿Cerrar sesión?')) location.reload(); };
+window.doLogout = () => { 
+  if (confirm('¿Cerrar sesión?')) { 
+    try { localStorage.removeItem('min_user'); } catch(e) {}
+    location.reload(); 
+  }
+};
 document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
 // ── STATE ──
@@ -907,7 +936,13 @@ const renderCalList=date=>{
 // ── FIRESTORE ──
 onSnapshot(collection(db,'cantantes'),snap=>{ cantantes=snap.docs.map(d=>({id:d.id,...d.data()})); renderCantantes(); populateDirectorSelect(); });
 onSnapshot(collection(db,'canciones'),snap=>{ canciones=snap.docs.map(d=>({id:d.id,...d.data()})); renderCanciones(); renderDashboard(); });
-onSnapshot(collection(db,'musicos'),snap=>{ musicos=snap.docs.map(d=>({id:d.id,...d.data()})); allUsers=musicos; renderMusicos(); renderDashboard(); });
+onSnapshot(collection(db,'musicos'),snap=>{ 
+  musicos=snap.docs.map(d=>({id:d.id,...d.data()})); 
+  allUsers=musicos; 
+  renderMusicos(); 
+  renderDashboard();
+  if (!CU) autoLogin();
+});
 onSnapshot(collection(db,'eventos'),snap=>{
   const hoy=new Date().toISOString().slice(0,10);
   eventos=snap.docs.map(d=>({id:d.id,...d.data()})).filter(ev=>{ if(ev.fecha&&ev.fecha<hoy){ deleteDoc(doc(db,'eventos',ev.id)); return false; } return true; });
