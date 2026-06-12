@@ -1,0 +1,24 @@
+{
+  "name": "Ministerio de Alabanza",
+  "short_name": "Ministerio",
+  "description": "App del Ministerio de Alabanza",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F0E1A",
+  "theme_color": "#0F0E1A",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
