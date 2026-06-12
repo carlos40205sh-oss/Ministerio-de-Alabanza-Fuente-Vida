@@ -275,12 +275,12 @@ input::placeholder{color:var(--muted);}
 </div>
 
 <nav class="nav">
-  <button class="nav-btn active" onclick="goTab('inicio',this)"><span class="icon">🏠</span><span class="label">Inicio</span><div class="dot"></div></button>
-  <button class="nav-btn" onclick="goTab('calendario',this)"><span class="icon">📅</span><span class="label">Calendario</span></button>
-  <button class="nav-btn" onclick="goTab('eventos',this)"><span class="icon">🗓</span><span class="label">Eventos</span></button>
-  <button class="nav-btn" onclick="goTab('canciones',this)"><span class="icon">🎵</span><span class="label">Canciones</span></button>
-  <button class="nav-btn" onclick="goTab('musicos',this)"><span class="icon">🎸</span><span class="label">Músicos</span></button>
-  <button class="nav-btn" onclick="goTab('cantantes',this)"><span class="icon">🎤</span><span class="label">Cantantes</span></button>
+  <button class="nav-btn active" onclick="goTab('inicio',this)" data-tab="inicio"><span class="icon">🏠</span><span class="label">Inicio</span><div class="dot"></div></button>
+  <button class="nav-btn" onclick="goTab('calendario',this)" data-tab="calendario"><span class="icon">📅</span><span class="label">Calendario</span></button>
+  <button class="nav-btn" onclick="goTab('eventos',this)" data-tab="eventos"><span class="icon">🗓</span><span class="label">Eventos</span></button>
+  <button class="nav-btn" onclick="goTab('canciones',this)" data-tab="canciones"><span class="icon">🎵</span><span class="label">Canciones</span></button>
+  <button class="nav-btn" onclick="goTab('musicos',this)" data-tab="musicos"><span class="icon">🎸</span><span class="label">Músicos</span></button>
+  <button class="nav-btn" onclick="goTab('cantantes',this)" data-tab="cantantes"><span class="icon">🎤</span><span class="label">Cantantes</span></button>
 </nav>
 
 <!-- MODAL EDITAR MUSICO -->
@@ -430,6 +430,21 @@ const tipoBg = t => ({'Servicio':'#7B6FD422','Ensayo':'#E8C96A22','Ayuno':'#7EC8
 const ROLES_EV = ['Líder','Voz','Guitarra','Bajo','Teclado/Piano','Batería','Saxofón','Presentación','Transmisión','Otros'];
 
 // ── NAV ──
+// ── HISTORY MANAGEMENT ──
+window.addEventListener('popstate', e => {
+  const tab = e.state?.tab || 'inicio';
+  const btn = document.querySelector('.nav-btn[data-tab="'+tab+'"]');
+  if (btn) {
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b=>{ b.classList.remove('active'); b.querySelector('.dot')?.remove(); });
+    document.getElementById('sec-'+tab).classList.add('active');
+    btn.classList.add('active');
+    const d=document.createElement('div'); d.className='dot'; btn.appendChild(d);
+    // If going back to eventos, show list view
+    if (tab==='eventos') hideEvForm();
+  }
+});
+
 window.goTab = (tab, btn) => {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('active'); b.querySelector('.dot')?.remove(); });
@@ -437,6 +452,7 @@ window.goTab = (tab, btn) => {
   btn.classList.add('active');
   const d = document.createElement('div'); d.className='dot'; btn.appendChild(d);
   if (tab === 'calendario') renderCalendar();
+  history.pushState({tab}, '', location.pathname);
 };
 
 // ── CANCIONES ──
@@ -679,6 +695,7 @@ window.showEvForm = (evId) => {
   document.getElementById('ev-list-view').style.display='none';
   document.getElementById('ev-form-view').style.display='block';
   document.getElementById('ev-detail-view').style.display='none';
+  history.pushState({tab:'eventos', form:true}, '', location.pathname);
 };
 window.hideEvForm = () => {
   document.getElementById('ev-list-view').style.display='block';
@@ -751,6 +768,7 @@ window.delComentario = async (evId, idx) => {
 
 // ── EVENTO DETAIL ──
 window.showEvDetail = id => {
+  history.pushState({tab:'eventos', detail:id}, '', location.pathname);
   const ev = eventos.find(e=>e.id===id); if (!ev) return;
   const evCans = canciones.filter(c=>(ev.setlist||[]).includes(c.id));
   const director = resolveDirector(ev.director);
