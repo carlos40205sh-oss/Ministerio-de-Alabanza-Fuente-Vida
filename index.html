@@ -490,6 +490,7 @@ const applyLogin = user => {
     document.querySelectorAll('.nav-admin').forEach(b=>b.style.setProperty('display','flex','important'));
   }
   renderCalendar();
+  renderAyuno();
   setTimeout(checkEventoProximo, 1500);
   setTimeout(checkCuotaPendiente, 4000);
   setTimeout(registerFCMToken, 3000);
@@ -517,6 +518,7 @@ const goTab = (tab, pushState=true) => {
   const btn = document.querySelector(`.nav-btn[data-tab="${tab}"]`);
   if(btn){btn.classList.add('active');const d=document.createElement('div');d.className='dot';btn.appendChild(d);}
   if(tab==='calendario') renderCalendar();
+  if(tab==='ayuno') renderAyuno();
   if(pushState) history.pushState({tab, view:'list'}, '', location.pathname);
 };
 
@@ -1262,7 +1264,7 @@ const renderAyuno = () => {
 onSnapshot(collection(db,'ayunos'), snap => {
   ayunoData = {};
   snap.docs.forEach(d => { ayunoData[d.id] = d.data(); });
-  renderAyuno();
+  if(CU) renderAyuno();
 });
 
 // Initialize history state
