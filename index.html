@@ -1161,7 +1161,7 @@ function renderCuotas() {
   $('cuota-mes-titulo').textContent = MESES_C[cuotaMes]+' '+cuotaYear;
   if($('cuota-monto').value==='') $('cuota-monto').value = cuotaMonto||'';
   const el=$('cuotas-list'); el.innerHTML='';
-  const musList = musicos.filter(m=>m.username); // only musicians with accounts
+  const musList = musicos.filter(m=>m.username).sort((a,b)=>a.nombre.localeCompare(b.nombre)); // only musicians with accounts, sorted A-Z
   let pagaron=0, deben=0;
   musList.forEach(m=>{
     const paid = cuotaData[m.id]?.[key]||false;
