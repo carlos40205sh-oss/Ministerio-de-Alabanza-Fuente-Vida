@@ -383,6 +383,16 @@ input::placeholder{color:var(--muted);}
   </div>
 </div>
 
+<!-- EVENTO PRÓXIMO MODAL -->
+<div id="evento-modal" class="modal" style="z-index:710">
+  <div class="modal-box" style="text-align:center;max-width:320px">
+    <div style="font-size:48px;margin-bottom:12px" id="evento-modal-icon">🎵</div>
+    <h3 style="color:var(--gold);margin-bottom:8px" id="evento-modal-titulo">Evento próximo</h3>
+    <p id="evento-modal-msg" style="color:var(--muted);font-size:13px;margin-bottom:16px;line-height:1.5"></p>
+    <button class="btn btn-primary btn-full" id="btn-evento-ok">¡Entendido!</button>
+  </div>
+</div>
+
 <!-- CUOTA MODAL -->
 <div id="cuota-modal" class="modal" style="z-index:700">
   <div class="modal-box" style="text-align:center;max-width:320px">
@@ -465,7 +475,8 @@ const applyLogin = user => {
     document.querySelectorAll('.nav-admin').forEach(b=>b.style.setProperty('display','flex','important'));
   }
   renderCalendar();
-  setTimeout(checkCuotaPendiente, 2000);
+  setTimeout(checkEventoProximo, 1500);
+  setTimeout(checkCuotaPendiente, 4000);
   setTimeout(registerFCMToken, 3000);
 };
 const autoLogin = () => {
@@ -1031,6 +1042,7 @@ $('btn-save-monto').addEventListener('click', async () => {
 $('btn-cuota-prev').addEventListener('click',()=>{cuotaMes--;if(cuotaMes<0){cuotaMes=11;cuotaYear--;}renderCuotas();});
 $('btn-cuota-next').addEventListener('click',()=>{cuotaMes++;if(cuotaMes>11){cuotaMes=0;cuotaYear++;}renderCuotas();});
 $('btn-cuota-ok').addEventListener('click',()=>$('cuota-modal').style.display='none');
+$('btn-evento-ok').addEventListener('click',()=>$('evento-modal').style.display='none');
 
 const toggleCuota = async (musId, paid) => {
   const key = cuotaKey();
@@ -1065,6 +1077,36 @@ function renderCuotas() {
   $('cuota-deben').textContent=deben;
   $('cuota-total').textContent='₡'+(pagaron*(cuotaMonto||0)).toLocaleString();
 }
+
+const checkEventoProximo = () => {
+  if(!CU||CU.admin) return;
+  const m = musicos.find(x=>x.username===CU.key);
+  if(!m) return;
+  const now = new Date();
+  const en48h = new Date(now.getTime() + 48*60*60*1000);
+  const hoyStr = now.toISOString().slice(0,10);
+  const en48Str = en48h.toISOString().slice(0,10);
+  // Find events in next 48h where musician is assigned
+  const proximos = eventos.filter(ev => {
+    if(ev.fecha < hoyStr || ev.fecha > en48Str) return false;
+    return (ev.asignados||[]).some(a => a.musId === m.id);
+  }).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  if(!proximos.length) return;
+  const ev = proximos[0];
+  const esHoy = ev.fecha === hoyStr;
+  const icono = ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':'🎵';
+  const cuando = esHoy ? '¡HOY!' : 'mañana';
+  const miRol = (ev.asignados||[]).find(a=>a.musId===m.id)?.rol || '';
+  $('evento-modal-icon').textContent = icono;
+  $('evento-modal-titulo').textContent = 'Evento ' + cuando;
+  $('evento-modal-msg').innerHTML = 
+    'Hola <strong>'+CU.nombre+'</strong>, tenés un evento <strong>'+cuando+'</strong>:<br><br>' +
+    '<strong style="color:var(--gold);font-size:15px">'+ev.titulo+'</strong><br>' +
+    (ev.horaIni?'<span style="color:var(--muted)">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</span><br>':'') +
+    '<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;margin-top:8px;display:inline-block">'+ev.tipo+'</span>' +
+    (miRol?'<br><span style="color:var(--accent);font-size:12px;margin-top:6px;display:inline-block">Tu rol: '+miRol+'</span>':'');
+  $('evento-modal').style.display='flex';
+};
 
 const checkCuotaPendiente = () => {
   if(!CU||CU.admin) return;
