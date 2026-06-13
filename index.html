@@ -466,8 +466,21 @@ window.addEventListener('popstate', e => {
   const state = e.state || {tab:'inicio'};
   const tab = state.tab || 'inicio';
   
-  // If was in event detail, go back to list
-  if (state.detail) { hideEvForm(); return; }
+  // If was in event detail, go back to origin tab
+  if (state.detail) {
+    const fromTab = state.fromTab || 'eventos';
+    const btn = document.querySelector('.nav-btn[data-tab="'+fromTab+'"]');
+    if (btn) {
+      document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(b=>{ b.classList.remove('active'); b.querySelector('.dot')?.remove(); });
+      document.getElementById('sec-'+fromTab).classList.add('active');
+      btn.classList.add('active');
+      const d=document.createElement('div'); d.className='dot'; btn.appendChild(d);
+      hideEvForm();
+      if(fromTab==='calendario') renderCalendar();
+    }
+    return;
+  }
   // If was in event form, go back to list
   if (state.form) { hideEvForm(); return; }
   
@@ -806,7 +819,15 @@ window.delComentario = async (evId, idx) => {
 };
 
 // ── EVENTO DETAIL ──
+window.showEvDetailFrom = (id, fromTab) => {
+  history.pushState({tab: fromTab, detail: id, fromTab}, '', location.pathname);
+  _showEvDetailInner(id);
+};
 window.showEvDetail = id => {
+  history.pushState({tab: 'eventos', detail: id, fromTab: 'eventos'}, '', location.pathname);
+  _showEvDetailInner(id);
+};
+const _showEvDetailInner = id => {
   history.pushState({tab:'eventos', detail:id}, '', location.pathname);
   const ev = eventos.find(e=>e.id===id); if (!ev) return;
   const evCans = canciones.filter(c=>(ev.setlist||[]).includes(c.id));
@@ -878,7 +899,7 @@ const renderEventos = () => {
     const div = document.createElement('div');
     div.className = 'card row';
     div.style.cursor = 'pointer';
-    div.addEventListener('click', () => showEvDetail(ev.id));
+    div.addEventListener('click', () => showEvDetailFrom(ev.id, 'eventos'));
     const horaStr = ev.horaIni ? '<div style="color:var(--muted);font-size:11px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>' : '';
     const badges = '<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>'+(ev.tipo!=='Ayuno'?' <span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">'+(ev.setlist||[]).length+'🎵</span> <span class="badge" style="background:#9590B022;color:var(--muted);border:1px solid #9590B044">'+(ev.asignados||[]).length+'🎸</span>':'');
     div.innerHTML = '<div style="width:42px;height:42px;border-radius:10px;background:'+tipoBg(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:8px;color:var(--muted)">'+(ev.fecha||'').slice(5,7)+'/'+(ev.fecha||'').slice(2,4)+'</span><span style="font-size:17px;font-weight:800;color:'+tipoColor(ev.tipo)+';line-height:1">'+(ev.fecha||'?').slice(8)+'</span></div><div style="flex:1"><div style="font-weight:700;font-size:14px">'+ev.titulo+'</div>'+horaStr+'<div style="margin-top:3px">'+badges+'</div></div><span style="color:var(--muted)">›</span>';
@@ -899,7 +920,7 @@ const renderDashboard = () => {
     const div=document.createElement('div');
     div.className='card row';
     div.style.cssText='cursor:pointer;padding:10px 12px;margin-bottom:8px';
-    div.addEventListener('click',()=>{ const nb=document.querySelectorAll('.nav-btn')[2]; goTab('eventos',nb); showEvDetail(ev.id); });
+    div.addEventListener('click',()=>{ showEvDetailFrom(ev.id, 'inicio'); });
     div.innerHTML='<span style="font-size:18px">'+(ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':'🎵')+'</span><div style="flex:1"><div style="font-weight:600;font-size:13px">'+ev.titulo+'</div><div style="color:var(--muted);font-size:11px">'+fmt(ev.fecha)+(ev.horaIni?' · '+ev.horaIni:'')+' · '+ev.tipo+'</div></div><span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>';
     proxEl.appendChild(div);
   }); }
@@ -966,9 +987,7 @@ const renderCalList=date=>{
     div.className='card row';
     div.style.cssText='cursor:pointer;padding:10px 12px';
     div.addEventListener('click',()=>{
-      const navBtn=document.querySelectorAll('.nav-btn')[2];
-      goTab('eventos',navBtn);
-      showEvDetail(ev.id);
+      showEvDetailFrom(ev.id, 'calendario');
     });
     div.innerHTML='<div style="flex:1"><div style="font-weight:700;font-size:13px">'+ev.titulo+'</div>'+(ev.horaIni?'<div style="color:var(--muted);font-size:11px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'')+'<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;margin-top:4px">'+ev.tipo+'</span></div><span style="color:var(--muted)">›</span>';
     el.appendChild(div);
