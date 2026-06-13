@@ -418,14 +418,35 @@ $('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')$('btn-entrar'
 $('hdr-user').addEventListener('click',()=>{if(confirm('¿Cerrar sesión?')){try{localStorage.removeItem('min_user');}catch(e){}location.reload();}});
 
 // ── NAV ──
-const goTab = tab => {
+const goTab = (tab, pushState=true) => {
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>{b.classList.remove('active');b.querySelector('.dot')?.remove();});
   $('sec-'+tab).classList.add('active');
   const btn = document.querySelector(`.nav-btn[data-tab="${tab}"]`);
   if(btn){btn.classList.add('active');const d=document.createElement('div');d.className='dot';btn.appendChild(d);}
   if(tab==='calendario') renderCalendar();
+  if(pushState) history.pushState({tab, view:'list'}, '', location.pathname);
 };
+
+// Handle back button
+window.addEventListener('popstate', e => {
+  const state = e.state || {tab:'inicio', view:'list'};
+  if(state.view==='detail' || state.view==='form') {
+    // Go back to list view of that tab
+    goTab(state.tab||'eventos', false);
+    hideEvForm();
+    if(state.tab==='calendario') {
+      $('cal-ev-detail').style.display='none';
+      $('cal-ev-list').style.display='block';
+      $('cal-grid').style.display='grid';
+      $('cal-hdr').style.display='grid';
+      $('cal-title-row').style.display='flex';
+      $('cal-legend').style.display='flex';
+    }
+  } else {
+    goTab(state.tab||'inicio', false);
+  }
+});
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => goTab(btn.dataset.tab));
 });
@@ -656,6 +677,7 @@ const showEvForm = evId => {
   populateDirectorSelect($('ev-director'),ev?ev.director:'');
   renderEvMusTags(); renderEvCanTags();
   $('ev-list-view').style.display='none'; $('ev-form-view').style.display='block'; $('ev-detail-view').style.display='none';
+  history.pushState({tab:'eventos', view:'form'}, '', location.pathname);
 };
 const hideEvForm = () => { $('ev-list-view').style.display='block'; $('ev-form-view').style.display='none'; $('ev-detail-view').style.display='none'; editingEvId=null; };
 const renderEvMusTags = () => {
@@ -800,6 +822,7 @@ const showEvDetail = id => {
   const detEl=$('ev-detail-view'); detEl.innerHTML='';
   detEl.appendChild(buildEvDetail(ev,hideEvForm));
   $('ev-list-view').style.display='none'; $('ev-form-view').style.display='none'; detEl.style.display='block';
+  history.pushState({tab:'eventos', view:'detail', id}, '', location.pathname);
 };
 
 function renderEventos() {
@@ -919,6 +942,9 @@ function renderDashboard() {
   const nuevas=canciones.filter(c=>c.nueva);
   sEl.innerHTML='<div class="card" style="margin-bottom:10px"><div style="font-weight:700;font-size:12px;color:var(--muted);margin-bottom:8px">🎸 MÚSICOS MÁS ACTIVOS</div>'+(topMus||'<div style="color:var(--muted);font-size:12px">Sin datos aún</div>')+'</div><div class="card" style="margin-bottom:10px"><div style="font-weight:700;font-size:12px;color:var(--muted);margin-bottom:8px">🎵 CANCIONES MÁS CANTADAS</div>'+(topCan||'<div style="color:var(--muted);font-size:12px">Sin datos aún</div>')+'</div>'+(nuevas.length?'<div class="card" style="margin-bottom:10px"><div style="font-weight:700;font-size:12px;color:var(--muted);margin-bottom:8px">🆕 CANCIONES NUEVAS</div>'+nuevas.map(c=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span>🎵</span><span style="flex:1;font-size:13px">'+c.titulo+'</span></div>').join('')+'</div>':'');
 }
+
+// Initialize history state
+if(!history.state) history.replaceState({tab:'inicio', view:'list'}, '', location.pathname);
 
 // ── FIRESTORE ──
 onSnapshot(collection(db,'cantantes'),snap=>{cantantes=snap.docs.map(d=>({id:d.id,...d.data()}));renderCantantes();populateDirectorSelect($('ev-director'),'');});
