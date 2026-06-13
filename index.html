@@ -216,6 +216,7 @@ input::placeholder{color:var(--muted);}
     </div>
     <label class="lbl">📄 Link letra (OneDrive PDF)</label><input id="can-link-letra" placeholder="https://..."/>
     <label class="lbl">🎼 Link acordes (OneDrive PDF)</label><input id="can-link-acordes" placeholder="https://..."/>
+    <label class="lbl">🎬 Link YouTube</label><input id="can-link-youtube" placeholder="https://youtube.com/..."/>
     <input id="can-tags" placeholder="Etiquetas: adoración, alabanza..."/>
     <label class="chk-lbl"><input type="checkbox" id="can-nueva"/> 🆕 Canción nueva</label>
     <label class="chk-lbl"><input type="checkbox" id="can-aprender"/> 📚 Por aprender</label>
@@ -393,6 +394,7 @@ input::placeholder{color:var(--muted);}
     </div>
     <label class="lbl">Link letra</label><input id="can-edit-letra"/>
     <label class="lbl">Link acordes</label><input id="can-edit-acordes"/>
+    <label class="lbl">🎬 YouTube</label><input id="can-edit-youtube"/>
     <label class="lbl">Etiquetas</label><input id="can-edit-tags"/>
     <label class="chk-lbl"><input type="checkbox" id="can-edit-nueva"/> 🆕 Nueva</label>
     <label class="chk-lbl"><input type="checkbox" id="can-edit-aprender"/> 📚 Por aprender</label>
@@ -542,8 +544,8 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 $('btn-add-can').addEventListener('click',()=>{const f=$('can-form');f.style.display=f.style.display==='none'?'block':'none';});
 $('btn-save-can').addEventListener('click', async () => {
   const t=$('can-titulo').value.trim(); if(!t) return;
-  await addDoc(collection(db,'canciones'),{titulo:t,artista:$('can-artista').value.trim(),tono:$('can-tono').value,bpm:Number($('can-bpm').value)||80,linkLetra:$('can-link-letra').value.trim(),linkAcordes:$('can-link-acordes').value.trim(),tags:$('can-tags').value.split(',').map(x=>x.trim()).filter(Boolean),nueva:$('can-nueva').checked,aprender:$('can-aprender').checked,creadoEn:Date.now()});
-  ['can-titulo','can-artista','can-bpm','can-tags','can-link-letra','can-link-acordes'].forEach(id=>$(id).value='');
+  await addDoc(collection(db,'canciones'),{titulo:t,artista:$('can-artista').value.trim(),tono:$('can-tono').value,bpm:Number($('can-bpm').value)||80,linkLetra:$('can-link-letra').value.trim(),linkAcordes:$('can-link-acordes').value.trim(),linkYoutube:$('can-link-youtube').value.trim(),tags:$('can-tags').value.split(',').map(x=>x.trim()).filter(Boolean),nueva:$('can-nueva').checked,aprender:$('can-aprender').checked,creadoEn:Date.now()});
+  ['can-titulo','can-artista','can-bpm','can-tags','can-link-letra','can-link-acordes','can-link-youtube'].forEach(id=>$(id).value='');
   $('can-nueva').checked=false; $('can-aprender').checked=false; $('can-form').style.display='none'; toast('✅ Canción guardada');
 });
 $('can-search').addEventListener('input', renderCanciones);
@@ -554,7 +556,7 @@ $('btn-sort-artist').addEventListener('click',()=>{sortMode='artist';$('btn-sort
 $('btn-close-can-edit').addEventListener('click',()=>$('can-edit-modal').style.display='none');
 $('btn-save-can-edit').addEventListener('click', async () => {
   const id=$('can-edit-id').value;
-  await updateDoc(doc(db,'canciones',id),{titulo:$('can-edit-titulo').value.trim(),artista:$('can-edit-artista').value.trim(),tono:$('can-edit-tono').value,bpm:Number($('can-edit-bpm').value)||80,linkLetra:$('can-edit-letra').value.trim(),linkAcordes:$('can-edit-acordes').value.trim(),tags:$('can-edit-tags').value.split(',').map(x=>x.trim()).filter(Boolean),nueva:$('can-edit-nueva').checked,aprender:$('can-edit-aprender').checked});
+  await updateDoc(doc(db,'canciones',id),{titulo:$('can-edit-titulo').value.trim(),artista:$('can-edit-artista').value.trim(),tono:$('can-edit-tono').value,bpm:Number($('can-edit-bpm').value)||80,linkLetra:$('can-edit-letra').value.trim(),linkAcordes:$('can-edit-acordes').value.trim(),linkYoutube:$('can-edit-youtube').value.trim(),tags:$('can-edit-tags').value.split(',').map(x=>x.trim()).filter(Boolean),nueva:$('can-edit-nueva').checked,aprender:$('can-edit-aprender').checked});
   $('can-edit-modal').style.display='none'; toast('✅ Canción actualizada');
 });
 
@@ -562,7 +564,7 @@ const editCancion = id => {
   const c=canciones.find(x=>x.id===id); if(!c) return;
   $('can-edit-id').value=id; $('can-edit-titulo').value=c.titulo||''; $('can-edit-artista').value=c.artista||'';
   $('can-edit-tono').value=c.tono||'G'; $('can-edit-bpm').value=c.bpm||'';
-  $('can-edit-letra').value=c.linkLetra||''; $('can-edit-acordes').value=c.linkAcordes||'';
+  $('can-edit-letra').value=c.linkLetra||''; $('can-edit-acordes').value=c.linkAcordes||''; $('can-edit-youtube').value=c.linkYoutube||'';
   $('can-edit-tags').value=(c.tags||[]).join(', '); $('can-edit-nueva').checked=c.nueva||false;
   $('can-edit-aprender').checked=c.aprender||false;
   $('can-edit-modal').style.display='flex';
@@ -577,7 +579,7 @@ function renderCanciones() {
   const makeCard = c => {
     const card=document.createElement('div'); card.className='card';
     const badges='<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">🎼 '+c.tono+'</span>'+(c.bpm?' <span class="badge" style="background:#9590B022;color:var(--muted);border:1px solid #9590B044">'+c.bpm+' BPM</span>':'')+(c.nueva?' <span class="badge" style="background:#F0A50022;color:var(--warn);border:1px solid #F0A50044">🆕 Nueva</span>':'')+(c.aprender?' <span class="badge" style="background:#7EC8A022;color:var(--success);border:1px solid #7EC8A044">📚 Por aprender</span>':'')+(c.tags||[]).map(t=>' <span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+t+'</span>').join('');
-    const links=(c.linkLetra?'<a href="'+c.linkLetra+'" target="_blank" class="link-btn">📄 Letra</a>':'')+(c.linkAcordes?' <a href="'+c.linkAcordes+'" target="_blank" class="link-btn">🎼 Acordes</a>':'');
+    const links=(c.linkLetra?'<a href="'+c.linkLetra+'" target="_blank" class="link-btn">📄 Letra</a>':'')+(c.linkAcordes?' <a href="'+c.linkAcordes+'" target="_blank" class="link-btn">🎼 Acordes</a>':'')+(c.linkYoutube?' <a href="'+c.linkYoutube+'" target="_blank" class="link-btn" style="background:#FF000011;border-color:#FF000044;color:#FF4444">🎬 YouTube</a>':'');
     card.innerHTML='<div class="row" style="align-items:flex-start"><div style="flex:1"><div style="font-weight:700;font-size:14px">'+c.titulo+'</div><div style="color:var(--muted);font-size:12px;margin-bottom:7px">'+(c.artista||'')+'</div><div style="margin-bottom:8px">'+badges+'</div><div>'+links+'</div></div></div>';
     if(CU&&CU.admin){
       const btns=document.createElement('div'); btns.style.cssText='display:flex;gap:4px;flex-direction:column';
@@ -939,7 +941,7 @@ const buildEvDetail = (ev, backFn) => {
         }
         if(cancion&&(cancion.linkLetra||cancion.linkAcordes)){
           const links=document.createElement('div'); links.style.cssText='display:flex;gap:6px;padding:4px 0 0 40px';
-          links.innerHTML=(cancion.linkLetra?'<a href="'+cancion.linkLetra+'" target="_blank" class="link-btn">📄 Letra</a>':'')+(cancion.linkAcordes?' <a href="'+cancion.linkAcordes+'" target="_blank" class="link-btn">🎼 Acordes</a>':'');
+          links.innerHTML=(cancion.linkLetra?'<a href="'+cancion.linkLetra+'" target="_blank" class="link-btn">📄 Letra</a>':'')+(cancion.linkAcordes?' <a href="'+cancion.linkAcordes+'" target="_blank" class="link-btn">🎼 Acordes</a>':'')+(cancion.linkYoutube?' <a href="'+cancion.linkYoutube+'" target="_blank" class="link-btn" style="background:#FF000011;border-color:#FF000044;color:#FF4444">🎬 YouTube</a>':'');
           const wrap2=document.createElement('div'); wrap2.appendChild(row); wrap2.appendChild(links); rs.appendChild(wrap2);
         } else {
           rs.appendChild(row);
