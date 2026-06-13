@@ -258,6 +258,20 @@ input::placeholder{color:var(--muted);}
   <div id="musicos-list"></div>
 </div>
 
+<!-- AYUNO -->
+<div id="sec-ayuno" class="section content">
+  <div style="text-align:center;margin-bottom:20px">
+    <div style="font-size:40px">🙏</div>
+    <h2 style="color:var(--gold);font-size:17px;margin:6px 0 4px">Ayuno Semanal</h2>
+    <p style="color:var(--muted);font-size:12px" id="ayuno-semana"></p>
+  </div>
+  <div class="form-sec" style="margin-bottom:16px">
+    <h4>📅 Mis días de ayuno esta semana</h4>
+    <div id="ayuno-mis-dias" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px"></div>
+  </div>
+  <div id="ayuno-lista"></div>
+</div>
+
 <!-- CANTANTES -->
 <div id="sec-cantantes" class="section content">
   <div class="row" style="justify-content:space-between;margin-bottom:14px">
@@ -279,6 +293,7 @@ input::placeholder{color:var(--muted);}
   <button class="nav-btn" data-tab="calendario"><span class="icon">📅</span><span class="label">Calendario</span></button>
   <button class="nav-btn" data-tab="eventos"><span class="icon">🗓</span><span class="label">Eventos</span></button>
   <button class="nav-btn" data-tab="canciones"><span class="icon">🎵</span><span class="label">Canciones</span></button>
+  <button class="nav-btn" data-tab="ayuno"><span class="icon">🙏</span><span class="label">Ayuno</span></button>
   <button class="nav-btn nav-admin" data-tab="musicos"><span class="icon">🎸</span><span class="label">Músicos</span></button>
   <button class="nav-btn nav-admin" data-tab="cantantes"><span class="icon">🎤</span><span class="label">Cantantes</span></button>
   <button class="nav-btn nav-admin" data-tab="cuotas"><span class="icon">💰</span><span class="label">Cuotas</span></button>
@@ -1111,6 +1126,17 @@ const checkEventoProximo = () => {
     html += '<div style="margin-top:4px"><span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>'+(miRol?' <span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+miRol+'</span>':'')+'</div>';
     html += '</div>';
   });
+  // Add ayuno days this week
+  const weekKey = getWeekKey();
+  const myDays = CU ? (ayunoData[weekKey]?.[CU.key] || []) : [];
+  if(myDays.length > 0) {
+    const days = getWeekDays();
+    const diasNombres = myDays.sort().map(i => days[i]?.nombre).filter(Boolean);
+    html += '<div style="background:var(--surface);border-radius:10px;padding:10px;margin-bottom:8px;text-align:left;border:1px solid #7B6FD444">';
+    html += '<div style="font-weight:700;font-size:13px;color:var(--accent)">🙏 Mis días de ayuno esta semana</div>';
+    html += '<div style="color:var(--muted);font-size:12px;margin-top:4px">'+diasNombres.join(', ')+'</div>';
+    html += '</div>';
+  }
   $('evento-modal-msg').innerHTML = html;
   $('evento-modal').style.display='flex';
 };
@@ -1150,6 +1176,93 @@ onSnapshot(collection(db,'cuotas'), snap=>{
   renderCuotas();
   // Check after login
   if(CU) checkCuotaPendiente();
+});
+
+// ── AYUNO ──
+let ayunoData = {}; // {userId: [0,2,4]} indices of days
+
+const getWeekKey = () => {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day===0?6:day-1));
+  const pad = n => String(n).padStart(2,'0');
+  return monday.getFullYear()+'-'+pad(monday.getMonth()+1)+'-'+pad(monday.getDate());
+};
+
+const getWeekDays = () => {
+  const weekKey = getWeekKey();
+  const [y,m,d] = weekKey.split('-').map(Number);
+  const monday = new Date(y,m-1,d);
+  const dias = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const pad = n => String(n).padStart(2,'0');
+  return dias.map((nombre,i) => {
+    const fecha = new Date(monday);
+    fecha.setDate(monday.getDate()+i);
+    return { nombre, fecha: fecha.getFullYear()+'-'+pad(fecha.getMonth()+1)+'-'+pad(fecha.getDate()) };
+  });
+};
+
+const renderAyuno = () => {
+  const weekKey = getWeekKey();
+  const days = getWeekDays();
+  const [y,m,d] = weekKey.split('-');
+  $('ayuno-semana').textContent = 'Semana del '+d+'/'+m+'/'+y;
+
+  // My days selector
+  const myKey = CU ? CU.key : null;
+  const myDays = myKey ? (ayunoData[weekKey]?.[myKey] || []) : [];
+  const misDiasEl = $('ayuno-mis-dias');
+  misDiasEl.innerHTML = '';
+  days.forEach((dia, i) => {
+    const btn = document.createElement('button');
+    const sel = myDays.includes(i);
+    btn.className = 'btn btn-sm';
+    btn.style.cssText = 'background:'+(sel?'#7B6FD4':'var(--surface)')+';color:'+(sel?'#fff':'var(--muted)')+';border:1px solid '+(sel?'var(--accent)':'var(--border)');
+    btn.textContent = dia.nombre.slice(0,3);
+    btn.addEventListener('click', async () => {
+      if(!CU) return;
+      const weekData = ayunoData[weekKey] || {};
+      const userDays = [...(weekData[myKey]||[])];
+      const idx = userDays.indexOf(i);
+      if(idx>=0) userDays.splice(idx,1); else userDays.push(i);
+      weekData[myKey] = userDays;
+      ayunoData[weekKey] = weekData;
+      await setDoc(doc(db,'ayunos',weekKey), weekData);
+      renderAyuno();
+    });
+    misDiasEl.appendChild(btn);
+  });
+
+  // Summary list
+  const listaEl = $('ayuno-lista'); listaEl.innerHTML = '';
+  days.forEach((dia, i) => {
+    const participants = [];
+    const weekData = ayunoData[weekKey] || {};
+    Object.entries(weekData).forEach(([userId, userDays]) => {
+      if(userDays.includes(i)) {
+        const mus = musicos.find(x=>x.username===userId);
+        if(mus) participants.push(mus.nombre);
+        else if(userId === 'carlitos') participants.push('Carlitos Soto');
+        else if(userId === 'jeaneth') participants.push('Jeaneth Hernández');
+      }
+    });
+    if(!participants.length) return;
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.style.marginBottom = '8px';
+    div.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--gold);margin-bottom:8px">🙏 '+dia.nombre+' <span style="color:var(--muted);font-size:11px;font-weight:400">('+participants.length+')</span></div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px">'+participants.map(n=>'<span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+n+'</span>').join('')+'</div>';
+    listaEl.appendChild(div);
+  });
+  if(!listaEl.children.length) listaEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px">Nadie ha marcado días de ayuno esta semana</div>';
+};
+
+// Firestore listener for ayunos
+onSnapshot(collection(db,'ayunos'), snap => {
+  ayunoData = {};
+  snap.docs.forEach(d => { ayunoData[d.id] = d.data(); });
+  renderAyuno();
 });
 
 // Initialize history state
