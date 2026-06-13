@@ -436,30 +436,9 @@ input::placeholder{color:var(--muted);}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 const FB = { apiKey:"AIzaSyC1OvY10grOXME6_Kdb28LTyyITIxxcjm0", authDomain:"ministerio-de-alabanza-ac3f2.firebaseapp.com", projectId:"ministerio-de-alabanza-ac3f2", storageBucket:"ministerio-de-alabanza-ac3f2.firebasestorage.app", messagingSenderId:"314404534308", appId:"1:314404534308:web:cbb3543a559a71c7a780b1" };
 const db = getFirestore(initializeApp(FB));
-const messaging = getMessaging();
-
-const VAPID_KEY = 'BO0ZwQdxZO-eKCOs2w55rPWT98YnZXyJQRvXJy2eGB179ikruI5CwUDpG3TrxHXz7hFBjwEgQHA-4WFnaHdrWqA';
-
-const registerFCMToken = async () => {
-  try {
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') return;
-    const token = await getToken(messaging, { vapidKey: VAPID_KEY });
-    if (token && CU) {
-      const m = musicos.find(x => x.username === CU.key);
-      if (m) await updateDoc(doc(db, 'musicos', m.id), { fcmToken: token });
-    }
-  } catch(e) { console.log('FCM error:', e); }
-};
-
-onMessage(messaging, payload => {
-  const { title, body } = payload.notification;
-  toast('🔔 ' + title + ': ' + body);
-});
 
 // ── STATE ──
 let CU = null, canciones = [], musicos = [], eventos = [], cantantes = [], allUsers = [];
@@ -508,7 +487,6 @@ const applyLogin = user => {
   renderAyuno();
   setTimeout(checkEventoProximo, 1500);
   setTimeout(checkCuotaPendiente, 4000);
-  setTimeout(registerFCMToken, 3000);
 };
 const autoLogin = () => {
   try { const s=localStorage.getItem('min_user'); if(s){const{u,p}=JSON.parse(s);const user=findUser(u,p);if(user){applyLogin(user);return true;}} } catch(e){}
@@ -882,7 +860,7 @@ const deleteEvento = async id => { if(confirm('¿Eliminar?')){await deleteDoc(do
 const buildEvDetail = (ev, backFn) => {
   const evCans=canciones.filter(c=>(ev.setlist||[]).includes(c.id)); // legacy
   const presididor=resolvePresididor(ev.director);
-  const dirRol=presididorRolStr(ev.presididor);
+  const dirRol=presididorRolStr(ev.director);
   const horaStr=(ev.horaIni||ev.horaFin)?' · '+(ev.horaIni||'')+(ev.horaFin?' - '+ev.horaFin:''):'';
   const wrap=document.createElement('div');
   // Header
@@ -1365,4 +1343,4 @@ onSnapshot(collection(db,'eventos'),snap=>{
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 </body>
-               </html>
+</html>
