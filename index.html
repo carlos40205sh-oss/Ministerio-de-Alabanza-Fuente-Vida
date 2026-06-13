@@ -169,8 +169,8 @@ input::placeholder{color:var(--muted);}
     </div>
     <div id="ev-extra">
       <div class="form-sec">
-        <h4>🎤 Director</h4>
-        <select id="ev-director"><option value="">-- Seleccionar --</option></select>
+        <h4>🎤 Presididor</h4>
+        <select id="ev-presididor"><option value="">-- Seleccionar --</option></select>
       </div>
       <div class="form-sec">
         <h4>🎸 Asignar músicos</h4>
@@ -644,15 +644,15 @@ function renderCantantes() {
 }
 
 // ── DIRECTOR SELECT ──
-const populateDirectorSelect = (sel, selectedVal) => {
+const populatePresididorSelect = (sel, selectedVal) => {
   if(!sel) return;
-  let html='<option value="">-- Seleccionar director --</option>';
+  let html='<option value="">-- Seleccionar presididor --</option>';
   if(musicos.length) html+='<optgroup label="Músicos">'+musicos.map(m=>'<option value="m_'+m.id+'"'+((selectedVal==='m_'+m.id)?' selected':'')+'>'+m.nombre+' ('+m.rol+')</option>').join('')+'</optgroup>';
   if(cantantes.length) html+='<optgroup label="Cantantes">'+cantantes.map(c=>'<option value="c_'+c.id+'"'+((selectedVal==='c_'+c.id)?' selected':'')+'>'+c.nombre+'</option>').join('')+'</optgroup>';
   sel.innerHTML=html;
 };
-const resolveDirector = val => { if(!val) return null; if(val.startsWith('c_')) return cantantes.find(x=>x.id===val.slice(2)); if(val.startsWith('m_')) return musicos.find(x=>x.id===val.slice(2)); return musicos.find(x=>x.id===val); };
-const directorRolStr = val => { if(!val) return ''; if(val.startsWith('c_')){const c=cantantes.find(x=>x.id===val.slice(2));return c?(c.notas||'Cantante'):'';} const m=musicos.find(x=>x.id===(val.startsWith('m_')?val.slice(2):val));return m?(m.rol||''):''; };
+const resolvePresididor = val => { if(!val) return null; if(val.startsWith('c_')) return cantantes.find(x=>x.id===val.slice(2)); if(val.startsWith('m_')) return musicos.find(x=>x.id===val.slice(2)); return musicos.find(x=>x.id===val); };
+const presididorRolStr = val => { if(!val) return ''; if(val.startsWith('c_')){const c=cantantes.find(x=>x.id===val.slice(2));return c?(c.notas||'Cantante'):'';} const m=musicos.find(x=>x.id===(val.startsWith('m_')?val.slice(2):val));return m?(m.rol||''):''; };
 
 // ── EVENTOS ──
 $('btn-new-ev').addEventListener('click',()=>showEvForm(null));
@@ -662,7 +662,7 @@ $('btn-save-ev').addEventListener('click', async () => {
   const titulo=$('ev-titulo').value.trim(), fecha=$('ev-fecha').value;
   if(!titulo||!fecha){alert('Título y fecha son requeridos');return;}
   const tipo=$('ev-tipo').value;
-  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),director:tipo!=='Ayuno'?$('ev-director').value:'',asignados:tipo!=='Ayuno'?evAssigned:[],setlist:tipo!=='Ayuno'?evSetlist:[]};
+  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),presididor:tipo!=='Ayuno'?$('ev-presididor').value:'',asignados:tipo!=='Ayuno'?evAssigned:[],setlist:tipo!=='Ayuno'?evSetlist:[]};
   if(editingEvId){await updateDoc(doc(db,'eventos',editingEvId),data);toast('✅ Evento actualizado');}
   else{await addDoc(collection(db,'eventos'),{...data,creadoEn:Date.now()});toast('✅ Evento guardado');}
   editingEvId=null; hideEvForm();
@@ -678,7 +678,7 @@ const showEvForm = evId => {
   $('ev-hora-ini').value=ev?ev.horaIni:''; $('ev-hora-fin').value=ev?ev.horaFin:'';
   $('ev-form-title').textContent=ev?'Editar evento':'Nuevo evento';
   $('ev-extra').style.display=(ev&&ev.tipo==='Ayuno')?'none':'block';
-  populateDirectorSelect($('ev-director'),ev?ev.director:'');
+  populatePresididorSelect($('ev-presididor'),ev?ev.presididor:'');
   renderEvMusTags(); renderEvCanTags();
   $('ev-list-view').style.display='none'; $('ev-form-view').style.display='block'; $('ev-detail-view').style.display='none';
   history.pushState({tab:'eventos', view:'form'}, '', location.pathname);
@@ -737,8 +737,8 @@ const deleteEvento = async id => { if(confirm('¿Eliminar?')){await deleteDoc(do
 
 const buildEvDetail = (ev, backFn) => {
   const evCans=canciones.filter(c=>(ev.setlist||[]).includes(c.id));
-  const director=resolveDirector(ev.director);
-  const dirRol=directorRolStr(ev.director);
+  const presididor=resolvePresididor(ev.presididor);
+  const dirRol=presididorRolStr(ev.presididor);
   const horaStr=(ev.horaIni||ev.horaFin)?' · '+(ev.horaIni||'')+(ev.horaFin?' - '+ev.horaFin:''):'';
   const wrap=document.createElement('div');
   // Header
@@ -765,7 +765,7 @@ const buildEvDetail = (ev, backFn) => {
     ay.innerHTML='<div style="font-size:48px">🙏</div><div style="color:var(--success);font-size:16px;font-weight:700;margin-top:12px">Día de Ayuno</div>';
     wrap.appendChild(ay);
   } else {
-    if(director){const ds=document.createElement('div');ds.className='ev-sec';ds.innerHTML='<h4>🎤 Director</h4><div class="row"><div class="avatar">'+roleIcon(dirRol)+'</div><div style="font-weight:600;font-size:14px">'+director.nombre+'</div><span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+dirRol+'</span></div>';wrap.appendChild(ds);}
+    if(presididor){const ds=document.createElement('div');ds.className='ev-sec';ds.innerHTML='<h4>🎤 Presididor</h4><div class="row"><div class="avatar">'+roleIcon(dirRol)+'</div><div style="font-weight:600;font-size:14px">'+presididor.nombre+'</div><span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+dirRol+'</span></div>';wrap.appendChild(ds);}
     if((ev.asignados||[]).length){
       const es=document.createElement('div'); es.className='ev-sec';
       es.innerHTML='<h4>🎸 Equipo ('+ev.asignados.length+')</h4>';
@@ -951,7 +951,7 @@ function renderDashboard() {
 if(!history.state) history.replaceState({tab:'inicio', view:'list'}, '', location.pathname);
 
 // ── FIRESTORE ──
-onSnapshot(collection(db,'cantantes'),snap=>{cantantes=snap.docs.map(d=>({id:d.id,...d.data()}));renderCantantes();populateDirectorSelect($('ev-director'),'');});
+onSnapshot(collection(db,'cantantes'),snap=>{cantantes=snap.docs.map(d=>({id:d.id,...d.data()}));renderCantantes();populatePresididorSelect($('ev-presididor'),'');});
 onSnapshot(collection(db,'canciones'),snap=>{canciones=snap.docs.map(d=>({id:d.id,...d.data()}));renderCanciones();renderDashboard();});
 onSnapshot(collection(db,'musicos'),snap=>{musicos=snap.docs.map(d=>({id:d.id,...d.data()}));allUsers=musicos;renderMusicos();renderDashboard();if(!CU)autoLogin();});
 onSnapshot(collection(db,'eventos'),snap=>{
