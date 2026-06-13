@@ -1048,10 +1048,20 @@ const checkCuotaPendiente = () => {
   if(!CU||CU.admin) return;
   const m = musicos.find(x=>x.username===CU.key);
   if(!m) return;
-  const key = cuotaKey();
-  const paid = cuotaData[m.id]?.[key]||false;
-  if(!paid && cuotaMonto>0){
-    $('cuota-modal-msg').innerHTML='Hola <strong>'+CU.nombre+'</strong>, tenés la cuota de <strong>'+MESES_C[cuotaMes]+' '+cuotaYear+'</strong> pendiente de pago.<br><br>Monto: <strong>₡'+cuotaMonto.toLocaleString()+'</strong><br><br><span style="color:var(--muted);font-size:12px">Coordiná el pago con tu administrador</span>';
+  // Check all months from Jan 2026 to current month
+  const now = new Date();
+  const pendientes = [];
+  let y = 2026, mo = 0; // Start Jan 2026
+  while(y < now.getFullYear() || (y === now.getFullYear() && mo <= now.getMonth())) {
+    const key = y+'-'+String(mo+1).padStart(2,'0');
+    const paid = cuotaData[m.id]?.[key]||false;
+    if(!paid) pendientes.push(MESES_C[mo]+' '+y);
+    mo++;
+    if(mo>11){mo=0;y++;}
+  }
+  if(pendientes.length > 0 && cuotaMonto>0){
+    const total = pendientes.length * cuotaMonto;
+    $('cuota-modal-msg').innerHTML='Hola <strong>'+CU.nombre+'</strong>, tenés <strong>'+pendientes.length+' mes'+(pendientes.length>1?'es':'')+' pendiente'+(pendientes.length>1?'s':'')+'</strong> de pago:<br><br><span style="color:var(--danger)">'+pendientes.join(', ')+'</span><br><br>Monto por mes: <strong>₡'+cuotaMonto.toLocaleString()+'</strong><br>Total pendiente: <strong style="color:var(--danger)">₡'+total.toLocaleString()+'</strong><br><br><span style="color:var(--muted);font-size:12px">Coordiná el pago con tu administrador</span>';
     $('cuota-modal').style.display='flex';
   }
 };
