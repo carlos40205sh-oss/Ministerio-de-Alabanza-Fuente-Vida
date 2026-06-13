@@ -291,6 +291,7 @@ input::placeholder{color:var(--muted);}
 <div id="sec-anuncios" class="section content" style="display:none">
   <div class="row" style="justify-content:space-between;margin-bottom:14px">
     <h2 style="color:var(--gold);font-size:17px;margin:0">📢 Anuncios</h2>
+    <button class="btn btn-primary btn-sm" id="btn-add-anuncio" style="display:none">+ Nuevo</button>
   </div>
   <div id="anuncio-form" style="display:none" class="form-sec">
     <h4>Nuevo anuncio</h4>
@@ -537,6 +538,7 @@ const applyLogin = user => {
     ['btn-new-ev','btn-add-can','btn-add-mus','btn-add-cant'].forEach(id=>$(id).style.display='inline-block');
     document.querySelectorAll('.nav-admin').forEach(b=>b.style.setProperty('display','flex','important'));
     document.getElementById('sec-anuncios').style.display='block';
+    $('btn-add-anuncio').style.display='inline-block';
   }
   renderCalendar();
   renderAyuno();
@@ -1423,7 +1425,7 @@ function renderAnuncios(anuncios) {
   });
 }
 
-$('btn-add-anuncio') && $('btn-add-anuncio').addEventListener('click', () => {
+$('btn-add-anuncio').addEventListener('click', () => {
   const f = $('anuncio-form'); f.style.display = f.style.display==='none'?'block':'none';
 });
 
