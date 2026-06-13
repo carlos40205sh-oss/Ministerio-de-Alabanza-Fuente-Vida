@@ -133,6 +133,7 @@ input::placeholder{color:var(--muted);}
   <div class="cal-hdr-row" id="cal-hdr"></div>
   <div class="cal-grid" id="cal-grid"></div>
   <div id="cal-ev-list"></div>
+  <div id="cal-ev-detail" style="display:none"></div>
 </div>
 
 <!-- EVENTOS -->
@@ -920,7 +921,11 @@ const renderDashboard = () => {
     const div=document.createElement('div');
     div.className='card row';
     div.style.cssText='cursor:pointer;padding:10px 12px;margin-bottom:8px';
-    div.addEventListener('click',()=>{ showEvDetailFrom(ev.id, 'inicio'); });
+    div.addEventListener('click',()=>{ 
+      const nb=document.querySelectorAll('.nav-btn')[2]; 
+      goTab('eventos',nb); 
+      showEvDetailFrom(ev.id, 'inicio'); 
+    });
     div.innerHTML='<span style="font-size:18px">'+(ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':'🎵')+'</span><div style="flex:1"><div style="font-weight:600;font-size:13px">'+ev.titulo+'</div><div style="color:var(--muted);font-size:11px">'+fmt(ev.fecha)+(ev.horaIni?' · '+ev.horaIni:'')+' · '+ev.tipo+'</div></div><span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>';
     proxEl.appendChild(div);
   }); }
@@ -987,11 +992,42 @@ const renderCalList=date=>{
     div.className='card row';
     div.style.cssText='cursor:pointer;padding:10px 12px';
     div.addEventListener('click',()=>{
-      showEvDetailFrom(ev.id, 'calendario');
+      calSelectedEvId = ev.id;
+      document.getElementById('cal-ev-list').style.display='none';
+      document.getElementById('cal-grid').style.display='none';
+      document.getElementById('cal-hdr').style.display='none';
+      document.getElementById('cal-title').parentElement.style.display='none';
+      document.getElementById('cal-ev-detail').style.display='block';
+      _showCalEvDetail(ev.id);
     });
     div.innerHTML='<div style="flex:1"><div style="font-weight:700;font-size:13px">'+ev.titulo+'</div>'+(ev.horaIni?'<div style="color:var(--muted);font-size:11px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'')+'<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;margin-top:4px">'+ev.tipo+'</span></div><span style="color:var(--muted)">›</span>';
     el.appendChild(div);
   });
+};
+let calSelectedEvId = null;
+const _showCalEvDetail = id => {
+  const ev = eventos.find(e=>e.id===id); if(!ev) return;
+  const el = document.getElementById('cal-ev-detail');
+  // Reuse showEvDetail logic but render into cal-ev-detail
+  const tmpDiv = document.createElement('div');
+  tmpDiv.id = 'ev-detail-view';
+  tmpDiv.style.display = 'block';
+  document.getElementById('ev-detail-view').replaceWith(tmpDiv);
+  _showEvDetailInner(id);
+  // Replace back button behavior
+  el.innerHTML = '<button class="btn btn-ghost btn-sm" onclick="hideCalEvDetail()" style="margin-bottom:14px">← Volver al calendario</button>' + document.getElementById('ev-detail-view').innerHTML;
+  // Restore ev-detail-view
+  const newTmp = document.createElement('div');
+  newTmp.id = 'ev-detail-view';
+  newTmp.style.display = 'none';
+  tmpDiv.replaceWith(newTmp);
+};
+window.hideCalEvDetail = () => {
+  document.getElementById('cal-ev-detail').style.display='none';
+  document.getElementById('cal-ev-list').style.display='block';
+  document.getElementById('cal-grid').style.display='grid';
+  document.getElementById('cal-hdr').style.display='grid';
+  document.getElementById('cal-title').parentElement.style.display='flex';
 };
 
 // ── FIRESTORE ──
