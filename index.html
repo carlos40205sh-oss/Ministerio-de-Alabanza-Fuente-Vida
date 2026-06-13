@@ -864,13 +864,18 @@ const renderEventos = () => {
   const el = document.getElementById('eventos-list');
   const sorted = [...eventos].sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
   if (!sorted.length){ el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No hay eventos</div>'; return; }
-  el.innerHTML = sorted.map(ev => {
-    const horaStr = ev.horaIni?'<div style="color:var(--muted);font-size:11px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'';
+  el.innerHTML = '';
+  sorted.forEach(ev => {
+    const div = document.createElement('div');
+    div.className = 'card row';
+    div.style.cursor = 'pointer';
+    div.addEventListener('click', () => showEvDetail(ev.id));
+    const horaStr = ev.horaIni ? '<div style="color:var(--muted);font-size:11px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>' : '';
     const badges = '<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>'+(ev.tipo!=='Ayuno'?' <span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">'+(ev.setlist||[]).length+'🎵</span> <span class="badge" style="background:#9590B022;color:var(--muted);border:1px solid #9590B044">'+(ev.asignados||[]).length+'🎸</span>':'');
-    return '<div class="card row" style="cursor:pointer" onclick="showEvDetail(\"'+ev.id+'\')"><div style="width:42px;height:42px;border-radius:10px;background:'+tipoBg(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:8px;color:var(--muted)">'+(ev.fecha||'').slice(5,7)+'/'+(ev.fecha||'').slice(2,4)+'</span><span style="font-size:17px;font-weight:800;color:'+tipoColor(ev.tipo)+';line-height:1">'+(ev.fecha||'?').slice(8)+'</span></div><div style="flex:1"><div style="font-weight:700;font-size:14px">'+ev.titulo+'</div>'+horaStr+'<div style="margin-top:3px">'+badges+'</div></div><span style="color:var(--muted)">›</span></div>';
-  }).join('');
+    div.innerHTML = '<div style="width:42px;height:42px;border-radius:10px;background:'+tipoBg(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:8px;color:var(--muted)">'+(ev.fecha||'').slice(5,7)+'/'+(ev.fecha||'').slice(2,4)+'</span><span style="font-size:17px;font-weight:800;color:'+tipoColor(ev.tipo)+';line-height:1">'+(ev.fecha||'?').slice(8)+'</span></div><div style="flex:1"><div style="font-weight:700;font-size:14px">'+ev.titulo+'</div>'+horaStr+'<div style="margin-top:3px">'+badges+'</div></div><span style="color:var(--muted)">›</span>';
+    el.appendChild(div);
+  });
 };
-
 // ── DASHBOARD ──
 const renderDashboard = () => {
   document.getElementById('st-c').textContent = canciones.length;
@@ -878,9 +883,17 @@ const renderDashboard = () => {
   document.getElementById('st-e').textContent = eventos.length;
   const hoy = new Date().toISOString().slice(0,10);
   const prox = [...eventos].filter(e=>e.fecha>=hoy).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(0,4);
-  document.getElementById('proximos-list').innerHTML = prox.length ? prox.map(ev=>
-    '<div class="card row" style="cursor:pointer;padding:10px 12px;margin-bottom:8px" onclick="goTab(&apos;eventos&apos;,document.querySelectorAll(&apos;.nav-btn&apos;)[2]);showEvDetail(\"'+ev.id+'\")"><span style="font-size:18px">'+(ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':'🎵')+'</span><div style="flex:1"><div style="font-weight:600;font-size:13px">'+ev.titulo+'</div><div style="color:var(--muted);font-size:11px">'+fmt(ev.fecha)+(ev.horaIni?' · '+ev.horaIni:'')+' · '+ev.tipo+'</div></div><span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span></div>'
-  ).join('') : '<div style="color:var(--muted);font-size:13px">No hay eventos próximos</div>';
+    const proxEl = document.getElementById('proximos-list');
+  proxEl.innerHTML = '';
+  if (!prox.length) { proxEl.innerHTML='<div style="color:var(--muted);font-size:13px">No hay eventos próximos</div>'; }
+  else { prox.forEach(ev=>{
+    const div=document.createElement('div');
+    div.className='card row';
+    div.style.cssText='cursor:pointer;padding:10px 12px;margin-bottom:8px';
+    div.addEventListener('click',()=>{ const nb=document.querySelectorAll('.nav-btn')[2]; goTab('eventos',nb); showEvDetail(ev.id); });
+    div.innerHTML='<span style="font-size:18px">'+(ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':'🎵')+'</span><div style="flex:1"><div style="font-weight:600;font-size:13px">'+ev.titulo+'</div><div style="color:var(--muted);font-size:11px">'+fmt(ev.fecha)+(ev.horaIni?' · '+ev.horaIni:'')+' · '+ev.tipo+'</div></div><span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>';
+    proxEl.appendChild(div);
+  }); }
 
   // Cumpleaños
   const hoyDate = new Date(), hoyM=hoyDate.getMonth()+1, hoyD=hoyDate.getDate();
@@ -921,7 +934,7 @@ window.renderCalendar=()=>{
   for(let d=1;d<=days;d++){
     const ds=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     const devs=eventos.filter(e=>e.fecha===ds);
-    const dayIdx=calDates.length; calDates.push(ds); html+='<div class="cal-day '+(devs.length?'has-ev ':'')+' '+(ds===todayStr?'today':'')+'" onclick="calClick(calDates['+dayIdx+'])" style="cursor:pointer"><div class="cal-day-num">'+d+'</div>'+devs.map(e=>'<div class="cal-dot" style="background:'+tipoColor(e.tipo)+';"></div>').join('')+'</div>';
+    html+='<div class="cal-day '+(devs.length?'has-ev ':'')+' '+(ds===todayStr?'today':'')+'" id="cday-'+ds+'" onclick="calClick(this.id.slice(5))" style="cursor:pointer"><div class="cal-day-num">'+d+'</div>'+devs.map(e=>'<div class="cal-dot" style="background:'+tipoColor(e.tipo)+';"></div>').join('')+'</div>';
   }
   document.getElementById('cal-grid').innerHTML=html;
   renderCalList(todayStr);
@@ -931,7 +944,19 @@ const renderCalList=date=>{
   const devs=eventos.filter(e=>e.fecha===date);
   const el=document.getElementById('cal-ev-list');
   if(!devs.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">'+fmt(date)+' — Sin eventos</div>';return;}
-  el.innerHTML='<div style="color:var(--muted);font-size:12px;margin-bottom:6px;padding-top:4px">'+fmt(date)+'</div>'+devs.map(ev=>'<div class="card row" style="cursor:pointer;padding:10px 12px" onclick="goTab(&apos;eventos&apos;,document.querySelectorAll(&apos;.nav-btn&apos;)[2]);showEvDetail(\"'+ev.id+'\")"><div style="flex:1"><div style="font-weight:700;font-size:13px">'+ev.titulo+'</div>'+(ev.horaIni?'<div style="color:var(--muted);font-size:11px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'')+'<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;margin-top:4px">'+ev.tipo+'</span></div><span style="color:var(--muted)">›</span></div>').join('');
+  el.innerHTML='<div style="color:var(--muted);font-size:12px;margin-bottom:6px;padding-top:4px">'+fmt(date)+'</div>';
+  devs.forEach(ev=>{
+    const div=document.createElement('div');
+    div.className='card row';
+    div.style.cssText='cursor:pointer;padding:10px 12px';
+    div.addEventListener('click',()=>{
+      const navBtn=document.querySelectorAll('.nav-btn')[2];
+      goTab('eventos',navBtn);
+      showEvDetail(ev.id);
+    });
+    div.innerHTML='<div style="flex:1"><div style="font-weight:700;font-size:13px">'+ev.titulo+'</div>'+(ev.horaIni?'<div style="color:var(--muted);font-size:11px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'')+'<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;margin-top:4px">'+ev.tipo+'</span></div><span style="color:var(--muted)">›</span>';
+    el.appendChild(div);
+  });
 };
 
 // ── FIRESTORE ──
