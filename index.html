@@ -1083,31 +1083,35 @@ const checkEventoProximo = () => {
   const m = musicos.find(x=>x.username===CU.key);
   if(!m) return;
   const now = new Date();
-  const en48h = new Date(now.getTime() + 48*60*60*1000);
-  // Use local date (Costa Rica UTC-6)
+  const en7d = new Date(now.getTime() + 7*24*60*60*1000);
   const pad = n => String(n).padStart(2,'0');
   const localDate = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
   const hoyStr = localDate(now);
-  const en48Str = localDate(en48h);
-  // Find events in next 48h where musician is assigned
+  const en7Str = localDate(en7d);
+  // Find events this week where musician is assigned
   const proximos = eventos.filter(ev => {
-    if(ev.fecha < hoyStr || ev.fecha > en48Str) return false;
+    if(ev.fecha < hoyStr || ev.fecha > en7Str) return false;
     return (ev.asignados||[]).some(a => a.musId === m.id);
   }).sort((a,b)=>a.fecha.localeCompare(b.fecha));
   if(!proximos.length) return;
-  const ev = proximos[0];
-  const esHoy = ev.fecha === hoyStr;
-  const icono = ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':'🎵';
-  const cuando = esHoy ? '¡HOY!' : 'mañana';
-  const miRol = (ev.asignados||[]).find(a=>a.musId===m.id)?.rol || '';
-  $('evento-modal-icon').textContent = icono;
-  $('evento-modal-titulo').textContent = 'Evento ' + cuando;
-  $('evento-modal-msg').innerHTML = 
-    'Hola <strong>'+CU.nombre+'</strong>, tenés un evento <strong>'+cuando+'</strong>:<br><br>' +
-    '<strong style="color:var(--gold);font-size:15px">'+ev.titulo+'</strong><br>' +
-    (ev.horaIni?'<span style="color:var(--muted)">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</span><br>':'') +
-    '<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;margin-top:8px;display:inline-block">'+ev.tipo+'</span>' +
-    (miRol?'<br><span style="color:var(--accent);font-size:12px;margin-top:6px;display:inline-block">Tu rol: '+miRol+'</span>':'');
+  const pad2 = n => String(n).padStart(2,'0');
+  const fmtFecha = f => { const [y,mo,d]=f.split('-'); return d+'/'+mo; };
+  const esHoy = f => f === hoyStr;
+  const esMañana = f => { const m2=new Date(now.getTime()+24*60*60*1000); return f===localDate(m2); };
+  $('evento-modal-icon').textContent = '📅';
+  $('evento-modal-titulo').textContent = 'Tus eventos esta semana';
+  let html = 'Hola <strong>'+CU.nombre+'</strong>, estos son tus eventos:<br><br>';
+  proximos.forEach(ev => {
+    const miRol = (ev.asignados||[]).find(a=>a.musId===m.id)?.rol||'';
+    const cuando = esHoy(ev.fecha)?'<span style="color:var(--danger);font-weight:700"> · HOY</span>':esMañana(ev.fecha)?'<span style="color:var(--warn);font-weight:700"> · Mañana</span>':'';
+    const icono = ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':'🎵';
+    html += '<div style="background:var(--surface);border-radius:10px;padding:10px;margin-bottom:8px;text-align:left">';
+    html += '<div style="font-weight:700;font-size:13px;color:var(--gold)">'+icono+' '+ev.titulo+cuando+'</div>';
+    html += '<div style="color:var(--muted);font-size:12px;margin-top:3px">📅 '+fmtFecha(ev.fecha)+(ev.horaIni?' · ⏰ '+ev.horaIni:'')+'</div>';
+    html += '<div style="margin-top:4px"><span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>'+(miRol?' <span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+miRol+'</span>':'')+'</div>';
+    html += '</div>';
+  });
+  $('evento-modal-msg').innerHTML = html;
   $('evento-modal').style.display='flex';
 };
 
