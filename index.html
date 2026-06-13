@@ -662,7 +662,7 @@ $('btn-save-ev').addEventListener('click', async () => {
   const titulo=$('ev-titulo').value.trim(), fecha=$('ev-fecha').value;
   if(!titulo||!fecha){alert('Título y fecha son requeridos');return;}
   const tipo=$('ev-tipo').value;
-  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),presididor:tipo!=='Ayuno'?$('ev-presididor').value:'',asignados:tipo!=='Ayuno'?evAssigned:[],setlist:tipo!=='Ayuno'?evSetlist:[]};
+  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),director:tipo!=='Ayuno'?$('ev-presididor').value:'',asignados:tipo!=='Ayuno'?evAssigned:[],setlist:tipo!=='Ayuno'?evSetlist:[]};
   if(editingEvId){await updateDoc(doc(db,'eventos',editingEvId),data);toast('✅ Evento actualizado');}
   else{await addDoc(collection(db,'eventos'),{...data,creadoEn:Date.now()});toast('✅ Evento guardado');}
   editingEvId=null; hideEvForm();
@@ -678,7 +678,7 @@ const showEvForm = evId => {
   $('ev-hora-ini').value=ev?ev.horaIni:''; $('ev-hora-fin').value=ev?ev.horaFin:'';
   $('ev-form-title').textContent=ev?'Editar evento':'Nuevo evento';
   $('ev-extra').style.display=(ev&&ev.tipo==='Ayuno')?'none':'block';
-  populatePresididorSelect($('ev-presididor'),ev?ev.presididor:'');
+  populatePresididorSelect($('ev-presididor'),ev?ev.director:'');
   renderEvMusTags(); renderEvCanTags();
   $('ev-list-view').style.display='none'; $('ev-form-view').style.display='block'; $('ev-detail-view').style.display='none';
   history.pushState({tab:'eventos', view:'form'}, '', location.pathname);
@@ -737,7 +737,7 @@ const deleteEvento = async id => { if(confirm('¿Eliminar?')){await deleteDoc(do
 
 const buildEvDetail = (ev, backFn) => {
   const evCans=canciones.filter(c=>(ev.setlist||[]).includes(c.id));
-  const presididor=resolvePresididor(ev.presididor);
+  const presididor=resolvePresididor(ev.director);
   const dirRol=presididorRolStr(ev.presididor);
   const horaStr=(ev.horaIni||ev.horaFin)?' · '+(ev.horaIni||'')+(ev.horaFin?' - '+ev.horaFin:''):'';
   const wrap=document.createElement('div');
