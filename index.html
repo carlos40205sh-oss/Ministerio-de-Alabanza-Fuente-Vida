@@ -1084,8 +1084,11 @@ const checkEventoProximo = () => {
   if(!m) return;
   const now = new Date();
   const en48h = new Date(now.getTime() + 48*60*60*1000);
-  const hoyStr = now.toISOString().slice(0,10);
-  const en48Str = en48h.toISOString().slice(0,10);
+  // Use local date (Costa Rica UTC-6)
+  const pad = n => String(n).padStart(2,'0');
+  const localDate = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  const hoyStr = localDate(now);
+  const en48Str = localDate(en48h);
   // Find events in next 48h where musician is assigned
   const proximos = eventos.filter(ev => {
     if(ev.fecha < hoyStr || ev.fecha > en48Str) return false;
