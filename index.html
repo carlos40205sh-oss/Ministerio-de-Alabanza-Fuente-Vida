@@ -1149,7 +1149,7 @@ const checkCuotaPendiente = () => {
   const now = new Date();
   const pendientes = [];
   let y = 2026, mo = 0; // Start Jan 2026
-  while(y < now.getFullYear() || (y === now.getFullYear() && mo <= now.getMonth())) {
+  while(y < now.getFullYear() || (y === now.getFullYear() && mo < now.getMonth())) {
     const key = y+'-'+String(mo+1).padStart(2,'0');
     const paid = cuotaData[m.id]?.[key]||false;
     if(!paid) pendientes.push(MESES_C[mo]+' '+y);
