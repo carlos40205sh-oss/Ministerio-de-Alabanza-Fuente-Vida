@@ -1,20 +1,22 @@
-const CACHE = 'ministerio-v1';
-const ASSETS = ['/'];
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
 
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-  self.skipWaiting();
+firebase.initializeApp({
+  apiKey: "AIzaSyC1OvY10grOXME6_Kdb28LTyyITIxxcjm0",
+  authDomain: "ministerio-de-alabanza-ac3f2.firebaseapp.com",
+  projectId: "ministerio-de-alabanza-ac3f2",
+  storageBucket: "ministerio-de-alabanza-ac3f2.firebasestorage.app",
+  messagingSenderId: "314404534308",
+  appId: "1:314404534308:web:cbb3543a559a71c7a780b1"
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-  ));
-  self.clients.claim();
-});
+const messaging = firebase.messaging();
 
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    fetch(e.request).catch(() => caches.match(e.request))
-  );
+messaging.onBackgroundMessage(payload => {
+  const { title, body } = payload.notification;
+  self.registration.showNotification(title, {
+    body: body,
+    icon: '/Ministerio-de-Alabanza-Fuente-Vida/icon.svg',
+    badge: '/Ministerio-de-Alabanza-Fuente-Vida/icon.svg'
+  });
 });
