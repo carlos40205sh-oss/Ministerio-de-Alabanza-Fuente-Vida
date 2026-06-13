@@ -454,7 +454,8 @@ const registerFCMToken = async () => {
     const perm = await Notification.requestPermission();
     console.log('Notification permission:', perm);
     if(perm !== 'granted') return;
-    const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+    const swReg = await navigator.serviceWorker.register('/Ministerio-de-Alabanza-Fuente-Vida/firebase-messaging-sw.js');
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
     console.log('FCM token:', token ? token.slice(0,20)+'...' : 'none');
     if(token && CU) {
       const m = musicos.find(x => x.username === CU.key);
