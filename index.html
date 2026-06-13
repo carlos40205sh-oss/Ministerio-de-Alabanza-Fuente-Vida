@@ -438,9 +438,33 @@ input::placeholder{color:var(--muted);}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 const FB = { apiKey:"AIzaSyC1OvY10grOXME6_Kdb28LTyyITIxxcjm0", authDomain:"ministerio-de-alabanza-ac3f2.firebaseapp.com", projectId:"ministerio-de-alabanza-ac3f2", storageBucket:"ministerio-de-alabanza-ac3f2.firebasestorage.app", messagingSenderId:"314404534308", appId:"1:314404534308:web:cbb3543a559a71c7a780b1" };
 const db = getFirestore(initializeApp(FB));
+
+let messaging;
+try { messaging = getMessaging(); } catch(e) { console.log('FCM not supported:', e); }
+
+const VAPID_KEY = 'BO0ZwQdxZO-eKCOs2w55rPWT98YnZXyJQRvXJy2eGB179ikruI5CwUDpG3TrxHXz7hFBjwEgQHA-4WFnaHdrWqA';
+
+const registerFCMToken = async () => {
+  if(!messaging) return;
+  try {
+    const perm = await Notification.requestPermission();
+    console.log('Notification permission:', perm);
+    if(perm !== 'granted') return;
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+    console.log('FCM token:', token ? token.slice(0,20)+'...' : 'none');
+    if(token && CU) {
+      const m = musicos.find(x => x.username === CU.key);
+      if(m) {
+        await updateDoc(doc(db, 'musicos', m.id), { fcmToken: token });
+        console.log('Token saved for:', m.nombre);
+      }
+    }
+  } catch(e) { console.log('FCM error:', e); }
+};
 
 // ── STATE ──
 let CU = null, canciones = [], musicos = [], eventos = [], cantantes = [], allUsers = [];
@@ -489,6 +513,7 @@ const applyLogin = user => {
   renderAyuno();
   setTimeout(checkEventoProximo, 1500);
   setTimeout(checkCuotaPendiente, 4000);
+  setTimeout(registerFCMToken, 5000);
 };
 const autoLogin = () => {
   try { const s=localStorage.getItem('min_user'); if(s){const{u,p}=JSON.parse(s);const user=findUser(u,p);if(user){applyLogin(user);return true;}} } catch(e){}
