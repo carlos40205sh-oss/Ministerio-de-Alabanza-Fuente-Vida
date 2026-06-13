@@ -402,7 +402,7 @@ const applyLogin = user => {
   $('welcome-msg').textContent = 'Bienvenido, '+CU.nombre;
   if(CU.admin) {
     ['btn-new-ev','btn-add-can','btn-add-mus','btn-add-cant'].forEach(id=>$(id).style.display='inline-block');
-    document.querySelectorAll('.nav-admin').forEach(b=>b.style.removeProperty('display'));
+    document.querySelectorAll('.nav-admin').forEach(b=>b.style.setProperty('display','flex','important'));
   }
   renderCalendar();
 };
