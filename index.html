@@ -178,8 +178,21 @@ input::placeholder{color:var(--muted);}
         <div id="ev-assigned-list"></div>
       </div>
       <div class="form-sec">
-        <h4>🎵 Repertorio</h4>
-        <div id="ev-can-tags"></div>
+        <h4>📋 Orden del servicio</h4>
+        <p style="color:var(--muted);font-size:11px;margin-bottom:8px">Agregá canciones o momentos especiales en orden</p>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <select id="ev-orden-tipo" style="width:auto;margin:0;flex:1">
+            <option value="cancion">🎵 Canción</option>
+            <option value="oracion">🙏 Oración</option>
+            <option value="lectura">📖 Lectura bíblica</option>
+            <option value="ofrendas">💝 Ofrendas</option>
+            <option value="anuncio">📢 Anuncio</option>
+            <option value="otro">✨ Otro</option>
+          </select>
+          <button class="btn btn-accent btn-sm" id="btn-add-orden">+ Agregar</button>
+        </div>
+        <div id="ev-can-tags" style="margin-bottom:8px"></div>
+        <div id="ev-orden-list"></div>
       </div>
     </div>
     <button class="btn btn-primary btn-full" id="btn-save-ev">💾 Guardar evento</button>
@@ -450,7 +463,7 @@ onMessage(messaging, payload => {
 
 // ── STATE ──
 let CU = null, canciones = [], musicos = [], eventos = [], cantantes = [], allUsers = [];
-let evAssigned = [], evSetlist = [], editingEvId = null;
+let evAssigned = [], evSetlist = [], evOrden = [], editingEvId = null;
 let sortMode = 'artist', musMode = 'rol';
 let calY, calM, calDates = [];
 
@@ -751,11 +764,19 @@ const presididorRolStr = val => { if(!val) return ''; if(val.startsWith('c_')){c
 $('btn-new-ev').addEventListener('click',()=>showEvForm(null));
 $('btn-ev-back').addEventListener('click',()=>hideEvForm());
 $('ev-tipo').addEventListener('change',()=>$('ev-extra').style.display=$('ev-tipo').value==='Ayuno'?'none':'block');
+$('ev-orden-tipo').addEventListener('change', renderEvCanTags);
+$('btn-add-orden').addEventListener('click', () => {
+  const tipo = $('ev-orden-tipo').value;
+  if(tipo === 'cancion') return; // handled by tag click
+  const labels={'oracion':'Oración','lectura':'Lectura bíblica','ofrendas':'Ofrendas','anuncio':'Anuncio','otro':'Momento especial'};
+  evOrden.push({tipo, titulo:labels[tipo]||tipo});
+  renderEvOrden();
+});
 $('btn-save-ev').addEventListener('click', async () => {
   const titulo=$('ev-titulo').value.trim(), fecha=$('ev-fecha').value;
   if(!titulo||!fecha){alert('Título y fecha son requeridos');return;}
   const tipo=$('ev-tipo').value;
-  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),director:tipo!=='Ayuno'?$('ev-presididor').value:'',asignados:tipo!=='Ayuno'?evAssigned:[],setlist:tipo!=='Ayuno'?evSetlist:[]};
+  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),director:tipo!=='Ayuno'?$('ev-presididor').value:'',asignados:tipo!=='Ayuno'?evAssigned:[],setlist:tipo!=='Ayuno'?evSetlist:[],orden:tipo!=='Ayuno'?evOrden:[]};
   if(editingEvId){await updateDoc(doc(db,'eventos',editingEvId),data);toast('✅ Evento actualizado');}
   else{await addDoc(collection(db,'eventos'),{...data,creadoEn:Date.now()});toast('✅ Evento guardado');}
   editingEvId=null; hideEvForm();
@@ -766,13 +787,14 @@ const showEvForm = evId => {
   const ev=evId?eventos.find(e=>e.id===evId):null;
   evAssigned=ev?[...(ev.asignados||[])]:[];
   evSetlist=ev?[...(ev.setlist||[])]:[];
+  evOrden=ev?[...(ev.orden||[])]:[];
   ['ev-titulo','ev-notas'].forEach(id=>$(id).value=ev?ev[id==='ev-titulo'?'titulo':'notas']||'':'');
   $('ev-fecha').value=ev?ev.fecha:''; $('ev-tipo').value=ev?ev.tipo:'Servicio';
   $('ev-hora-ini').value=ev?ev.horaIni:''; $('ev-hora-fin').value=ev?ev.horaFin:'';
   $('ev-form-title').textContent=ev?'Editar evento':'Nuevo evento';
   $('ev-extra').style.display=(ev&&ev.tipo==='Ayuno')?'none':'block';
   populatePresididorSelect($('ev-presididor'),ev?ev.director:'');
-  renderEvMusTags(); renderEvCanTags();
+  renderEvMusTags(); renderEvCanTags(); renderEvOrden();
   $('ev-list-view').style.display='none'; $('ev-form-view').style.display='block'; $('ev-detail-view').style.display='none';
   history.pushState({tab:'eventos', view:'form'}, '', location.pathname);
 };
@@ -801,11 +823,40 @@ const renderEvMusTags = () => {
 };
 const renderEvCanTags = () => {
   const tagsEl=$('ev-can-tags'); tagsEl.innerHTML='';
-  canciones.forEach(c=>{
-    const span=document.createElement('span'); span.className='tag '+(evSetlist.includes(c.id)?'sel-gold':'');
+  // Only show cancion selector when tipo is cancion
+  const tipo = $('ev-orden-tipo') ? $('ev-orden-tipo').value : 'cancion';
+  if(tipo !== 'cancion') return;
+  canciones.sort((a,b)=>a.titulo.localeCompare(b.titulo)).forEach(c=>{
+    const span=document.createElement('span'); span.className='tag';
+    span.style.cssText='font-size:11px;padding:3px 8px';
     span.textContent=c.titulo;
-    span.addEventListener('click',()=>{const i=evSetlist.indexOf(c.id);if(i>=0)evSetlist.splice(i,1);else evSetlist.push(c.id);renderEvCanTags();});
+    span.addEventListener('click',()=>{
+      evOrden.push({tipo:'cancion', cancionId:c.id, titulo:c.titulo, tono:c.tono||''});
+      renderEvOrden();
+    });
     tagsEl.appendChild(span);
+  });
+};
+const renderEvOrden = () => {
+  const el = $('ev-orden-list'); el.innerHTML='';
+  if(!evOrden.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:12px">Sin items aún</div>';return;}
+  evOrden.forEach((item,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:6px';
+    const icons={'cancion':'🎵','oracion':'🙏','lectura':'📖','ofrendas':'💝','anuncio':'📢','otro':'✨'};
+    div.innerHTML='<span style="color:var(--gold);font-weight:700;font-size:12px;width:18px">'+(i+1)+'</span>'
+      +'<span style="font-size:15px">'+icons[item.tipo]+'</span>'
+      +'<div style="flex:1"><div style="font-size:13px;font-weight:600">'+item.titulo+'</div>'
+      +(item.tono?'<div style="font-size:11px;color:var(--muted)">Tono: '+item.tono+'</div>':'')+'</div>';
+    // Move up/down buttons
+    const upBtn=document.createElement('button'); upBtn.className='btn btn-ghost btn-sm'; upBtn.textContent='↑'; upBtn.style.padding='3px 7px';
+    upBtn.addEventListener('click',()=>{if(i>0){[evOrden[i-1],evOrden[i]]=[evOrden[i],evOrden[i-1]];renderEvOrden();}});
+    const downBtn=document.createElement('button'); downBtn.className='btn btn-ghost btn-sm'; downBtn.textContent='↓'; downBtn.style.padding='3px 7px';
+    downBtn.addEventListener('click',()=>{if(i<evOrden.length-1){[evOrden[i+1],evOrden[i]]=[evOrden[i],evOrden[i+1]];renderEvOrden();}});
+    const delBtn=document.createElement('button'); delBtn.className='btn btn-danger btn-sm'; delBtn.textContent='✕'; delBtn.style.padding='3px 7px';
+    delBtn.addEventListener('click',()=>{evOrden.splice(i,1);renderEvOrden();});
+    div.appendChild(upBtn); div.appendChild(downBtn); div.appendChild(delBtn);
+    el.appendChild(div);
   });
 };
 
@@ -829,7 +880,7 @@ const delComentario = async (evId,idx) => {
 const deleteEvento = async id => { if(confirm('¿Eliminar?')){await deleteDoc(doc(db,'eventos',id));hideEvForm();toast('🗑️ Eliminado');} };
 
 const buildEvDetail = (ev, backFn) => {
-  const evCans=canciones.filter(c=>(ev.setlist||[]).includes(c.id));
+  const evCans=canciones.filter(c=>(ev.setlist||[]).includes(c.id)); // legacy
   const presididor=resolvePresididor(ev.director);
   const dirRol=presididorRolStr(ev.presididor);
   const horaStr=(ev.horaIni||ev.horaFin)?' · '+(ev.horaIni||'')+(ev.horaFin?' - '+ev.horaFin:''):'';
@@ -886,12 +937,35 @@ const buildEvDetail = (ev, backFn) => {
       if(pres||aus){const sum=document.createElement('div');sum.style.cssText='margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;gap:10px';sum.innerHTML='<span style="font-size:12px;color:var(--success)">✅ '+pres+' presentes</span><span style="font-size:12px;color:var(--danger)">❌ '+aus+' ausentes</span>';es.appendChild(sum);}
       wrap.appendChild(es);
     }
-    if(evCans.length){
-      const rs=document.createElement('div'); rs.className='ev-sec'; rs.innerHTML='<h4>🎵 Repertorio ('+evCans.length+')</h4>';
-      evCans.forEach((c,i)=>{
-        const row=document.createElement('div'); row.className='rol-row'; row.innerHTML='<span style="color:var(--gold-dim);font-weight:700;width:18px;font-size:12px">'+(i+1)+'</span><div style="flex:1"><div style="font-weight:600;font-size:13px">'+c.titulo+'</div><div style="color:var(--muted);font-size:11px">'+(c.artista||'')+'</div></div><span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">'+c.tono+'</span>';
-        rs.appendChild(row);
-        if(c.linkLetra||c.linkAcordes){const ld=document.createElement('div');ld.style.cssText='display:flex;gap:6px;padding:4px 0 6px 22px';ld.innerHTML=(c.linkLetra?'<a href="'+c.linkLetra+'" target="_blank" class="link-btn">📄 Letra</a>':'')+(c.linkAcordes?' <a href="'+c.linkAcordes+'" target="_blank" class="link-btn">🎼 Acordes</a>':'');rs.appendChild(ld);}
+    const orden = ev.orden||[];
+    if(orden.length){
+      const icons={'cancion':'🎵','oracion':'🙏','lectura':'📖','ofrendas':'💝','anuncio':'📢','otro':'✨'};
+      const rs=document.createElement('div'); rs.className='ev-sec';
+      rs.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><h4 style="margin:0">📋 Orden del servicio</h4>'+(CU&&CU.admin?'<span id="orden-actual-lbl" style="font-size:11px;color:var(--muted)">Toca un ítem para marcarlo activo</span>':'')+'</div>';
+      orden.forEach((item,i)=>{
+        const cancion = item.tipo==='cancion' ? canciones.find(c=>c.id===item.cancionId) : null;
+        const isActivo = ev.ordenActivo === i;
+        const row=document.createElement('div');
+        row.style.cssText='display:flex;align-items:center;gap:8px;padding:10px;border-radius:10px;margin-bottom:6px;transition:background .2s;cursor:'+(CU&&CU.admin?'pointer':'default')+';background:'+(isActivo?'linear-gradient(135deg,#7B6FD433,#E8C96A22)':'var(--bg)')+';border:1px solid '+(isActivo?'var(--gold)':'var(--border)');
+        row.innerHTML='<span style="color:'+(isActivo?'var(--gold)':'var(--muted)')+';font-weight:700;font-size:13px;width:22px">'+(i+1)+'</span>'
+          +'<span style="font-size:18px">'+icons[item.tipo]+'</span>'
+          +'<div style="flex:1"><div style="font-size:13px;font-weight:'+(isActivo?'700':'600')+';color:'+(isActivo?'var(--gold)':'var(--text)')+'">'+item.titulo+'</div>'
+          +(cancion&&cancion.artista?'<div style="font-size:11px;color:var(--muted)">'+cancion.artista+'</div>':'')+'</div>'
+          +(item.tono?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">'+item.tono+'</span>':'')
+          +(isActivo?'<span style="color:var(--gold);font-size:11px;font-weight:700">▶ ACTUAL</span>':'');
+        if(CU&&CU.admin){
+          row.addEventListener('click',async()=>{
+            const newActivo = ev.ordenActivo===i ? null : i;
+            await updateDoc(doc(db,'eventos',ev.id),{ordenActivo:newActivo});
+          });
+        }
+        if(cancion&&(cancion.linkLetra||cancion.linkAcordes)){
+          const links=document.createElement('div'); links.style.cssText='display:flex;gap:6px;padding:4px 0 0 40px';
+          links.innerHTML=(cancion.linkLetra?'<a href="'+cancion.linkLetra+'" target="_blank" class="link-btn">📄 Letra</a>':'')+(cancion.linkAcordes?' <a href="'+cancion.linkAcordes+'" target="_blank" class="link-btn">🎼 Acordes</a>':'');
+          const wrap2=document.createElement('div'); wrap2.appendChild(row); wrap2.appendChild(links); rs.appendChild(wrap2);
+        } else {
+          rs.appendChild(row);
+        }
       });
       wrap.appendChild(rs);
     }
