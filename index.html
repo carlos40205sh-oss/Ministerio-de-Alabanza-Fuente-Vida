@@ -287,6 +287,21 @@ input::placeholder{color:var(--muted);}
   <div id="ayuno-lista"></div>
 </div>
 
+<!-- ANUNCIOS -->
+<div id="sec-anuncios" class="section content" style="display:none">
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <h2 style="color:var(--gold);font-size:17px;margin:0">📢 Anuncios</h2>
+  </div>
+  <div id="anuncio-form" style="display:none" class="form-sec">
+    <h4>Nuevo anuncio</h4>
+    <input id="anuncio-titulo" placeholder="Título del anuncio"/>
+    <textarea id="anuncio-texto" placeholder="Escribe el anuncio aquí..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:8px 12px;outline:none;margin-bottom:8px;min-height:80px;resize:vertical"></textarea>
+    <label class="chk-lbl"><input type="checkbox" id="anuncio-notif" checked/> 📲 Notificar a todos</label>
+    <button class="btn btn-primary btn-full" id="btn-save-anuncio">📢 Publicar anuncio</button>
+  </div>
+  <div id="anuncios-list"></div>
+</div>
+
 <!-- CANTANTES -->
 <div id="sec-cantantes" class="section content">
   <div class="row" style="justify-content:space-between;margin-bottom:14px">
@@ -309,6 +324,7 @@ input::placeholder{color:var(--muted);}
   <button class="nav-btn" data-tab="eventos"><span class="icon">🗓</span><span class="label">Eventos</span></button>
   <button class="nav-btn" data-tab="canciones"><span class="icon">🎵</span><span class="label">Canciones</span></button>
   <button class="nav-btn" data-tab="ayuno"><span class="icon">🙏</span><span class="label">Ayuno</span></button>
+  <button class="nav-btn nav-admin" data-tab="anuncios"><span class="icon">📢</span><span class="label">Anuncios</span></button>
   <button class="nav-btn nav-admin" data-tab="musicos"><span class="icon">🎸</span><span class="label">Músicos</span></button>
   <button class="nav-btn nav-admin" data-tab="cantantes"><span class="icon">🎤</span><span class="label">Cantantes</span></button>
   <button class="nav-btn nav-admin" data-tab="cuotas"><span class="icon">💰</span><span class="label">Cuotas</span></button>
@@ -425,6 +441,17 @@ input::placeholder{color:var(--muted);}
   </div>
 </div>
 
+<!-- ANUNCIO MODAL -->
+<div id="anuncio-modal" class="modal" style="z-index:720">
+  <div class="modal-box" style="max-width:340px">
+    <div style="font-size:32px;text-align:center;margin-bottom:8px">📢</div>
+    <h3 style="color:var(--gold);margin-bottom:6px;text-align:center" id="anuncio-modal-titulo"></h3>
+    <p id="anuncio-modal-texto" style="color:var(--muted);font-size:13px;margin-bottom:16px;line-height:1.6;white-space:pre-wrap"></p>
+    <div style="font-size:11px;color:var(--muted);text-align:right;margin-bottom:12px" id="anuncio-modal-fecha"></div>
+    <button class="btn btn-primary btn-full" id="btn-anuncio-ok">Entendido</button>
+  </div>
+</div>
+
 <!-- CUOTA MODAL -->
 <div id="cuota-modal" class="modal" style="z-index:700">
   <div class="modal-box" style="text-align:center;max-width:320px">
@@ -509,6 +536,7 @@ const applyLogin = user => {
   if(CU.admin) {
     ['btn-new-ev','btn-add-can','btn-add-mus','btn-add-cant'].forEach(id=>$(id).style.display='inline-block');
     document.querySelectorAll('.nav-admin').forEach(b=>b.style.setProperty('display','flex','important'));
+    document.getElementById('sec-anuncios').style.display='block';
   }
   renderCalendar();
   renderAyuno();
@@ -1353,6 +1381,69 @@ onSnapshot(collection(db,'ayunos'), snap => {
   ayunoData = {};
   snap.docs.forEach(d => { ayunoData[d.id] = d.data(); });
   if(CU) renderAyuno();
+});
+
+// ── ANUNCIOS ──
+$('btn-anuncio-ok').addEventListener('click', () => {
+  $('anuncio-modal').style.display = 'none';
+  // Mark as seen
+  try { const seen = JSON.parse(localStorage.getItem('anuncios_vistos')||'[]'); if(!seen.includes(window._lastAnuncioId)){seen.push(window._lastAnuncioId);localStorage.setItem('anuncios_vistos',JSON.stringify(seen));} } catch(e){}
+});
+
+const checkAnuncioNuevo = (anuncios) => {
+  if(!CU||!anuncios.length) return;
+  try {
+    const seen = JSON.parse(localStorage.getItem('anuncios_vistos')||'[]');
+    const ultimo = anuncios[0]; // Most recent
+    if(!seen.includes(ultimo.id)){
+      window._lastAnuncioId = ultimo.id;
+      $('anuncio-modal-titulo').textContent = ultimo.titulo;
+      $('anuncio-modal-texto').textContent = ultimo.texto;
+      $('anuncio-modal-fecha').textContent = ultimo.fecha || '';
+      $('anuncio-modal').style.display = 'flex';
+    }
+  } catch(e){}
+};
+
+function renderAnuncios(anuncios) {
+  const el = $('anuncios-list'); el.innerHTML = '';
+  // Show add button for admins
+  const addBtn = $('anuncio-form');
+  if(CU&&CU.admin) addBtn.style.display = 'block';
+  if(!anuncios.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No hay anuncios</div>';return;}
+  anuncios.forEach(a => {
+    const div = document.createElement('div'); div.className = 'card';
+    div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div style="font-weight:700;font-size:14px;color:var(--gold)">📢 '+a.titulo+'</div>'+(CU&&CU.admin?'<button class="btn btn-danger btn-sm" style="flex-shrink:0">✕</button>':'')+'</div><div style="font-size:13px;color:var(--text);white-space:pre-wrap;margin-bottom:8px">'+a.texto+'</div><div style="font-size:11px;color:var(--muted)">'+a.fecha+'</div>';
+    if(CU&&CU.admin){
+      div.querySelector('.btn-danger').addEventListener('click', async () => {
+        if(confirm('¿Eliminar anuncio?')) { await deleteDoc(doc(db,'anuncios',a.id)); toast('🗑️ Eliminado'); }
+      });
+    }
+    el.appendChild(div);
+  });
+}
+
+$('btn-add-anuncio') && $('btn-add-anuncio').addEventListener('click', () => {
+  const f = $('anuncio-form'); f.style.display = f.style.display==='none'?'block':'none';
+});
+
+$('btn-save-anuncio').addEventListener('click', async () => {
+  const titulo = $('anuncio-titulo').value.trim();
+  const texto = $('anuncio-texto').value.trim();
+  if(!titulo||!texto){alert('Completá el título y el texto');return;}
+  const fecha = new Date().toLocaleDateString('es-CR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const notif = $('anuncio-notif').checked;
+  await addDoc(collection(db,'anuncios'), {titulo, texto, fecha, notif, creadoEn:Date.now()});
+  $('anuncio-titulo').value=''; $('anuncio-texto').value='';
+  $('anuncio-form').style.display='none';
+  toast('📢 Anuncio publicado!');
+});
+
+let anunciosData = [];
+onSnapshot(collection(db,'anuncios'), snap => {
+  anunciosData = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.creadoEn-a.creadoEn);
+  renderAnuncios(anunciosData);
+  if(CU) setTimeout(()=>checkAnuncioNuevo(anunciosData), 6000);
 });
 
 // Initialize history state
