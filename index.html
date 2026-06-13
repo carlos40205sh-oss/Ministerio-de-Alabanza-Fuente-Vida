@@ -55,6 +55,7 @@ input::placeholder{color:var(--muted);}
 .cal-day{min-height:38px;border-radius:8px;padding:3px;cursor:pointer;}
 .cal-day.has-ev{background:var(--card);border:1px solid var(--border);}
 .cal-day.today{border:1px solid var(--gold)!important;}
+.cal-day.selected{border:1px solid var(--accent)!important;background:var(--card);}
 .cal-day-num{font-size:11px;font-weight:600;color:var(--muted);text-align:center;}
 .cal-day.has-ev .cal-day-num{color:var(--text);}
 .cal-dot{width:5px;height:5px;border-radius:50%;margin:2px auto 0;}
@@ -462,7 +463,15 @@ const ROLES_EV = ['Líder','Voz','Guitarra','Bajo','Teclado/Piano','Batería','S
 // ── NAV ──
 // ── HISTORY MANAGEMENT ──
 window.addEventListener('popstate', e => {
-  const tab = e.state?.tab || 'inicio';
+  const state = e.state || {tab:'inicio'};
+  const tab = state.tab || 'inicio';
+  
+  // If was in event detail, go back to list
+  if (state.detail) { hideEvForm(); return; }
+  // If was in event form, go back to list
+  if (state.form) { hideEvForm(); return; }
+  
+  // Navigate to tab
   const btn = document.querySelector('.nav-btn[data-tab="'+tab+'"]');
   if (btn) {
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
@@ -470,8 +479,8 @@ window.addEventListener('popstate', e => {
     document.getElementById('sec-'+tab).classList.add('active');
     btn.classList.add('active');
     const d=document.createElement('div'); d.className='dot'; btn.appendChild(d);
-    // If going back to eventos, show list view
-    if (tab==='eventos') hideEvForm();
+    if(tab==='eventos') hideEvForm();
+    if(tab==='calendario') renderCalendar();
   }
 });
 
@@ -939,7 +948,14 @@ window.renderCalendar=()=>{
   document.getElementById('cal-grid').innerHTML=html;
   renderCalList(todayStr);
 };
-window.calClick=date=>renderCalList(date);
+window.calClick=date=>{
+  // Remove previous selection
+  document.querySelectorAll('.cal-day.selected').forEach(d=>d.classList.remove('selected'));
+  // Mark selected day
+  const dayEl = document.getElementById('cday-'+date);
+  if(dayEl) dayEl.classList.add('selected');
+  renderCalList(date);
+};
 const renderCalList=date=>{
   const devs=eventos.filter(e=>e.fecha===date);
   const el=document.getElementById('cal-ev-list');
