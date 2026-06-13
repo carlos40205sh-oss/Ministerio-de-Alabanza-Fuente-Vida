@@ -570,19 +570,37 @@ window.renderCanciones = () => {
   const el = document.getElementById('canciones-list');
   if (!filtered.length){ el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No se encontraron canciones</div>'; return; }
 
-  const canCard = c => {
+  const makeCanCard = c => {
+    const card = document.createElement('div');
+    card.className = 'card';
     const links = (c.linkLetra?'<a href="'+c.linkLetra+'" target="_blank" class="link-btn">📄 Letra</a>':'') +
                   (c.linkAcordes?' <a href="'+c.linkAcordes+'" target="_blank" class="link-btn">🎼 Acordes</a>':'');
     const badges = '<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">🎼 '+c.tono+'</span>' +
       (c.bpm?' <span class="badge" style="background:#9590B022;color:var(--muted);border:1px solid #9590B044">'+c.bpm+' BPM</span>':'') +
       (c.nueva?' <span class="badge" style="background:#F0A50022;color:var(--warn);border:1px solid #F0A50044">🆕 Nueva</span>':'') +
       (c.tags||[]).map(t=>' <span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+t+'</span>').join('');
-    const btns = CU&&CU.admin ? '<div style="display:flex;gap:4px;flex-direction:column"><button class="btn btn-accent btn-sm" onclick="editCancion(\"'+c.id+'\")">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteCancion(\"'+c.id+'\")">✕</button></div>' : '';
-    return '<div class="card"><div class="row" style="align-items:flex-start"><div style="flex:1"><div style="font-weight:700;font-size:14px">'+c.titulo+'</div><div style="color:var(--muted);font-size:12px;margin-bottom:7px">'+(c.artista||'')+'</div><div style="margin-bottom:8px">'+badges+'</div><div>'+links+'</div></div>'+btns+'</div></div>';
+    card.innerHTML = '<div class="row" style="align-items:flex-start"><div style="flex:1"><div style="font-weight:700;font-size:14px">'+c.titulo+'</div><div style="color:var(--muted);font-size:12px;margin-bottom:7px">'+(c.artista||'')+'</div><div style="margin-bottom:8px">'+badges+'</div><div>'+links+'</div></div></div>';
+    if (CU&&CU.admin) {
+      const btnsDiv = document.createElement('div');
+      btnsDiv.style.cssText = 'display:flex;gap:4px;flex-direction:column';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn btn-accent btn-sm';
+      editBtn.textContent = '✏️';
+      editBtn.addEventListener('click', e => { e.stopPropagation(); editCancion(c.id); });
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn btn-danger btn-sm';
+      delBtn.textContent = '✕';
+      delBtn.addEventListener('click', e => { e.stopPropagation(); deleteCancion(c.id); });
+      btnsDiv.appendChild(editBtn);
+      btnsDiv.appendChild(delBtn);
+      card.querySelector('.row').appendChild(btnsDiv);
+    }
+    return card;
   };
 
+  el.innerHTML = '';
   if (sortMode === 'az') {
-    el.innerHTML = filtered.map(canCard).join('');
+    filtered.forEach(c => el.appendChild(makeCanCard(c)));
   } else {
     const groups = {};
     filtered.forEach(c => {
@@ -590,48 +608,50 @@ window.renderCanciones = () => {
       if (!groups[key]) groups[key] = [];
       groups[key].push(c);
     });
-    const sortedArtists = Object.keys(groups).sort();
-    el.innerHTML = sortedArtists.map(artist => {
+    Object.keys(groups).sort().forEach(artist => {
       const id = 'cgrp-'+artist.replace(/[^a-zA-Z0-9]/g,'').slice(0,10);
-      return '<div style="margin-bottom:8px">'
-        +'<div id="'+id+'" data-open="false" onclick="toggleGrp(this.id)" data-fix="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:4px">'
-        +'<span style="font-size:16px">🎵</span>'
-        +'<span style="flex:1;font-weight:700;font-size:14px;color:var(--text)">'+artist+'</span>'
-        +'<span style="color:var(--muted);font-size:12px">'+groups[artist].length+' canciones</span>'
-        +'<span id="arr-'+id+'" style="color:var(--gold);font-size:14px">▸</span>'
-        +'</div>'
-        +'<div id="list-'+id+'" style="display:none">'
-        +groups[artist].map(canCard).join('')
-        +'</div>'
-        +'</div>';
-    }).join('');
+      const grpDiv = document.createElement('div');
+      grpDiv.style.marginBottom = '8px';
+      const header = document.createElement('div');
+      header.id = id;
+      header.dataset.open = 'false';
+      header.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:4px';
+      header.innerHTML = '<span style="font-size:16px">🎵</span><span style="flex:1;font-weight:700;font-size:14px;color:var(--text)">'+artist+'</span><span style="color:var(--muted);font-size:12px">'+groups[artist].length+' canciones</span><span id="arr-'+id+'" style="color:var(--gold);font-size:14px">▸</span>';
+      header.addEventListener('click', () => toggleGrp(id));
+      const listDiv = document.createElement('div');
+      listDiv.id = 'list-'+id;
+      listDiv.style.display = 'none';
+      groups[artist].forEach(c => listDiv.appendChild(makeCanCard(c)));
+      grpDiv.appendChild(header);
+      grpDiv.appendChild(listDiv);
+      el.appendChild(grpDiv);
+    });
   }
-};
-window.toggleGrp = id => {
-  const el = document.getElementById(id);
-  const list = document.getElementById('list-'+id);
-  const arr = document.getElementById('arr-'+id);
-  if (!el||!list) return;
-  const isOpen = el.dataset.open !== 'false';
-  el.dataset.open = isOpen ? 'false' : 'true';
-  list.style.display = isOpen ? 'none' : 'block';
-  if(arr) arr.textContent = isOpen ? '▸' : '▾';
-};
-let musMode = 'rol';
-window.setMusMode = mode => {
-  musMode = mode;
-  const az = document.getElementById('btn-mus-az');
-  const rol = document.getElementById('btn-mus-rol');
-  if(az) az.className = mode==='az' ? 'btn btn-accent btn-sm' : 'btn btn-ghost btn-sm';
-  if(rol) rol.className = mode==='rol' ? 'btn btn-accent btn-sm' : 'btn btn-ghost btn-sm';
-  renderMusicos();
-};
-window.toggleMusForm = () => { const f=document.getElementById('mus-form'); f.style.display=f.style.display==='none'?'block':'none'; };
-const musCard = m => {
+};const makeMusCard = m => {
+  const card = document.createElement('div');
+  card.className = 'card';
   const rolesBadges = (m.roles||[m.rol]).map(r=>'<span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+roleIcon(r)+' '+r+'</span>').join(' ');
   const dispBadge = '<span class="badge" style="background:'+(m.disponible?'#7EC8A022':'#E06C7522')+';color:'+(m.disponible?'var(--success)':'var(--danger)')+';border:1px solid '+(m.disponible?'#7EC8A044':'#E06C7544')+'">'+(m.disponible?'Disponible':'No disponible')+'</span>';
-  const btns = CU&&CU.admin ? '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0"><button class="btn btn-accent btn-sm" onclick="editMusico(this.dataset.mid)" data-mid="'+m.id+'">✏️ Editar</button><button class="btn btn-ghost btn-sm" onclick="toggleDisp(this.dataset.mid," data-mid="'+m.id+'"'+m.disponible+')">'+(m.disponible?'🔴 Ocupado':'🟢 Disponible')+'</button><button class="btn btn-danger btn-sm" onclick="deleteMusico(this.dataset.mid)" data-mid2="'+m.id+'">✕ Borrar</button></div>' : '';
-  return '<div class="card"><div class="row" style="align-items:flex-start"><div class="avatar">'+roleIcon(m.rol)+'</div><div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="margin-top:4px">'+rolesBadges+' '+dispBadge+'</div>'+(m.admin?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44;margin-top:4px">🔑 Admin</span>':'')+(m.username?'<div style="color:var(--muted);font-size:11px;margin-top:3px">👤 '+m.username+'</div>':'')+(m.bday?'<div style="color:var(--muted);font-size:11px;margin-top:2px">🎂 '+fmtBday(m.bday)+'</div>':'')+'</div>'+btns+'</div></div>';
+  card.innerHTML = '<div class="row" style="align-items:flex-start"><div class="avatar">'+roleIcon(m.rol)+'</div><div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="margin-top:4px">'+rolesBadges+' '+dispBadge+'</div>'+(m.admin?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44;margin-top:4px">🔑 Admin</span>':'')+(m.username?'<div style="color:var(--muted);font-size:11px;margin-top:3px">👤 '+m.username+'</div>':'')+(m.bday?'<div style="color:var(--muted);font-size:11px;margin-top:2px">🎂 '+fmtBday(m.bday)+'</div>':'')+'</div></div>';
+  if (CU&&CU.admin) {
+    const btnsDiv = document.createElement('div');
+    btnsDiv.style.cssText = 'display:flex;flex-direction:column;gap:4px;flex-shrink:0';
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn btn-accent btn-sm';
+    editBtn.textContent = '✏️ Editar';
+    editBtn.addEventListener('click', e => { e.stopPropagation(); editMusico(m.id); });
+    const dispBtn = document.createElement('button');
+    dispBtn.className = 'btn btn-ghost btn-sm';
+    dispBtn.textContent = m.disponible ? '🔴 Ocupado' : '🟢 Disponible';
+    dispBtn.addEventListener('click', e => { e.stopPropagation(); toggleDisp(m.id, m.disponible); });
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn btn-danger btn-sm';
+    delBtn.textContent = '✕ Borrar';
+    delBtn.addEventListener('click', e => { e.stopPropagation(); deleteMusico(m.id); });
+    btnsDiv.appendChild(editBtn); btnsDiv.appendChild(dispBtn); btnsDiv.appendChild(delBtn);
+    card.querySelector('.row').appendChild(btnsDiv);
+  }
+  return card;
 };
 const renderMusicos = () => {
   const el = document.getElementById('musicos-list');
@@ -641,71 +661,62 @@ const renderMusicos = () => {
     m.nombre.toLowerCase().includes(q) ||
     (m.roles||[m.rol]).some(r=>r.toLowerCase().includes(q))
   ).sort((a,b)=>a.nombre.localeCompare(b.nombre));
-
+  el.innerHTML = '';
   if (musMode === 'az') {
-    el.innerHTML = filtered.map(musCard).join('');
+    filtered.forEach(m => el.appendChild(makeMusCard(m)));
   } else {
     const groups = {};
     filtered.forEach(m => {
-      const roles = m.roles||[m.rol];
-      roles.forEach(r => {
+      (m.roles||[m.rol]).forEach(r => {
         if (!groups[r]) groups[r] = [];
         if (!groups[r].find(x=>x.id===m.id)) groups[r].push(m);
       });
     });
     const rolOrder = ['Líder','Voz','Guitarra','Bajo','Teclado/Piano','Batería','Saxofón','Presentación','Transmisión','Otros'];
-    const sortedRoles = Object.keys(groups).sort((a,b)=>{
-      const ia = rolOrder.indexOf(a); const ib = rolOrder.indexOf(b);
-      return (ia===-1?99:ia) - (ib===-1?99:ib);
-    });
-    el.innerHTML = sortedRoles.map(rol => {
+    Object.keys(groups).sort((a,b)=>{ const ia=rolOrder.indexOf(a),ib=rolOrder.indexOf(b); return (ia===-1?99:ia)-(ib===-1?99:ib); }).forEach(rol => {
       const id = 'mgrp-'+rol.replace(/[^a-zA-Z0-9]/g,'');
-      return '<div style="margin-bottom:8px">'
-        +'<div id="'+id+'" data-open="false" onclick="toggleGrp(this.id)" data-fix="true" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:4px">'
-        +'<span style="font-size:18px">'+roleIcon(rol)+'</span>'
-        +'<span style="flex:1;font-weight:700;font-size:14px;color:var(--text)">'+rol+'</span>'
-        +'<span style="color:var(--muted);font-size:12px">'+groups[rol].length+' músicos</span>'
-        +'<span id="arr-'+id+'" style="color:var(--gold);font-size:14px">▸</span>'
-        +'</div>'
-        +'<div id="list-'+id+'" style="display:none">'
-        +groups[rol].map(musCard).join('')
-        +'</div>'
-        +'</div>';
-    }).join('');
+      const grpDiv = document.createElement('div');
+      grpDiv.style.marginBottom = '8px';
+      const header = document.createElement('div');
+      header.id = id;
+      header.dataset.open = 'false';
+      header.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:4px';
+      header.innerHTML = '<span style="font-size:18px">'+roleIcon(rol)+'</span><span style="flex:1;font-weight:700;font-size:14px;color:var(--text)">'+rol+'</span><span style="color:var(--muted);font-size:12px">'+groups[rol].length+' músicos</span><span id="arr-'+id+'" style="color:var(--gold);font-size:14px">▸</span>';
+      header.addEventListener('click', () => toggleGrp(id));
+      const listDiv = document.createElement('div');
+      listDiv.id = 'list-'+id;
+      listDiv.style.display = 'none';
+      groups[rol].forEach(m => listDiv.appendChild(makeMusCard(m)));
+      grpDiv.appendChild(header);
+      grpDiv.appendChild(listDiv);
+      el.appendChild(grpDiv);
+    });
   }
-};
-
-// ── CANTANTES ──
-window.toggleCantForm = () => { const f=document.getElementById('cant-form'); f.style.display=f.style.display==='none'?'block':'none'; };
-window.saveCantante = async () => {
-  const n = document.getElementById('cant-nombre').value.trim(); if (!n) return;
-  await addDoc(collection(db,'cantantes'), { nombre:n, notas:document.getElementById('cant-notas').value.trim(), creadoEn:Date.now() });
-  ['cant-nombre','cant-notas'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('cant-form').style.display='none'; toast('✅ Cantante guardado');
-};
-window.deleteCantante = async id => { if(confirm('¿Eliminar?')){ await deleteDoc(doc(db,'cantantes',id)); toast('🗑️ Eliminado'); }};
-window.editCantante = id => {
-  const c = cantantes.find(x=>x.id===id); if (!c) return;
-  document.getElementById('cant-edit-id').value=id;
-  document.getElementById('cant-edit-nombre').value=c.nombre||'';
-  document.getElementById('cant-edit-notas').value=c.notas||'';
-  document.getElementById('cant-edit-modal').style.display='flex';
-};
-window.closeCantEdit = () => document.getElementById('cant-edit-modal').style.display='none';
-window.saveCantEdit = async () => {
-  const id = document.getElementById('cant-edit-id').value;
-  await updateDoc(doc(db,'cantantes',id), { nombre:document.getElementById('cant-edit-nombre').value.trim(), notas:document.getElementById('cant-edit-notas').value.trim() });
-  closeCantEdit(); toast('✅ Cantante actualizado');
-};
-const renderCantantes = () => {
+};const renderCantantes = () => {
   const el = document.getElementById('cantantes-list');
   if (!cantantes.length){ el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No hay cantantes</div>'; return; }
-  el.innerHTML = cantantes.map(c => {
-    const btns = CU&&CU.admin ? '<div style="display:flex;gap:4px"><button class="btn btn-accent btn-sm" onclick="editCantante(\"'+c.id+'\")">✏️ Editar</button><button class="btn btn-danger btn-sm" onclick="deleteCantante(\"'+c.id+'\")">✕</button></div>' : '';
-    return '<div class="card row"><div class="avatar">🎤</div><div style="flex:1"><div style="font-weight:600;font-size:14px">'+c.nombre+'</div>'+(c.notas?'<div style="color:var(--muted);font-size:12px">'+c.notas+'</div>':'')+'</div>'+btns+'</div>';
-  }).join('');
+  el.innerHTML = '';
+  cantantes.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'card row';
+    div.innerHTML = '<div class="avatar">🎤</div><div style="flex:1"><div style="font-weight:600;font-size:14px">'+c.nombre+'</div>'+(c.notas?'<div style="color:var(--muted);font-size:12px">'+c.notas+'</div>':'')+'</div>';
+    if (CU&&CU.admin) {
+      const btnsDiv = document.createElement('div');
+      btnsDiv.style.cssText = 'display:flex;gap:4px';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn btn-accent btn-sm';
+      editBtn.textContent = '✏️ Editar';
+      editBtn.addEventListener('click', e => { e.stopPropagation(); editCantante(c.id); });
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn btn-danger btn-sm';
+      delBtn.textContent = '✕';
+      delBtn.addEventListener('click', e => { e.stopPropagation(); deleteCantante(c.id); });
+      btnsDiv.appendChild(editBtn); btnsDiv.appendChild(delBtn);
+      div.appendChild(btnsDiv);
+    }
+    el.appendChild(div);
+  });
 };
-
 // ── DIRECTOR SELECT ──
 const populateDirectorSelect = (selectedVal) => {
   const sel = document.getElementById('ev-director');
@@ -797,7 +808,7 @@ window.marcarAsist = async (evId, musId, estado) => {
   const asistencia = ev.asistencia||{};
   asistencia[musId] = estado;
   await updateDoc(doc(db,'eventos',evId), {asistencia});
-  toast(estado==='llego'?'✅ Marcado':'❌ Marcado');
+  toast(estado==='llego'?'✅ Llegó':'❌ No llegó');
 };
 
 // ── COMENTARIOS ──
@@ -821,15 +832,14 @@ window.delComentario = async (evId, idx) => {
 
 // ── EVENTO DETAIL ──
 window.showEvDetailFrom = (id, fromTab) => {
-  history.pushState({tab: fromTab, detail: id, fromTab}, '', location.pathname);
+  history.pushState({tab:fromTab, detail:id, fromTab}, '', location.pathname);
   _showEvDetailInner(id);
 };
 window.showEvDetail = id => {
-  history.pushState({tab: 'eventos', detail: id, fromTab: 'eventos'}, '', location.pathname);
+  history.pushState({tab:'eventos', detail:id, fromTab:'eventos'}, '', location.pathname);
   _showEvDetailInner(id);
 };
 const _showEvDetailInner = id => {
-  history.pushState({tab:'eventos', detail:id}, '', location.pathname);
   const ev = eventos.find(e=>e.id===id); if (!ev) return;
   const evCans = canciones.filter(c=>(ev.setlist||[]).includes(c.id));
   const director = resolveDirector(ev.director);
@@ -907,6 +917,7 @@ const renderEventos = () => {
     el.appendChild(div);
   });
 };
+
 // ── DASHBOARD ──
 const renderDashboard = () => {
   document.getElementById('st-c').textContent = canciones.length;
@@ -914,18 +925,14 @@ const renderDashboard = () => {
   document.getElementById('st-e').textContent = eventos.length;
   const hoy = new Date().toISOString().slice(0,10);
   const prox = [...eventos].filter(e=>e.fecha>=hoy).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(0,4);
-    const proxEl = document.getElementById('proximos-list');
+  const proxEl = document.getElementById('proximos-list');
   proxEl.innerHTML = '';
   if (!prox.length) { proxEl.innerHTML='<div style="color:var(--muted);font-size:13px">No hay eventos próximos</div>'; }
   else { prox.forEach(ev=>{
     const div=document.createElement('div');
     div.className='card row';
     div.style.cssText='cursor:pointer;padding:10px 12px;margin-bottom:8px';
-    div.addEventListener('click',()=>{ 
-      const nb=document.querySelectorAll('.nav-btn')[2]; 
-      goTab('eventos',nb); 
-      showEvDetailFrom(ev.id, 'inicio'); 
-    });
+    div.addEventListener('click',()=>{ const nb=document.querySelectorAll('.nav-btn')[2]; goTab('eventos',nb); showEvDetailFrom(ev.id,'inicio'); });
     div.innerHTML='<span style="font-size:18px">'+(ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':'🎵')+'</span><div style="flex:1"><div style="font-weight:600;font-size:13px">'+ev.titulo+'</div><div style="color:var(--muted);font-size:11px">'+fmt(ev.fecha)+(ev.horaIni?' · '+ev.horaIni:'')+' · '+ev.tipo+'</div></div><span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>';
     proxEl.appendChild(div);
   }); }
@@ -964,7 +971,6 @@ window.renderCalendar=()=>{
   document.getElementById('cal-hdr').innerHTML=DNS.map(d=>'<div class="cal-dn">'+d+'</div>').join('');
   const first=new Date(calY,calM,1).getDay(), days=new Date(calY,calM+1,0).getDate(), todayStr=now.toISOString().slice(0,10);
   let html='';
-  calDates=[];
   for(let i=0;i<first;i++) html+='<div></div>';
   for(let d=1;d<=days;d++){
     const ds=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
@@ -975,12 +981,18 @@ window.renderCalendar=()=>{
   renderCalList(todayStr);
 };
 window.calClick=date=>{
-  // Remove previous selection
   document.querySelectorAll('.cal-day.selected').forEach(d=>d.classList.remove('selected'));
-  // Mark selected day
   const dayEl = document.getElementById('cday-'+date);
   if(dayEl) dayEl.classList.add('selected');
   renderCalList(date);
+};
+window.hideCalEvDetail = () => {
+  document.getElementById('cal-ev-detail').style.display='none';
+  document.getElementById('cal-ev-list').style.display='block';
+  document.getElementById('cal-grid').style.display='grid';
+  document.getElementById('cal-hdr').style.display='grid';
+  const titleRow = document.querySelector('#sec-calendario .row');
+  if(titleRow) titleRow.style.display='flex';
 };
 const renderCalList=date=>{
   const devs=eventos.filter(e=>e.fecha===date);
@@ -992,52 +1004,40 @@ const renderCalList=date=>{
     div.className='card row';
     div.style.cssText='cursor:pointer;padding:10px 12px';
     div.addEventListener('click',()=>{
-      calSelectedEvId = ev.id;
       document.getElementById('cal-ev-list').style.display='none';
       document.getElementById('cal-grid').style.display='none';
       document.getElementById('cal-hdr').style.display='none';
-      document.getElementById('cal-title').parentElement.style.display='none';
-      document.getElementById('cal-ev-detail').style.display='block';
-      _showCalEvDetail(ev.id);
+      const titleRow = document.querySelector('#sec-calendario .row');
+      if(titleRow) titleRow.style.display='none';
+      const detEl = document.getElementById('cal-ev-detail');
+      detEl.style.display='block';
+      detEl.innerHTML='<button class="btn btn-ghost btn-sm" onclick="hideCalEvDetail()" style="margin-bottom:14px">← Volver al calendario</button>';
+      // Render event detail into cal-ev-detail
+      const tmpId = 'tmp-detail-'+Date.now();
+      const tmp = document.createElement('div');
+      tmp.id = 'ev-detail-view';
+      detEl.appendChild(tmp);
+      const oldDetail = document.getElementById('ev-detail-view');
+      if(oldDetail && oldDetail !== tmp) oldDetail.style.display='none';
+      _showEvDetailInner(ev.id);
+      // Move rendered content
+      const rendered = document.getElementById('ev-detail-view');
+      if(rendered && rendered !== tmp){
+        tmp.innerHTML = rendered.innerHTML;
+      }
     });
     div.innerHTML='<div style="flex:1"><div style="font-weight:700;font-size:13px">'+ev.titulo+'</div>'+(ev.horaIni?'<div style="color:var(--muted);font-size:11px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'')+'<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;margin-top:4px">'+ev.tipo+'</span></div><span style="color:var(--muted)">›</span>';
     el.appendChild(div);
   });
 };
-let calSelectedEvId = null;
-const _showCalEvDetail = id => {
-  const ev = eventos.find(e=>e.id===id); if(!ev) return;
-  const el = document.getElementById('cal-ev-detail');
-  // Reuse showEvDetail logic but render into cal-ev-detail
-  const tmpDiv = document.createElement('div');
-  tmpDiv.id = 'ev-detail-view';
-  tmpDiv.style.display = 'block';
-  document.getElementById('ev-detail-view').replaceWith(tmpDiv);
-  _showEvDetailInner(id);
-  // Replace back button behavior
-  el.innerHTML = '<button class="btn btn-ghost btn-sm" onclick="hideCalEvDetail()" style="margin-bottom:14px">← Volver al calendario</button>' + document.getElementById('ev-detail-view').innerHTML;
-  // Restore ev-detail-view
-  const newTmp = document.createElement('div');
-  newTmp.id = 'ev-detail-view';
-  newTmp.style.display = 'none';
-  tmpDiv.replaceWith(newTmp);
-};
-window.hideCalEvDetail = () => {
-  document.getElementById('cal-ev-detail').style.display='none';
-  document.getElementById('cal-ev-list').style.display='block';
-  document.getElementById('cal-grid').style.display='grid';
-  document.getElementById('cal-hdr').style.display='grid';
-  document.getElementById('cal-title').parentElement.style.display='flex';
-};
 
 // ── FIRESTORE ──
 onSnapshot(collection(db,'cantantes'),snap=>{ cantantes=snap.docs.map(d=>({id:d.id,...d.data()})); renderCantantes(); populateDirectorSelect(); });
 onSnapshot(collection(db,'canciones'),snap=>{ canciones=snap.docs.map(d=>({id:d.id,...d.data()})); renderCanciones(); renderDashboard(); });
-onSnapshot(collection(db,'musicos'),snap=>{ 
-  musicos=snap.docs.map(d=>({id:d.id,...d.data()})); 
-  allUsers=musicos; 
-  renderMusicos(); 
-  renderDashboard();
+onSnapshot(collection(db,'musicos'),snap=>{
+  musicos=snap.docs.map(d=>({id:d.id,...d.data()}));
+  allUsers=musicos;
+  renderMusicos(); renderDashboard();
   if (!CU) autoLogin();
 });
 onSnapshot(collection(db,'eventos'),snap=>{
