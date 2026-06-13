@@ -40,6 +40,7 @@ input::placeholder{color:var(--muted);}
 .nav-btn .label{font-size:9px;font-weight:600;color:var(--muted);}
 .nav-btn.active .label{color:var(--gold);}
 .dot{width:4px;height:4px;border-radius:50%;background:var(--gold);}
+.nav-admin{display:none !important;}
 .section{display:none;}
 .section.active{display:block;}
 .tag{cursor:pointer;padding:4px 10px;border-radius:8px;font-size:12px;border:1px solid var(--border);color:var(--muted);display:inline-block;margin:3px;}
@@ -278,8 +279,8 @@ input::placeholder{color:var(--muted);}
   <button class="nav-btn" data-tab="calendario"><span class="icon">📅</span><span class="label">Calendario</span></button>
   <button class="nav-btn" data-tab="eventos"><span class="icon">🗓</span><span class="label">Eventos</span></button>
   <button class="nav-btn" data-tab="canciones"><span class="icon">🎵</span><span class="label">Canciones</span></button>
-  <button class="nav-btn" data-tab="musicos"><span class="icon">🎸</span><span class="label">Músicos</span></button>
-  <button class="nav-btn" data-tab="cantantes"><span class="icon">🎤</span><span class="label">Cantantes</span></button>
+  <button class="nav-btn nav-admin" data-tab="musicos"><span class="icon">🎸</span><span class="label">Músicos</span></button>
+  <button class="nav-btn nav-admin" data-tab="cantantes"><span class="icon">🎤</span><span class="label">Cantantes</span></button>
 </nav>
 
 <!-- MODALS -->
@@ -399,7 +400,10 @@ const applyLogin = user => {
   $('login-screen').style.display='none';
   $('hdr-user').textContent = CU.nombre+' · Salir';
   $('welcome-msg').textContent = 'Bienvenido, '+CU.nombre;
-  if(CU.admin) ['btn-new-ev','btn-add-can','btn-add-mus','btn-add-cant'].forEach(id=>$(id).style.display='inline-block');
+  if(CU.admin) {
+    ['btn-new-ev','btn-add-can','btn-add-mus','btn-add-cant'].forEach(id=>$(id).style.display='inline-block');
+    document.querySelectorAll('.nav-admin').forEach(b=>b.style.removeProperty('display'));
+  }
   renderCalendar();
 };
 const autoLogin = () => {
