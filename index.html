@@ -281,7 +281,36 @@ input::placeholder{color:var(--muted);}
   <button class="nav-btn" data-tab="canciones"><span class="icon">🎵</span><span class="label">Canciones</span></button>
   <button class="nav-btn nav-admin" data-tab="musicos"><span class="icon">🎸</span><span class="label">Músicos</span></button>
   <button class="nav-btn nav-admin" data-tab="cantantes"><span class="icon">🎤</span><span class="label">Cantantes</span></button>
+  <button class="nav-btn nav-admin" data-tab="cuotas"><span class="icon">💰</span><span class="label">Cuotas</span></button>
 </nav>
+
+<!-- CUOTAS -->
+<div id="sec-cuotas" class="section content">
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <h2 style="color:var(--gold);font-size:17px;margin:0">💰 Cuotas</h2>
+  </div>
+  <div class="form-sec" style="margin-bottom:16px">
+    <h4>⚙️ Configuración</h4>
+    <label class="lbl">Monto mensual</label>
+    <div class="row">
+      <input id="cuota-monto" type="number" placeholder="Ej: 5000" style="margin:0;flex:1"/>
+      <button class="btn btn-primary btn-sm" id="btn-save-monto" style="white-space:nowrap;margin-left:8px">Guardar</button>
+    </div>
+  </div>
+  <div class="row" style="justify-content:space-between;margin-bottom:12px">
+    <h3 style="color:var(--accent);font-size:13px;margin:0" id="cuota-mes-titulo">Junio 2026</h3>
+    <div class="row" style="gap:4px">
+      <button class="btn btn-ghost btn-sm" id="btn-cuota-prev">‹</button>
+      <button class="btn btn-ghost btn-sm" id="btn-cuota-next">›</button>
+    </div>
+  </div>
+  <div id="cuotas-resumen" style="display:flex;gap:8px;margin-bottom:14px">
+    <div class="card" style="flex:1;text-align:center;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--success)" id="cuota-pagaron">0</div><div style="font-size:11px;color:var(--muted)">Pagaron</div></div>
+    <div class="card" style="flex:1;text-align:center;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--danger)" id="cuota-deben">0</div><div style="font-size:11px;color:var(--muted)">Deben</div></div>
+    <div class="card" style="flex:1;text-align:center;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--gold)" id="cuota-total">₡0</div><div style="font-size:11px;color:var(--muted)">Recaudado</div></div>
+  </div>
+  <div id="cuotas-list"></div>
+</div>
 
 <!-- MODALS -->
 <div id="mus-edit-modal" class="modal">
@@ -354,9 +383,19 @@ input::placeholder{color:var(--muted);}
   </div>
 </div>
 
+<!-- CUOTA MODAL -->
+<div id="cuota-modal" class="modal" style="z-index:700">
+  <div class="modal-box" style="text-align:center;max-width:320px">
+    <div style="font-size:48px;margin-bottom:12px">💰</div>
+    <h3 style="color:var(--gold);margin-bottom:8px">Cuota pendiente</h3>
+    <p id="cuota-modal-msg" style="color:var(--muted);font-size:13px;margin-bottom:16px;line-height:1.5"></p>
+    <button class="btn btn-primary btn-full" id="btn-cuota-ok">Entendido</button>
+  </div>
+</div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const FB = { apiKey:"AIzaSyC1OvY10grOXME6_Kdb28LTyyITIxxcjm0", authDomain:"ministerio-de-alabanza-ac3f2.firebaseapp.com", projectId:"ministerio-de-alabanza-ac3f2", storageBucket:"ministerio-de-alabanza-ac3f2.firebasestorage.app", messagingSenderId:"314404534308", appId:"1:314404534308:web:cbb3543a559a71c7a780b1" };
 const db = getFirestore(initializeApp(FB));
@@ -405,6 +444,7 @@ const applyLogin = user => {
     document.querySelectorAll('.nav-admin').forEach(b=>b.style.setProperty('display','flex','important'));
   }
   renderCalendar();
+  setTimeout(checkCuotaPendiente, 2000);
 };
 const autoLogin = () => {
   try { const s=localStorage.getItem('min_user'); if(s){const{u,p}=JSON.parse(s);const user=findUser(u,p);if(user){applyLogin(user);return true;}} } catch(e){}
@@ -946,6 +986,90 @@ function renderDashboard() {
   const nuevas=canciones.filter(c=>c.nueva);
   sEl.innerHTML='<div class="card" style="margin-bottom:10px"><div style="font-weight:700;font-size:12px;color:var(--muted);margin-bottom:8px">🎸 MÚSICOS MÁS ACTIVOS</div>'+(topMus||'<div style="color:var(--muted);font-size:12px">Sin datos aún</div>')+'</div><div class="card" style="margin-bottom:10px"><div style="font-weight:700;font-size:12px;color:var(--muted);margin-bottom:8px">🎵 CANCIONES MÁS CANTADAS</div>'+(topCan||'<div style="color:var(--muted);font-size:12px">Sin datos aún</div>')+'</div>'+(nuevas.length?'<div class="card" style="margin-bottom:10px"><div style="font-weight:700;font-size:12px;color:var(--muted);margin-bottom:8px">🆕 CANCIONES NUEVAS</div>'+nuevas.map(c=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span>🎵</span><span style="flex:1;font-size:13px">'+c.titulo+'</span></div>').join('')+'</div>':'');
 }
+
+// ── CUOTAS ──
+let cuotaMes = new Date().getMonth(), cuotaYear = new Date().getFullYear();
+let cuotaData = {}; // {musId: {YYYY-MM: true/false}}
+let cuotaMonto = 0;
+const MESES_C = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+const cuotaKey = () => cuotaYear+'-'+String(cuotaMes+1).padStart(2,'0');
+
+$('btn-save-monto').addEventListener('click', async () => {
+  const m = parseInt($('cuota-monto').value);
+  if(!m||m<=0){alert('Ingresá un monto válido');return;}
+  await updateDoc(doc(db,'config','cuotas'), {monto:m}).catch(async ()=>{
+    await addDoc(collection(db,'config'), {monto:m});
+  });
+  // Use setDoc instead
+    await setDoc(doc(db,'config','cuotas'), {monto:m});
+  cuotaMonto = m; toast('✅ Monto guardado: ₡'+m.toLocaleString());
+});
+
+$('btn-cuota-prev').addEventListener('click',()=>{cuotaMes--;if(cuotaMes<0){cuotaMes=11;cuotaYear--;}renderCuotas();});
+$('btn-cuota-next').addEventListener('click',()=>{cuotaMes++;if(cuotaMes>11){cuotaMes=0;cuotaYear++;}renderCuotas();});
+$('btn-cuota-ok').addEventListener('click',()=>$('cuota-modal').style.display='none');
+
+const toggleCuota = async (musId, paid) => {
+  const key = cuotaKey();
+    if(!cuotaData[musId]) cuotaData[musId]={};
+  cuotaData[musId][key] = !paid;
+  await setDoc(doc(db,'cuotas',musId), cuotaData[musId]);
+  renderCuotas();
+  toast(!paid ? '✅ Pago registrado' : '↩️ Pago removido');
+};
+
+function renderCuotas() {
+  const key = cuotaKey();
+  $('cuota-mes-titulo').textContent = MESES_C[cuotaMes]+' '+cuotaYear;
+  if($('cuota-monto').value==='') $('cuota-monto').value = cuotaMonto||'';
+  const el=$('cuotas-list'); el.innerHTML='';
+  const musList = musicos.filter(m=>m.username); // only musicians with accounts
+  let pagaron=0, deben=0;
+  musList.forEach(m=>{
+    const paid = cuotaData[m.id]?.[key]||false;
+    if(paid) pagaron++; else deben++;
+    const div=document.createElement('div'); div.className='card row';
+    div.innerHTML='<div class="avatar">'+roleIcon(m.rol)+'</div><div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="color:var(--muted);font-size:12px">'+(m.roles||[m.rol])[0]+'</div></div>';
+    const btn=document.createElement('button');
+    btn.className='btn btn-sm';
+    btn.style.cssText='background:'+(paid?'#7EC8A022':'#E06C7522')+';color:'+(paid?'var(--success)':'var(--danger)')+';border:1px solid '+(paid?'#7EC8A044':'#E06C7544')+';white-space:nowrap';
+    btn.textContent=paid?'✅ Pagó':'❌ Debe';
+    btn.addEventListener('click',()=>toggleCuota(m.id,paid));
+    div.appendChild(btn);
+    el.appendChild(div);
+  });
+  $('cuota-pagaron').textContent=pagaron;
+  $('cuota-deben').textContent=deben;
+  $('cuota-total').textContent='₡'+(pagaron*(cuotaMonto||0)).toLocaleString();
+}
+
+const checkCuotaPendiente = () => {
+  if(!CU||CU.admin) return;
+  const m = musicos.find(x=>x.username===CU.key);
+  if(!m) return;
+  const key = cuotaKey();
+  const paid = cuotaData[m.id]?.[key]||false;
+  if(!paid && cuotaMonto>0){
+    $('cuota-modal-msg').innerHTML='Hola <strong>'+CU.nombre+'</strong>, tenés la cuota de <strong>'+MESES_C[cuotaMes]+' '+cuotaYear+'</strong> pendiente de pago.<br><br>Monto: <strong>₡'+cuotaMonto.toLocaleString()+'</strong><br><br><span style="color:var(--muted);font-size:12px">Coordiná el pago con tu administrador</span>';
+    $('cuota-modal').style.display='flex';
+  }
+};
+
+// Firestore listener for cuotas
+// Load config
+try {
+  const cfgDoc = await getDoc(doc(db,'config','cuotas'));
+  if(cfgDoc.exists()) { cuotaMonto=cfgDoc.data().monto||0; $('cuota-monto').value=cuotaMonto; }
+} catch(e){}
+// Load cuota payments
+onSnapshot(collection(db,'cuotas'), snap=>{
+  cuotaData={};
+  snap.docs.forEach(d=>{ cuotaData[d.id]=d.data(); });
+  renderCuotas();
+  // Check after login
+  if(CU) checkCuotaPendiente();
+});
 
 // Initialize history state
 if(!history.state) history.replaceState({tab:'inicio', view:'list'}, '', location.pathname);
