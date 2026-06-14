@@ -902,23 +902,33 @@ function renderEvOrden() {
   if(!evOrden.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:12px">Sin items aún</div>';return;}
   evOrden.forEach((item,i)=>{
     const div=document.createElement('div');
-    div.style.cssText='display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:6px';
+    div.style.cssText='background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:6px';
     const icons={'cancion':'🎵','oracion':'🙏','lectura':'📖','ofrendas':'💝','anuncio':'📢','otro':'✨'};
-    div.innerHTML='<span style="color:var(--gold);font-weight:700;font-size:12px;width:18px">'+(i+1)+'</span>'
+    const topRow=document.createElement('div'); topRow.style.cssText='display:flex;align-items:center;gap:8px';
+    topRow.innerHTML='<span style="color:var(--gold);font-weight:700;font-size:12px;width:18px">'+(i+1)+'</span>'
       +'<span style="font-size:15px">'+icons[item.tipo]+'</span>'
       +'<div style="flex:1"><div style="font-size:13px;font-weight:600">'+item.titulo+'</div>'
       +(item.tono?'<div style="font-size:11px;color:var(--muted)">Tono: '+item.tono+'</div>':'')+'</div>';
-    // Move up/down buttons
     const upBtn=document.createElement('button'); upBtn.className='btn btn-ghost btn-sm'; upBtn.textContent='↑'; upBtn.style.padding='3px 7px';
     upBtn.addEventListener('click',()=>{if(i>0){[evOrden[i-1],evOrden[i]]=[evOrden[i],evOrden[i-1]];renderEvOrden();}});
     const downBtn=document.createElement('button'); downBtn.className='btn btn-ghost btn-sm'; downBtn.textContent='↓'; downBtn.style.padding='3px 7px';
     downBtn.addEventListener('click',()=>{if(i<evOrden.length-1){[evOrden[i+1],evOrden[i]]=[evOrden[i],evOrden[i+1]];renderEvOrden();}});
     const delBtn=document.createElement('button'); delBtn.className='btn btn-danger btn-sm'; delBtn.textContent='✕'; delBtn.style.padding='3px 7px';
-    delBtn.addEventListener('click',()=>{evOrden.splice(i,1);renderEvOrden();});
-    div.appendChild(upBtn); div.appendChild(downBtn); div.appendChild(delBtn);
+    delBtn.addEventListener('click',()=>{evOrden.splice(i,1);$('estructura-panel').style.display='none';renderEvOrden();});
+    topRow.appendChild(upBtn); topRow.appendChild(downBtn); topRow.appendChild(delBtn);
+    div.appendChild(topRow);
+    if(item.tipo==='cancion'){
+      const estBtn=document.createElement('button');
+      estBtn.className='btn btn-ghost btn-sm';
+      estBtn.style.cssText='margin-top:6px;font-size:11px;width:100%;text-align:left';
+      const partes=item.estructura||[];
+      estBtn.textContent=partes.length?'🎼 '+partes.map(p=>p.nombre+' ×'+p.veces).join(' → '):'+ Agregar estructura';
+      estBtn.addEventListener('click',()=>renderEstruturaPanel(i));
+      div.appendChild(estBtn);
+    }
     el.appendChild(div);
   });
-};
+}
 
 // ── EVENTO DETAIL ──
 const marcarAsist = async (evId,musId,estado) => {
