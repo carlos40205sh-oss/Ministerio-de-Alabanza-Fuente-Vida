@@ -47,6 +47,28 @@ input::placeholder{color:var(--muted);}
 .tag.sel-gold{border-color:var(--gold);background:#E8C96A22;color:var(--gold);}
 .tag.sel-accent{border-color:var(--accent);background:#7B6FD422;color:var(--accent);}
 .avatar{width:36px;height:36px;border-radius:50%;background:#7B6FD433;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+/* MODO SERVICIO */
+#modo-servicio{display:none;position:fixed;inset:0;background:var(--bg);z-index:800;flex-direction:column;overflow-y:auto;}
+.ms-header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;}
+.ms-evento-titulo{font-size:13px;font-weight:700;color:var(--gold);}
+.ms-progreso-txt{font-size:12px;color:var(--muted);}
+.ms-actual{padding:20px 16px;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;}
+.ms-icono-big{font-size:56px;margin-bottom:12px;}
+.ms-cancion-big{font-size:26px;font-weight:800;color:var(--gold);margin-bottom:4px;line-height:1.2;}
+.ms-artista-big{font-size:13px;color:var(--muted);margin-bottom:14px;}
+.ms-tono-big{background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44;border-radius:99px;padding:6px 20px;font-size:15px;font-weight:700;margin-bottom:20px;display:inline-block;}
+.ms-estructura-big{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:24px;}
+.ms-parte-big{background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:8px 14px;text-align:center;min-width:65px;}
+.ms-parte-big.ms-done{border-color:var(--accent);opacity:0.5;}
+.ms-parte-big-nombre{font-size:11px;font-weight:700;color:var(--muted);}
+.ms-parte-big.ms-done .ms-parte-big-nombre{color:var(--accent);}
+.ms-parte-big-veces{font-size:20px;font-weight:800;color:var(--text);}
+.ms-nav-btns{display:flex;gap:10px;padding:16px;position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border);}
+.ms-btn-prev{flex:1;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--muted);font-family:inherit;font-weight:700;font-size:15px;cursor:pointer;}
+.ms-btn-next{flex:2;padding:14px;border:none;border-radius:14px;background:var(--gold);color:#0F0E1A;font-family:inherit;font-weight:800;font-size:16px;cursor:pointer;}
+.ms-siguiente-preview{margin:0 16px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;}
+.ms-progress-bar{height:3px;background:var(--border);margin:0 16px;}
+.ms-progress-fill{height:100%;background:var(--gold);border-radius:99px;transition:width .3s;}
 #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--success);color:#0F0E1A;padding:8px 20px;border-radius:99px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
 #login-screen{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;}
 .login-box{width:100%;max-width:360px;}
@@ -461,6 +483,30 @@ input::placeholder{color:var(--muted);}
     <h3 style="color:var(--gold);margin-bottom:8px">Cuota pendiente</h3>
     <p id="cuota-modal-msg" style="color:var(--muted);font-size:13px;margin-bottom:16px;line-height:1.5"></p>
     <button class="btn btn-primary btn-full" id="btn-cuota-ok">Entendido</button>
+  </div>
+</div>
+
+<!-- MODO SERVICIO -->
+<div id="modo-servicio">
+  <div class="ms-header">
+    <div>
+      <div style="font-size:11px;color:var(--muted)">⭐ Modo Servicio</div>
+      <div class="ms-evento-titulo" id="ms-ev-titulo"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="ms-progreso-txt" id="ms-progreso"></span>
+      <button onclick="salirModoServicio()" style="border:none;background:var(--danger);color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">✕ Salir</button>
+    </div>
+  </div>
+  <div class="ms-progress-bar"><div class="ms-progress-fill" id="ms-progress-fill"></div></div>
+  <div class="ms-actual" id="ms-actual-content"></div>
+  <div class="ms-siguiente-preview" id="ms-siguiente-preview" style="display:none">
+    <span style="font-size:24px" id="ms-sig-icono"></span>
+    <div><div style="font-size:11px;color:var(--muted)">A continuación:</div><div style="font-size:13px;font-weight:700" id="ms-sig-titulo"></div></div>
+  </div>
+  <div class="ms-nav-btns">
+    <button class="ms-btn-prev" onclick="msAnterior()">← Anterior</button>
+    <button class="ms-btn-next" onclick="msSiguiente()" id="ms-btn-next">Siguiente →</button>
   </div>
 </div>
 
@@ -1023,6 +1069,14 @@ const buildEvDetail = (ev, backFn) => {
   backBtn.addEventListener('click',backFn);
   const title=document.createElement('h2'); title.style.cssText='color:var(--gold);font-size:15px;margin:0;flex:1'; title.textContent=ev.titulo;
   hdr.appendChild(backBtn); hdr.appendChild(title);
+  // Modo Servicio button (visible for all if event has orden)
+  if((ev.orden||[]).length > 0) {
+    const msBtn=document.createElement('button');
+    msBtn.style.cssText='border:none;background:var(--gold);color:#0F0E1A;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap';
+    msBtn.textContent='⭐ Modo Servicio';
+    msBtn.addEventListener('click',()=>iniciarModoServicio(ev));
+    hdr.appendChild(msBtn);
+  }
   if(CU&&CU.admin){
     const editBtn=document.createElement('button'); editBtn.className='btn btn-accent btn-sm'; editBtn.textContent='✏️';
     editBtn.addEventListener('click',()=>showEvForm(ev.id));
@@ -1511,7 +1565,6 @@ const checkAnuncioNuevo = (anuncios) => {
 
 function renderAnuncios(anuncios) {
   const el = $('anuncios-list'); el.innerHTML = '';
-  // Show add button for admins
   const addBtn = $('anuncio-form');
   if(CU&&CU.admin) addBtn.style.display = 'block';
   if(!anuncios.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No hay anuncios</div>';return;}
@@ -1549,6 +1602,97 @@ onSnapshot(collection(db,'anuncios'), snap => {
   renderAnuncios(anunciosData);
   if(CU) setTimeout(()=>checkAnuncioNuevo(anunciosData), 6000);
 });
+
+// ── MODO SERVICIO ──
+let msEvento = null, msIdx = 0;
+const msIcons = {'cancion':'🎵','oracion':'🙏','lectura':'📖','ofrendas':'💝','anuncio':'📢','otro':'✨'};
+
+window.iniciarModoServicio = (ev) => {
+  msEvento = ev;
+  msIdx = 0;
+  $('modo-servicio').style.display = 'flex';
+  $('modo-servicio').style.flexDirection = 'column';
+  document.body.style.overflow = 'hidden';
+  $('ms-ev-titulo').textContent = ev.titulo;
+  msRender();
+};
+
+window.salirModoServicio = () => {
+  $('modo-servicio').style.display = 'none';
+  document.body.style.overflow = '';
+};
+
+window.msSiguiente = () => {
+  const orden = msEvento.orden || [];
+  if(msIdx < orden.length - 1) { msIdx++; msRender(); }
+  else { if(confirm('¿Finalizar el servicio?')) salirModoServicio(); }
+};
+
+window.msAnterior = () => {
+  if(msIdx > 0) { msIdx--; msRender(); }
+};
+
+const msRender = () => {
+  const orden = msEvento.orden || [];
+  if(!orden.length) return;
+  const item = orden[msIdx];
+  const total = orden.length;
+  
+  // Progress
+  $('ms-progreso').textContent = (msIdx+1)+' / '+total;
+  $('ms-progress-fill').style.width = ((msIdx+1)/total*100)+'%';
+  
+  // Next button text
+  $('ms-btn-next').textContent = msIdx === total-1 ? '🏁 Finalizar' : 'Siguiente →';
+  
+  // Build current item content
+  const el = $('ms-actual-content'); el.innerHTML = '';
+  
+  if(item.tipo === 'cancion') {
+    const cancion = canciones.find(c=>c.id===item.cancionId);
+    el.innerHTML = '<div class="ms-icono-big">🎵</div>'
+      +'<div class="ms-cancion-big">'+item.titulo+'</div>'
+      +(cancion&&cancion.artista?'<div class="ms-artista-big">'+cancion.artista+'</div>':'')
+      +(item.tono?'<div class="ms-tono-big">🎼 '+item.tono+'</div>':'');
+    
+    // Estructura
+    const partes = item.estructura || [];
+    if(partes.length) {
+      const estDiv = document.createElement('div'); estDiv.className='ms-estructura-big';
+      partes.forEach((p,i) => {
+        const pd = document.createElement('div'); pd.className='ms-parte-big';
+        pd.innerHTML='<div class="ms-parte-big-nombre">'+p.nombre+'</div><div class="ms-parte-big-veces">×'+p.veces+'</div>';
+        estDiv.appendChild(pd);
+        if(i<partes.length-1){const arr=document.createElement('span');arr.style.cssText='color:var(--muted);font-size:16px;align-self:center';arr.textContent='→';estDiv.appendChild(arr);}
+      });
+      el.appendChild(estDiv);
+    }
+    
+    // Links
+    if(cancion&&(cancion.linkLetra||cancion.linkAcordes||cancion.linkYoutube)){
+      const linksDiv = document.createElement('div'); linksDiv.style.cssText='display:flex;gap:10px;justify-content:center;margin-bottom:20px';
+      if(cancion.linkLetra) linksDiv.innerHTML+='<a href="'+cancion.linkLetra+'" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid #7B6FD444;color:var(--accent);background:#7B6FD411">📄 Letra</a>';
+      if(cancion.linkAcordes) linksDiv.innerHTML+='<a href="'+cancion.linkAcordes+'" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid #E8C96A44;color:var(--gold);background:#E8C96A11">🎼 Acordes</a>';
+      if(cancion.linkYoutube) linksDiv.innerHTML+='<a href="'+cancion.linkYoutube+'" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid #FF000044;color:#FF4444;background:#FF000011">🎬 YouTube</a>';
+      el.appendChild(linksDiv);
+    }
+  } else {
+    // Non-song item
+    const icon = msIcons[item.tipo]||'✨';
+    el.innerHTML = '<div style="font-size:72px;margin-bottom:20px">'+icon+'</div>'
+      +'<div style="font-size:24px;font-weight:800;color:var(--gold)">'+item.titulo+'</div>';
+  }
+  
+  // Next item preview
+  if(msIdx < total - 1) {
+    const next = orden[msIdx+1];
+    $('ms-siguiente-preview').style.display='flex';
+    $('ms-sig-icono').textContent = msIcons[next.tipo]||'✨';
+    $('ms-sig-titulo').textContent = next.titulo;
+  } else {
+    $('ms-siguiente-preview').style.display='none';
+  }
+};
 
 // Initialize history state
 if(!history.state) history.replaceState({tab:'inicio', view:'list'}, '', location.pathname);
