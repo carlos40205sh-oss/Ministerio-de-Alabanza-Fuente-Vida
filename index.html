@@ -193,30 +193,7 @@ input::placeholder{color:var(--muted);}
         </div>
         <div id="ev-can-tags" style="margin-bottom:8px"></div>
         <div id="ev-orden-list"></div>
-        <!-- Estructura modal -->
-        <div id="estructura-panel" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:8px">
-          <div style="font-weight:700;font-size:13px;color:var(--gold);margin-bottom:10px">🎼 Estructura de: <span id="estructura-song-name"></span></div>
-          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="estructura-partes-list"></div>
-          <div style="display:flex;gap:6px;margin-bottom:8px">
-            <select id="estructura-tipo" style="flex:1;margin:0;font-size:12px;padding:6px">
-              <option value="Intro">Intro</option>
-              <option value="Estrofa">Estrofa</option>
-              <option value="Coro">Coro</option>
-              <option value="Pre-Coro">Pre-Coro</option>
-              <option value="Bridge">Bridge</option>
-              <option value="Outro">Outro</option>
-              <option value="Instrumental">Instrumental</option>
-            </select>
-            <select id="estructura-veces" style="width:60px;margin:0;font-size:12px;padding:6px">
-              <option value="1">×1</option>
-              <option value="2">×2</option>
-              <option value="3">×3</option>
-              <option value="4">×4</option>
-            </select>
-            <button class="btn btn-accent btn-sm" id="btn-add-parte">+ Agregar</button>
-          </div>
-          <button class="btn btn-primary btn-sm" id="btn-save-estructura" style="width:100%">💾 Guardar estructura</button>
-        </div>
+
       </div>
     </div>
     <button class="btn btn-primary btn-full" id="btn-save-ev">💾 Guardar evento</button>
@@ -917,6 +894,64 @@ function renderEstructuraPartes(partes) {
     if(i<partes.length-1){const arr=document.createElement('span');arr.style.cssText='color:var(--muted);font-size:11px;margin:0 2px';arr.textContent='→';el.appendChild(arr);}
   });
 }
+function buildEstructuraEditor(idx) {
+  const item = evOrden[idx];
+  const panel = document.createElement('div');
+  panel.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;margin-top:6px';
+  
+  const renderPartes = () => {
+    panel.innerHTML = '';
+    const partes = item.estructura || [];
+    // Show current parts
+    if(partes.length) {
+      const partesRow = document.createElement('div');
+      partesRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;align-items:center';
+      partes.forEach((p,pi) => {
+        const sp = document.createElement('div');
+        sp.style.cssText = 'display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px';
+        sp.innerHTML = '<span style="font-weight:600">'+p.nombre+'</span><span style="background:var(--accent);color:#fff;border-radius:99px;padding:0 6px;font-size:10px">×'+p.veces+'</span>';
+        const rm = document.createElement('button');
+        rm.style.cssText = 'border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:11px;padding:0 2px';
+        rm.textContent = '✕';
+        rm.addEventListener('click', () => { partes.splice(pi,1); item.estructura=partes; renderPartes(); });
+        sp.appendChild(rm);
+        partesRow.appendChild(sp);
+        if(pi < partes.length-1) { const arr=document.createElement('span'); arr.style.cssText='color:var(--muted);font-size:12px'; arr.textContent='→'; partesRow.appendChild(arr); }
+      });
+      panel.appendChild(partesRow);
+    }
+    // Add new parte row
+    const addRow = document.createElement('div');
+    addRow.style.cssText = 'display:flex;gap:6px;align-items:center';
+    const tipoSel = document.createElement('select');
+    tipoSel.style.cssText = 'flex:1;margin:0;font-size:12px;padding:5px';
+    ['Intro','Estrofa','Coro','Pre-Coro','Bridge','Outro','Instrumental'].forEach(t => {
+      const o = document.createElement('option'); o.value=t; o.textContent=t; tipoSel.appendChild(o);
+    });
+    const vecesSel = document.createElement('select');
+    vecesSel.style.cssText = 'width:55px;margin:0;font-size:12px;padding:5px';
+    [1,2,3,4,5,6].forEach(n => {
+      const o = document.createElement('option'); o.value=n; o.textContent='×'+n; vecesSel.appendChild(o);
+    });
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn btn-accent btn-sm';
+    addBtn.textContent = '+ Agregar';
+    addBtn.addEventListener('click', () => {
+      if(!item.estructura) item.estructura = [];
+      item.estructura.push({nombre:tipoSel.value, veces:parseInt(vecesSel.value)});
+      renderPartes();
+    });
+    const doneBtn = document.createElement('button');
+    doneBtn.className = 'btn btn-ghost btn-sm';
+    doneBtn.textContent = '✓ Listo';
+    doneBtn.addEventListener('click', () => { renderEvOrden(); toast('✅ Estructura guardada'); });
+    addRow.appendChild(tipoSel); addRow.appendChild(vecesSel); addRow.appendChild(addBtn); addRow.appendChild(doneBtn);
+    panel.appendChild(addRow);
+  };
+  renderPartes();
+  return panel;
+}
+
 function renderEvOrden() {
   const el = $('ev-orden-list'); el.innerHTML='';
   if(!evOrden.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:12px">Sin items aún</div>';return;}
@@ -943,7 +978,14 @@ function renderEvOrden() {
       estBtn.style.cssText='margin-top:6px;font-size:11px;width:100%;text-align:left';
       const partes=item.estructura||[];
       estBtn.textContent=partes.length?'🎼 '+partes.map(p=>p.nombre+' ×'+p.veces).join(' → '):'+ Agregar estructura';
-      estBtn.addEventListener('click',()=>renderEstruturaPanel(i));
+      estBtn.addEventListener('click',()=>{
+        // Toggle inline editor
+        const existing = div.querySelector('.estructura-editor');
+        if(existing){ existing.remove(); return; }
+        const editor = buildEstructuraEditor(i);
+        editor.className = 'estructura-editor';
+        div.appendChild(editor);
+      });
       div.appendChild(estBtn);
     }
     el.appendChild(div);
