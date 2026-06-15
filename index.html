@@ -915,6 +915,20 @@ function renderEvMusTags() {
     div.appendChild(sel); div.appendChild(rmBtn); listEl.appendChild(div);
   });
 };
+function renderEvPulperiaTags() {
+  const tagsEl=$('ev-pulperia-tags'); if(!tagsEl) return; tagsEl.innerHTML='';
+  musicos.forEach(m=>{
+    const sel = evPulperia.includes(m.id);
+    const span=document.createElement('span'); span.className='tag '+(sel?'sel-accent':'');
+    span.textContent=roleIcon(m.rol)+' '+m.nombre;
+    span.addEventListener('click',()=>{
+      const i=evPulperia.indexOf(m.id);
+      if(i>=0) evPulperia.splice(i,1); else evPulperia.push(m.id);
+      renderEvPulperiaTags();
+    });
+    tagsEl.appendChild(span);
+  });
+}
 function renderEvCanTags() {
   const tagsEl=$('ev-can-tags'); tagsEl.innerHTML='';
   // Only show cancion selector when tipo is cancion
