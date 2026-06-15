@@ -202,6 +202,7 @@ input::placeholder{color:var(--muted);}
       <div class="form-sec">
         <h4>🛒 Pulpería</h4>
         <div id="ev-pulperia-tags" style="margin-bottom:8px"></div>
+        <div id="ev-pulperia-list"></div>
       </div>
       <div class="form-sec">
         <h4>📋 Orden del servicio</h4>
@@ -928,6 +929,16 @@ function renderEvPulperiaTags() {
     });
     tagsEl.appendChild(span);
   });
+  // Show selected list
+  const listEl=$('ev-pulperia-list'); if(!listEl) return; listEl.innerHTML='';
+  evPulperia.forEach(musId=>{
+    const m=musicos.find(x=>x.id===musId); if(!m) return;
+    const div=document.createElement('div'); div.className='assigned-item';
+    div.innerHTML='<span style="font-size:15px">'+roleIcon(m.rol)+'</span><span style="flex:1;font-size:13px;font-weight:600">'+m.nombre+'</span>';
+    const rmBtn=document.createElement('button'); rmBtn.className='btn btn-danger btn-sm'; rmBtn.textContent='✕';
+    rmBtn.addEventListener('click',()=>{evPulperia.splice(evPulperia.indexOf(musId),1);renderEvPulperiaTags();});
+    div.appendChild(rmBtn); listEl.appendChild(div);
+  });
 }
 function renderEvCanTags() {
   const tagsEl=$('ev-can-tags'); tagsEl.innerHTML='';
@@ -1129,6 +1140,18 @@ const buildEvDetail = (ev, backFn) => {
     wrap.appendChild(ay);
   } else {
     if(presididor){const ds=document.createElement('div');ds.className='ev-sec';ds.innerHTML='<h4>🎤 Presididor</h4><div class="row"><div class="avatar">'+roleIcon(dirRol)+'</div><div style="font-weight:600;font-size:14px">'+presididor.nombre+'</div><span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+dirRol+'</span></div>';wrap.appendChild(ds);}
+    // Define role groups
+    const VOICE_ROLES = ['Voz','Líder'];
+    const SOUND_ROLES = ['Sonidista'];
+    const MULTI_ROLES = ['Presentación','Transmisión'];
+
+    const getGroup = (rol) => {
+      if(VOICE_ROLES.includes(rol)) return 'voces';
+      if(SOUND_ROLES.includes(rol)) return 'sonido';
+      if(MULTI_ROLES.includes(rol)) return 'multimedia';
+      return 'musicos';
+    };
+
     // Helper to build attendance row
     const makeAsistRow = (m, rol, asist, evId, colorAccent) => {
       const est=asist[m.id]||'pendiente';
@@ -1149,30 +1172,37 @@ const buildEvDetail = (ev, backFn) => {
     };
 
     const asist=ev.asistencia||{};
-    // Split asignados into musicians and voices
-    const VOICE_ROLES = ['Voz','Líder'];
-    const musAsign = (ev.asignados||[]).filter(a=>{ const m=musicos.find(x=>x.id===a.musId); return m&&!VOICE_ROLES.includes(a.rol)&&a.rol!=='Voz'||false; });
-    const vocAsign = (ev.asignados||[]).filter(a=>VOICE_ROLES.includes(a.rol)||a.rol==='Voz');
-    const pulpAsign = (ev.pulperia||[]);
+    const pulpAsist=ev.asistenciaPulperia||{};
 
-    // Músicos section
-    if((ev.asignados||[]).length){
+    // Group asignados by role type
+    const groups = {
+      musicos: {label:'🎸 Músicos', color:'#7B6FD4', items:[]},
+      voces:   {label:'🎙️ Voces',   color:'#F0A500', items:[]},
+      sonido:  {label:'🔊 Sonido',  color:'#E8C96A', items:[]},
+      multimedia:{label:'📡 Multimedia', color:'#7EC8A0', items:[]}
+    };
+    (ev.asignados||[]).forEach(a=>{
+      const g = getGroup(a.rol);
+      if(groups[g]) groups[g].items.push(a);
+    });
+
+    // Render each group
+    Object.entries(groups).forEach(([key, grp])=>{
+      if(!grp.items.length) return;
       const es=document.createElement('div'); es.className='ev-sec';
-      es.innerHTML='<h4 style="color:var(--accent)">🎸 Músicos ('+(ev.asignados||[]).length+')</h4>';
-      ev.asignados.forEach(a=>{
+      es.innerHTML='<h4 style="color:'+grp.color+'">'+grp.label+' ('+grp.items.length+')</h4>';
+      grp.items.forEach(a=>{
         const m=musicos.find(x=>x.id===a.musId); if(!m) return;
-        es.appendChild(makeAsistRow(m, a.rol, asist, ev.id, '#7B6FD4'));
+        es.appendChild(makeAsistRow(m, a.rol, asist, ev.id, grp.color));
       });
-      const pres=Object.values(asist).filter(v=>v==='llego').length, aus=Object.values(asist).filter(v=>v==='no-llego').length;
-      if(pres||aus){const sum=document.createElement('div');sum.style.cssText='margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;gap:10px';sum.innerHTML='<span style="font-size:12px;color:var(--success)">✅ '+pres+'</span><span style="font-size:12px;color:var(--danger)">❌ '+aus+'</span>';es.appendChild(sum);}
       wrap.appendChild(es);
-    }
+    });
 
     // Pulpería section
+    const pulpAsign = ev.pulperia||[];
     if(pulpAsign.length){
       const ps=document.createElement('div'); ps.className='ev-sec';
       ps.innerHTML='<h4 style="color:var(--success)">🛒 Pulpería ('+pulpAsign.length+')</h4>';
-      const pulpAsist = ev.asistenciaPulperia||{};
       pulpAsign.forEach(musId=>{
         const m=musicos.find(x=>x.id===musId); if(!m) return;
         ps.appendChild(makeAsistRow(m, '', pulpAsist, ev.id+'_pulp', '#7EC8A0'));
