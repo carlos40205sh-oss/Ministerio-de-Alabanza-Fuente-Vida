@@ -872,7 +872,15 @@ const presididorRolStr = val => { if(!val) return ''; if(val.startsWith('c_')){c
 // ── EVENTOS ──
 $('btn-new-ev').addEventListener('click',()=>showEvForm(null));
 $('btn-ev-back').addEventListener('click',()=>hideEvForm());
-$('ev-tipo').addEventListener('change',()=>$('ev-extra').style.display=$('ev-tipo').value==='Ayuno'?'none':'block');
+$('ev-tipo').addEventListener('change',()=>{
+  const isAyuno = $('ev-tipo').value==='Ayuno';
+  $('ev-extra').style.display=isAyuno?'none':'block';
+  if(isAyuno){
+    // Auto-assign all musicians
+    evAssigned = musicos.map(m=>({musId:m.id, rol:m.rol||'Voz'}));
+    evVoz = []; evSonido = []; evMulti = []; evPulperia = [];
+  }
+});
 $('ev-orden-tipo').addEventListener('change', renderEvCanTags);
 $('btn-add-orden').addEventListener('click', () => {
   const tipo = $('ev-orden-tipo').value;
@@ -885,7 +893,8 @@ $('btn-save-ev').addEventListener('click', async () => {
   const titulo=$('ev-titulo').value.trim(), fecha=$('ev-fecha').value;
   if(!titulo||!fecha){alert('Título y fecha son requeridos');return;}
   const tipo=$('ev-tipo').value;
-  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),director:tipo!=='Ayuno'?$('ev-presididor').value:'',asignados:tipo!=='Ayuno'?evAssigned:[],vozAsignados:tipo!=='Ayuno'?evVoz:[],sonidoAsignados:tipo!=='Ayuno'?evSonido:[],multiAsignados:tipo!=='Ayuno'?evMulti:[],setlist:tipo!=='Ayuno'?evSetlist:[],orden:tipo!=='Ayuno'?evOrden:[],pulperia:tipo!=='Ayuno'?evPulperia:[]};
+  const todosAsignados = tipo==='Ayuno' ? musicos.map(m=>({musId:m.id, rol:m.rol||'Voz'})) : evAssigned;
+  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),director:tipo!=='Ayuno'?$('ev-presididor').value:'',asignados:todosAsignados,vozAsignados:tipo!=='Ayuno'?evVoz:[],sonidoAsignados:tipo!=='Ayuno'?evSonido:[],multiAsignados:tipo!=='Ayuno'?evMulti:[],setlist:tipo!=='Ayuno'?evSetlist:[],orden:tipo!=='Ayuno'?evOrden:[],pulperia:tipo!=='Ayuno'?evPulperia:[]};
   if(editingEvId){await updateDoc(doc(db,'eventos',editingEvId),data);toast('✅ Evento actualizado');}
   else{await addDoc(collection(db,'eventos'),{...data,creadoEn:Date.now()});toast('✅ Evento guardado');}
   editingEvId=null; hideEvForm();
