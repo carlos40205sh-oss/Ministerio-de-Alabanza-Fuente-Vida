@@ -1,177 +1,1858 @@
-const { onSchedule } = require("firebase-functions/v2/scheduler");
-const { onDocumentCreated } = require("firebase-functions/v2/firestore");
-const { setGlobalOptions } = require("firebase-functions/v2");
-const admin = require("firebase-admin");
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="theme-color" content="#0F0E1A"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="Ministerio"/>
+<link rel="manifest" href="manifest.json"/>
+<title>Ministerio de Alabanza</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0F0E1A;--surface:#1A1830;--card:#221F3B;--border:#2E2B4A;
+  --gold:#E8C96A;--gold-dim:#A8922E;--accent:#7B6FD4;
+  --text:#F0EDE8;--muted:#9590B0;--danger:#E06C75;--success:#7EC8A0;--warn:#F0A500;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding-bottom:80px;min-height:100vh;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;}
+header h1{font-size:15px;font-weight:800;color:var(--gold);}
+.content{padding:16px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;}
+input,select{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:8px 12px;width:100%;outline:none;margin-bottom:8px;}
+input::placeholder{color:var(--muted);}
+.btn{border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:600;font-size:14px;padding:9px 18px;transition:opacity .15s;}
+.btn:active{opacity:.8;}
+.btn-primary{background:var(--gold);color:#0F0E1A;}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-danger{background:#E06C7522;color:var(--danger);border:1px solid #E06C7544;}
+.btn-accent{background:var(--accent);color:#fff;}
+.btn-sm{font-size:12px;padding:5px 12px;}
+.btn-full{width:100%;}
+.row{display:flex;gap:8px;align-items:center;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:200;}
+.nav-btn{flex:1;background:none;border:none;cursor:pointer;padding:8px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit;}
+.nav-btn .icon{font-size:16px;}
+.nav-btn .label{font-size:9px;font-weight:600;color:var(--muted);}
+.nav-btn.active .label{color:var(--gold);}
+.dot{width:4px;height:4px;border-radius:50%;background:var(--gold);}
+.nav-admin{display:none !important;}
+.section{display:none;}
+.section.active{display:block;}
+.tag{cursor:pointer;padding:4px 10px;border-radius:8px;font-size:12px;border:1px solid var(--border);color:var(--muted);display:inline-block;margin:3px;}
+.tag.sel-gold{border-color:var(--gold);background:#E8C96A22;color:var(--gold);}
+.tag.sel-accent{border-color:var(--accent);background:#7B6FD422;color:var(--accent);}
+.avatar{width:36px;height:36px;border-radius:50%;background:#7B6FD433;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+/* MODO SERVICIO */
+#modo-servicio{display:none;position:fixed;inset:0;background:var(--bg);z-index:800;flex-direction:column;overflow-y:auto;}
+.ms-header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;}
+.ms-evento-titulo{font-size:13px;font-weight:700;color:var(--gold);}
+.ms-progreso-txt{font-size:12px;color:var(--muted);}
+.ms-actual{padding:20px 16px;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;}
+.ms-icono-big{font-size:56px;margin-bottom:12px;}
+.ms-cancion-big{font-size:26px;font-weight:800;color:var(--gold);margin-bottom:4px;line-height:1.2;}
+.ms-artista-big{font-size:13px;color:var(--muted);margin-bottom:14px;}
+.ms-tono-big{background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44;border-radius:99px;padding:6px 20px;font-size:15px;font-weight:700;margin-bottom:20px;display:inline-block;}
+.ms-estructura-big{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:24px;}
+.ms-parte-big{background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:8px 14px;text-align:center;min-width:65px;}
+.ms-parte-big.ms-done{border-color:var(--accent);opacity:0.5;}
+.ms-parte-big-nombre{font-size:11px;font-weight:700;color:var(--muted);}
+.ms-parte-big.ms-done .ms-parte-big-nombre{color:var(--accent);}
+.ms-parte-big-veces{font-size:20px;font-weight:800;color:var(--text);}
+.ms-nav-btns{display:flex;gap:10px;padding:16px;position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border);}
+.ms-btn-prev{flex:1;padding:14px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--muted);font-family:inherit;font-weight:700;font-size:15px;cursor:pointer;}
+.ms-btn-next{flex:2;padding:14px;border:none;border-radius:14px;background:var(--gold);color:#0F0E1A;font-family:inherit;font-weight:800;font-size:16px;cursor:pointer;}
+.ms-siguiente-preview{margin:0 16px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;}
+.ms-progress-bar{height:3px;background:var(--border);margin:0 16px;}
+.ms-progress-fill{height:100%;background:var(--gold);border-radius:99px;transition:width .3s;}
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--success);color:#0F0E1A;padding:8px 20px;border-radius:99px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+#login-screen{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;}
+.login-box{width:100%;max-width:360px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:12px;}
+.cal-hdr-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;}
+.cal-dn{text-align:center;font-size:10px;color:var(--muted);font-weight:600;padding:3px 0;}
+.cal-day{min-height:38px;border-radius:8px;padding:3px;cursor:pointer;}
+.cal-day.has-ev{background:var(--card);border:1px solid var(--border);}
+.cal-day.today{border:1px solid var(--gold)!important;}
+.cal-day.selected{border:1px solid var(--accent)!important;background:var(--card);}
+.cal-day-num{font-size:11px;font-weight:600;color:var(--muted);text-align:center;}
+.cal-day.has-ev .cal-day-num,.cal-day.selected .cal-day-num{color:var(--text);}
+.cal-dot{width:5px;height:5px;border-radius:50%;margin:2px auto 0;}
+.ev-sec{background:var(--surface);border-radius:12px;padding:12px;margin-bottom:10px;}
+.ev-sec h4{color:var(--accent);font-size:12px;margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.rol-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);}
+.rol-row:last-child{border-bottom:none;}
+.form-sec{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;}
+.form-sec h4{color:var(--gold);font-size:13px;margin-bottom:10px;font-weight:700;}
+.lbl{color:var(--muted);font-size:12px;display:block;margin-bottom:4px;}
+.assigned-item{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:8px;padding:7px 10px;margin-bottom:6px;}
+.link-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;border:1px solid var(--border);color:var(--accent);background:#7B6FD411;}
+.modal{display:none;position:fixed;inset:0;background:#000000BB;z-index:600;align-items:center;justify-content:center;padding:16px;}
+.modal-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;}
+.roles-check{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.roles-check label{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px 10px;}
+.chk-lbl{color:var(--muted);font-size:13px;display:flex;gap:8px;align-items:center;margin-bottom:8px;cursor:pointer;}
+.grp-header{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+</style>
+</head>
+<body>
 
-admin.initializeApp();
-setGlobalOptions({ maxInstances: 2, region: "us-central1" });
+<div id="login-screen">
+  <div class="login-box">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:44px">✨</div>
+      <h1 style="color:var(--gold);font-size:20px;margin:8px 0 4px">Ministerio de Alabanza</h1>
+      <p style="color:var(--muted);font-size:13px">Ingresá con tu cuenta</p>
+    </div>
+    <input id="login-user" placeholder="Usuario" autocomplete="off"/>
+    <input id="login-pass" type="password" placeholder="Contraseña"/>
+    <div id="login-err" style="color:var(--danger);font-size:12px;margin-bottom:8px;display:none">Usuario o contraseña incorrectos</div>
+    <label class="chk-lbl" style="justify-content:center;margin-bottom:8px"><input type="checkbox" id="remember-me"/> Recordarme</label>
+    <button class="btn btn-primary btn-full" id="btn-entrar">Entrar</button>
+  </div>
+</div>
 
-const db = admin.firestore();
+<header>
+  <h1>✨ Ministerio de Alabanza</h1>
+  <span id="hdr-user" style="font-size:11px;color:var(--muted);cursor:pointer"></span>
+</header>
+<div id="toast"></div>
 
-// Runs every day at 8am Costa Rica time (UTC-6 = 14:00 UTC)
-exports.notificarEventos = onSchedule("0 14 * * *", async () => {
-  const hoy = new Date();
-  const manana = new Date(hoy);
-  manana.setDate(manana.getDate() + 1);
+<!-- INICIO -->
+<div id="sec-inicio" class="section active content">
+  <div style="background:linear-gradient(135deg,#4A3F9F33,#A8922E22);border:1px solid #E8C96A33;border-radius:16px;padding:18px;margin-bottom:18px">
+    <div style="font-size:20px">✨</div>
+    <h2 style="color:var(--gold);font-size:18px;margin:5px 0 3px">Ministerio de Alabanza</h2>
+    <p style="color:var(--muted);font-size:13px" id="welcome-msg">Bienvenido</p>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px">
+    <div class="card" style="text-align:center;padding:12px 8px"><div style="font-size:24px;font-weight:800;color:var(--gold)" id="st-c">0</div><div style="font-size:11px;color:var(--muted)">Canciones</div></div>
+    <div class="card" style="text-align:center;padding:12px 8px"><div style="font-size:24px;font-weight:800;color:var(--accent)" id="st-m">0</div><div style="font-size:11px;color:var(--muted)">Músicos</div></div>
+    <div class="card" style="text-align:center;padding:12px 8px"><div style="font-size:24px;font-weight:800;color:var(--success)" id="st-e">0</div><div style="font-size:11px;color:var(--muted)">Eventos</div></div>
+  </div>
+  <div id="bday-hoy" style="display:none;background:linear-gradient(135deg,#E8C96A33,#F0A50022);border:1px solid var(--gold);border-radius:12px;padding:14px;margin-bottom:14px"></div>
+  <h3 style="color:var(--accent);font-size:13px;margin-bottom:10px">PRÓXIMOS EVENTOS</h3>
+  <div id="proximos-list"></div>
+  <h3 style="color:var(--accent);font-size:13px;margin-bottom:10px;margin-top:20px">🎂 CUMPLEAÑOS DEL MES</h3>
+  <div id="bday-mes"></div>
+  <h3 style="color:var(--accent);font-size:13px;margin-bottom:10px;margin-top:20px">📊 ESTADÍSTICAS</h3>
+  <div id="stats-section"></div>
+</div>
 
-  const fmtDate = d => d.toISOString().slice(0, 10);
-  const hoyStr = fmtDate(hoy);
-  const mananaStr = fmtDate(manana);
+<!-- CALENDARIO -->
+<div id="sec-calendario" class="section content">
+  <div class="row" style="justify-content:space-between;margin-bottom:14px" id="cal-title-row">
+    <h2 style="color:var(--gold);font-size:17px;margin:0">📅 Calendario</h2>
+    <div class="row" style="gap:4px">
+      <button class="btn btn-ghost btn-sm" id="cal-prev-btn">‹</button>
+      <span id="cal-title" style="font-size:13px;font-weight:700;color:var(--text);min-width:110px;text-align:center"></span>
+      <button class="btn btn-ghost btn-sm" id="cal-next-btn">›</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:10px;font-size:11px" id="cal-legend"><span>🟣 Servicio</span><span>🟡 Ensayo</span><span>🟢 Ayuno</span></div>
+  <div class="cal-hdr-row" id="cal-hdr"></div>
+  <div class="cal-grid" id="cal-grid"></div>
+  <div id="cal-ev-list"></div>
+  <div id="cal-ev-detail" style="display:none"></div>
+</div>
 
-  const eventosSnap = await db.collection("eventos")
-    .where("fecha", "in", [hoyStr, mananaStr])
-    .get();
+<!-- EVENTOS -->
+<div id="sec-eventos" class="section content">
+  <div id="ev-list-view">
+    <div class="row" style="justify-content:space-between;margin-bottom:14px">
+      <h2 style="color:var(--gold);font-size:17px;margin:0">🗓 Eventos</h2>
+      <button class="btn btn-primary btn-sm" id="btn-new-ev" style="display:none">+ Nuevo</button>
+    </div>
+    <div id="eventos-list"></div>
+  </div>
+  <div id="ev-form-view" style="display:none">
+    <div class="row" style="margin-bottom:14px">
+      <button class="btn btn-ghost btn-sm" id="btn-ev-back">← Volver</button>
+      <h2 id="ev-form-title" style="color:var(--gold);font-size:15px;margin:0">Nuevo evento</h2>
+    </div>
+    <div class="form-sec">
+      <h4>📋 General</h4>
+      <label class="lbl">Título</label><input id="ev-titulo" placeholder="Ej: Servicio Domingo AM"/>
+      <div class="grid2">
+        <div><label class="lbl">Fecha</label><input id="ev-fecha" type="date"/></div>
+        <div><label class="lbl">Tipo</label>
+          <select id="ev-tipo"><option value="Servicio">Servicio</option><option value="Ensayo">Ensayo</option><option value="Ayuno">Ayuno</option></select>
+        </div>
+      </div>
+      <div class="grid2">
+        <div><label class="lbl">Hora inicio</label><input id="ev-hora-ini" type="time"/></div>
+        <div><label class="lbl">Hora fin</label><input id="ev-hora-fin" type="time"/></div>
+      </div>
+      <label class="lbl">Notas</label><input id="ev-notas" placeholder="Opcional"/>
+    </div>
+    <div id="ev-extra">
+      <div class="form-sec">
+        <h4>🎤 Presididor</h4>
+        <select id="ev-presididor"><option value="">-- Seleccionar --</option></select>
+      </div>
+      <div class="form-sec">
+        <h4>🎸 Músicos</h4>
+        <div id="ev-mus-tags" style="margin-bottom:8px"></div>
+        <div id="ev-assigned-list"></div>
+      </div>
+      <div class="form-sec">
+        <h4>🎙️ Voces</h4>
+        <div id="ev-voz-tags" style="margin-bottom:8px"></div>
+        <div id="ev-voz-list"></div>
+      </div>
+      <div class="form-sec">
+        <h4>🔊 Sonido</h4>
+        <div id="ev-sonido-tags" style="margin-bottom:8px"></div>
+        <div id="ev-sonido-list"></div>
+      </div>
+      <div class="form-sec">
+        <h4>📡 Multimedia</h4>
+        <div id="ev-multi-tags" style="margin-bottom:8px"></div>
+        <div id="ev-multi-list"></div>
+      </div>
+      <div class="form-sec">
+        <h4>🛒 Pulpería</h4>
+        <div id="ev-pulperia-tags" style="margin-bottom:8px"></div>
+        <div id="ev-pulperia-list"></div>
+      </div>
+      <div class="form-sec">
+        <h4>📋 Orden del servicio</h4>
+        <p style="color:var(--muted);font-size:11px;margin-bottom:8px">Agregá canciones o momentos especiales en orden</p>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <select id="ev-orden-tipo" style="width:auto;margin:0;flex:1">
+            <option value="cancion">🎵 Canción</option>
+            <option value="oracion">🙏 Oración</option>
+            <option value="lectura">📖 Lectura bíblica</option>
+            <option value="ofrendas">💝 Ofrendas</option>
+            <option value="anuncio">📢 Anuncio</option>
+            <option value="otro">✨ Otro</option>
+          </select>
+          <button class="btn btn-accent btn-sm" id="btn-add-orden">+ Agregar</button>
+        </div>
+        <div id="ev-can-tags" style="margin-bottom:8px"></div>
+        <div id="ev-orden-list"></div>
 
-  if (eventosSnap.empty) return null;
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" id="btn-save-ev">💾 Guardar evento</button>
+  </div>
+  <div id="ev-detail-view" style="display:none"></div>
+</div>
 
-  const eventos = eventosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-  const musicosSnap = await db.collection("musicos").get();
-  const musicos = musicosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+<!-- CANCIONES -->
+<div id="sec-canciones" class="section content">
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <h2 style="color:var(--gold);font-size:17px;margin:0">🎵 Canciones</h2>
+    <button class="btn btn-primary btn-sm" id="btn-add-can" style="display:none">+ Agregar</button>
+  </div>
+  <div id="can-form" style="display:none" class="form-sec">
+    <h4>Nueva canción</h4>
+    <input id="can-titulo" placeholder="Título"/>
+    <input id="can-artista" placeholder="Artista / Ministerio"/>
+    <div class="grid2">
+      <select id="can-tono"><option>C</option><option>C#</option><option>D</option><option>D#</option><option>E</option><option>F</option><option>F#</option><option selected>G</option><option>G#</option><option>A</option><option>A#</option><option>B</option></select>
+      <input id="can-bpm" type="number" placeholder="BPM"/>
+    </div>
+    <label class="lbl">📄 Link letra (OneDrive PDF)</label><input id="can-link-letra" placeholder="https://..."/>
+    <label class="lbl">🎼 Link acordes (OneDrive PDF)</label><input id="can-link-acordes" placeholder="https://..."/>
+    <label class="lbl">🎬 Link YouTube</label><input id="can-link-youtube" placeholder="https://youtube.com/..."/>
+    <input id="can-tags" placeholder="Etiquetas: adoración, alabanza..."/>
+    <label class="chk-lbl"><input type="checkbox" id="can-nueva"/> 🆕 Canción nueva</label>
+    <label class="chk-lbl"><input type="checkbox" id="can-aprender"/> 📚 Por aprender</label>
+    <button class="btn btn-primary btn-full" id="btn-save-can">Guardar canción</button>
+  </div>
+  <input id="can-search" placeholder="🔍 Buscar por título, artista o etiqueta..."/>
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button id="btn-sort-az" class="btn btn-ghost btn-sm">A-Z</button>
+    <button id="btn-sort-artist" class="btn btn-accent btn-sm">Por artista</button>
+  </div>
+  <div id="canciones-list"></div>
+</div>
 
-  for (const ev of eventos) {
-    const esHoy = ev.fecha === hoyStr;
-    const titulo = esHoy ? "🎵 Evento hoy!" : "🎵 Evento mañana!";
-    const cuerpo = `${ev.titulo}${ev.horaIni ? " a las " + ev.horaIni : ""} · ${ev.tipo}`;
+<!-- MUSICOS -->
+<div id="sec-musicos" class="section content">
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <h2 style="color:var(--gold);font-size:17px;margin:0">🎸 Músicos</h2>
+    <button class="btn btn-primary btn-sm" id="btn-add-mus" style="display:none">+ Agregar</button>
+  </div>
+  <div id="mus-form" style="display:none" class="form-sec">
+    <h4>Nuevo músico</h4>
+    <input id="mus-nombre" placeholder="Nombre completo"/>
+    <label class="lbl">Roles / Instrumentos</label>
+    <div class="roles-check" id="mus-roles-check">
+      <label><input type="checkbox" value="Líder"/> 🎤 Líder</label>
+      <label><input type="checkbox" value="Voz"/> 🎙️ Voz</label>
+      <label><input type="checkbox" value="Guitarra"/> 🎸 Guitarra</label>
+      <label><input type="checkbox" value="Bajo"/> 🎵 Bajo</label>
+      <label><input type="checkbox" value="Teclado/Piano"/> 🎹 Teclado/Piano</label>
+      <label><input type="checkbox" value="Batería"/> 🥁 Batería</label>
+      <label><input type="checkbox" value="Saxofón"/> 🎷 Saxofón</label>
+      <label><input type="checkbox" value="Presentación"/> 📽️ Presentación</label>
+      <label><input type="checkbox" value="Transmisión"/> 📡 Transmisión</label>
+      <label><input type="checkbox" value="Sonidista"/> 🔊 Sonidista</label>
+      <label><input type="checkbox" value="Otros"/> 🎶 Otros</label>
+    </div>
+    <input id="mus-tel" placeholder="Teléfono (opcional)"/>
+    <label class="lbl">Usuario</label><input id="mus-username" placeholder="Ej: maria123"/>
+    <label class="lbl">Contraseña</label><input id="mus-pass" type="password" placeholder="Contraseña"/>
+    <label class="lbl">🎂 Cumpleaños</label>
+    <div class="grid2" style="grid-template-columns:1fr 1fr 1fr">
+      <select id="mus-bday-d"><option value="">Día</option></select>
+      <select id="mus-bday-m"><option value="">Mes</option><option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option><option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option><option value="07">Julio</option><option value="08">Agosto</option><option value="09">Septiembre</option><option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option></select>
+      <select id="mus-bday-y"><option value="">Año</option></select>
+    </div>
+    <label class="chk-lbl"><input type="checkbox" id="mus-admin"/> 🔑 Es administrador</label>
+    <label class="chk-lbl"><input type="checkbox" id="mus-disp" checked/> Disponible</label>
+    <button class="btn btn-primary btn-full" id="btn-save-mus">Guardar músico</button>
+  </div>
+  <input id="mus-search" placeholder="🔍 Buscar músico..."/>
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button id="btn-mus-az" class="btn btn-ghost btn-sm">A-Z</button>
+    <button id="btn-mus-rol" class="btn btn-accent btn-sm">Por rol</button>
+  </div>
+  <div id="musicos-list"></div>
+</div>
 
-    const asignadosIds = (ev.asignados || []).map(a => a.musId);
-    const tokens = musicos
-      .filter(m => asignadosIds.includes(m.id) && m.fcmToken)
-      .map(m => m.fcmToken);
+<!-- AYUNO -->
+<div id="sec-ayuno" class="section content">
+  <div style="text-align:center;margin-bottom:20px">
+    <div style="font-size:40px">🙏</div>
+    <h2 style="color:var(--gold);font-size:17px;margin:6px 0 4px">Ayuno Semanal</h2>
+    <p style="color:var(--muted);font-size:12px" id="ayuno-semana"></p>
+  </div>
+  <div class="form-sec" style="margin-bottom:16px">
+    <h4>📅 Mis días de ayuno esta semana</h4>
+    <div id="ayuno-mis-dias" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px"></div>
+  </div>
+  <div id="ayuno-lista"></div>
+</div>
 
-    if (!tokens.length) continue;
+<!-- ANUNCIOS -->
+<div id="sec-anuncios" class="section content" style="display:none">
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <h2 style="color:var(--gold);font-size:17px;margin:0">📢 Anuncios</h2>
+    <button class="btn btn-primary btn-sm" id="btn-add-anuncio" style="display:none">+ Nuevo</button>
+  </div>
+  <div id="anuncio-form" style="display:none" class="form-sec">
+    <h4>Nuevo anuncio</h4>
+    <input id="anuncio-titulo" placeholder="Título del anuncio"/>
+    <textarea id="anuncio-texto" placeholder="Escribe el anuncio aquí..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:8px 12px;outline:none;margin-bottom:8px;min-height:80px;resize:vertical"></textarea>
+    <label class="chk-lbl"><input type="checkbox" id="anuncio-notif" checked/> 📲 Notificar a todos</label>
+    <button class="btn btn-primary btn-full" id="btn-save-anuncio">📢 Publicar anuncio</button>
+  </div>
+  <div id="anuncios-list"></div>
+</div>
 
-    try {
-      await admin.messaging().sendEachForMulticast({
-        notification: { title: titulo, body: cuerpo },
-      webpush: { fcmOptions: { link: "https://carlos40205sh-oss.github.io/Ministerio-de-Alabanza-Fuente-Vida/" } },
-        data: { eventoId: ev.id },
-        tokens,
+<!-- CANTANTES -->
+<div id="sec-cantantes" class="section content">
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <h2 style="color:var(--gold);font-size:17px;margin:0">🎤 Cantantes</h2>
+    <button class="btn btn-primary btn-sm" id="btn-add-cant" style="display:none">+ Agregar</button>
+  </div>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:14px">Cantantes del coro o invitados — sin acceso a la app</p>
+  <div id="cant-form" style="display:none" class="form-sec">
+    <h4>Nuevo cantante</h4>
+    <input id="cant-nombre" placeholder="Nombre completo"/>
+    <input id="cant-notas" placeholder="Notas (voz, coro, invitado...)"/>
+    <button class="btn btn-primary btn-full" id="btn-save-cant">Guardar cantante</button>
+  </div>
+  <div id="cantantes-list"></div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" data-tab="inicio"><span class="icon">🏠</span><span class="label">Inicio</span><div class="dot"></div></button>
+  <button class="nav-btn" data-tab="calendario"><span class="icon">📅</span><span class="label">Calendario</span></button>
+  <button class="nav-btn" data-tab="eventos"><span class="icon">🗓</span><span class="label">Eventos</span></button>
+  <button class="nav-btn" data-tab="canciones"><span class="icon">🎵</span><span class="label">Canciones</span></button>
+  <button class="nav-btn" data-tab="ayuno"><span class="icon">🙏</span><span class="label">Ayuno</span></button>
+  <button class="nav-btn nav-admin" data-tab="anuncios"><span class="icon">📢</span><span class="label">Anuncios</span></button>
+  <button class="nav-btn nav-admin" data-tab="musicos"><span class="icon">🎸</span><span class="label">Músicos</span></button>
+  <button class="nav-btn nav-admin" data-tab="cantantes"><span class="icon">🎤</span><span class="label">Cantantes</span></button>
+  <button class="nav-btn nav-admin" data-tab="cuotas"><span class="icon">💰</span><span class="label">Cuotas</span></button>
+</nav>
+
+<!-- CUOTAS -->
+<div id="sec-cuotas" class="section content">
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <h2 style="color:var(--gold);font-size:17px;margin:0">💰 Cuotas</h2>
+  </div>
+  <div class="form-sec" style="margin-bottom:16px">
+    <h4>⚙️ Configuración</h4>
+    <label class="lbl">Monto mensual</label>
+    <div class="row">
+      <input id="cuota-monto" type="number" placeholder="Ej: 5000" style="margin:0;flex:1"/>
+      <button class="btn btn-primary btn-sm" id="btn-save-monto" style="white-space:nowrap;margin-left:8px">Guardar</button>
+    </div>
+  </div>
+  <div class="row" style="justify-content:space-between;margin-bottom:12px">
+    <h3 style="color:var(--accent);font-size:13px;margin:0" id="cuota-mes-titulo">Junio 2026</h3>
+    <div class="row" style="gap:4px">
+      <button class="btn btn-ghost btn-sm" id="btn-cuota-prev">‹</button>
+      <button class="btn btn-ghost btn-sm" id="btn-cuota-next">›</button>
+    </div>
+  </div>
+  <div id="cuotas-resumen" style="display:flex;gap:8px;margin-bottom:14px">
+    <div class="card" style="flex:1;text-align:center;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--success)" id="cuota-pagaron">0</div><div style="font-size:11px;color:var(--muted)">Pagaron</div></div>
+    <div class="card" style="flex:1;text-align:center;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--danger)" id="cuota-deben">0</div><div style="font-size:11px;color:var(--muted)">Deben</div></div>
+    <div class="card" style="flex:1;text-align:center;padding:10px"><div style="font-size:20px;font-weight:800;color:var(--gold)" id="cuota-total">₡0</div><div style="font-size:11px;color:var(--muted)">Recaudado</div></div>
+  </div>
+  <div id="cuotas-list"></div>
+</div>
+
+<!-- MODALS -->
+<div id="mus-edit-modal" class="modal">
+  <div class="modal-box">
+    <div class="row" style="justify-content:space-between;margin-bottom:14px">
+      <h3 style="color:var(--gold);margin:0">✏️ Editar músico</h3>
+      <button class="btn btn-ghost btn-sm" id="btn-close-mus-edit">✕</button>
+    </div>
+    <input type="hidden" id="mus-edit-id"/>
+    <label class="lbl">Nombre</label><input id="mus-edit-nombre"/>
+    <label class="lbl">Roles</label>
+    <div class="roles-check" id="mus-edit-roles">
+      <label><input type="checkbox" value="Líder"/> 🎤 Líder</label>
+      <label><input type="checkbox" value="Voz"/> 🎙️ Voz</label>
+      <label><input type="checkbox" value="Guitarra"/> 🎸 Guitarra</label>
+      <label><input type="checkbox" value="Bajo"/> 🎵 Bajo</label>
+      <label><input type="checkbox" value="Teclado/Piano"/> 🎹 Teclado/Piano</label>
+      <label><input type="checkbox" value="Batería"/> 🥁 Batería</label>
+      <label><input type="checkbox" value="Saxofón"/> 🎷 Saxofón</label>
+      <label><input type="checkbox" value="Presentación"/> 📽️ Presentación</label>
+      <label><input type="checkbox" value="Transmisión"/> 📡 Transmisión</label>
+      <label><input type="checkbox" value="Sonidista"/> 🔊 Sonidista</label>
+      <label><input type="checkbox" value="Otros"/> 🎶 Otros</label>
+    </div>
+    <label class="lbl">Teléfono</label><input id="mus-edit-tel"/>
+    <label class="lbl">Usuario</label><input id="mus-edit-username"/>
+    <label class="lbl">Contraseña</label><input id="mus-edit-pass" type="password"/>
+    <label class="lbl">🎂 Cumpleaños</label>
+    <div class="grid2" style="grid-template-columns:1fr 1fr 1fr">
+      <select id="mus-edit-bday-d"><option value="">Día</option></select>
+      <select id="mus-edit-bday-m"><option value="">Mes</option><option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option><option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option><option value="07">Julio</option><option value="08">Agosto</option><option value="09">Septiembre</option><option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option></select>
+      <select id="mus-edit-bday-y"><option value="">Año</option></select>
+    </div>
+    <label class="chk-lbl"><input type="checkbox" id="mus-edit-admin"/> 🔑 Admin</label>
+    <label class="chk-lbl"><input type="checkbox" id="mus-edit-disp"/> Disponible</label>
+    <button class="btn btn-primary btn-full" id="btn-save-mus-edit">💾 Guardar</button>
+  </div>
+</div>
+
+<div id="can-edit-modal" class="modal">
+  <div class="modal-box">
+    <div class="row" style="justify-content:space-between;margin-bottom:14px">
+      <h3 style="color:var(--gold);margin:0">✏️ Editar canción</h3>
+      <button class="btn btn-ghost btn-sm" id="btn-close-can-edit">✕</button>
+    </div>
+    <input type="hidden" id="can-edit-id"/>
+    <label class="lbl">Título</label><input id="can-edit-titulo"/>
+    <label class="lbl">Artista</label><input id="can-edit-artista"/>
+    <div class="grid2">
+      <div><label class="lbl">Tono</label><select id="can-edit-tono"><option>C</option><option>C#</option><option>D</option><option>D#</option><option>E</option><option>F</option><option>F#</option><option>G</option><option>G#</option><option>A</option><option>A#</option><option>B</option></select></div>
+      <div><label class="lbl">BPM</label><input id="can-edit-bpm" type="number"/></div>
+    </div>
+    <label class="lbl">Link letra</label><input id="can-edit-letra"/>
+    <label class="lbl">Link acordes</label><input id="can-edit-acordes"/>
+    <label class="lbl">🎬 YouTube</label><input id="can-edit-youtube"/>
+    <label class="lbl">Etiquetas</label><input id="can-edit-tags"/>
+    <label class="chk-lbl"><input type="checkbox" id="can-edit-nueva"/> 🆕 Nueva</label>
+    <label class="chk-lbl"><input type="checkbox" id="can-edit-aprender"/> 📚 Por aprender</label>
+    <button class="btn btn-primary btn-full" id="btn-save-can-edit">💾 Guardar</button>
+  </div>
+</div>
+
+<div id="cant-edit-modal" class="modal">
+  <div class="modal-box" style="max-height:50vh">
+    <div class="row" style="justify-content:space-between;margin-bottom:14px">
+      <h3 style="color:var(--gold);margin:0">✏️ Editar cantante</h3>
+      <button class="btn btn-ghost btn-sm" id="btn-close-cant-edit">✕</button>
+    </div>
+    <input type="hidden" id="cant-edit-id"/>
+    <label class="lbl">Nombre</label><input id="cant-edit-nombre"/>
+    <label class="lbl">Notas</label><input id="cant-edit-notas"/>
+    <button class="btn btn-primary btn-full" id="btn-save-cant-edit">💾 Guardar</button>
+  </div>
+</div>
+
+<!-- EVENTO PRÓXIMO MODAL -->
+<div id="evento-modal" class="modal" style="z-index:710">
+  <div class="modal-box" style="text-align:center;max-width:320px">
+    <div style="font-size:48px;margin-bottom:12px" id="evento-modal-icon">🎵</div>
+    <h3 style="color:var(--gold);margin-bottom:8px" id="evento-modal-titulo">Evento próximo</h3>
+    <p id="evento-modal-msg" style="color:var(--muted);font-size:13px;margin-bottom:16px;line-height:1.5"></p>
+    <button class="btn btn-primary btn-full" id="btn-evento-ok">¡Entendido!</button>
+  </div>
+</div>
+
+<!-- ANUNCIO MODAL -->
+<div id="anuncio-modal" class="modal" style="z-index:720">
+  <div class="modal-box" style="max-width:340px">
+    <div style="font-size:32px;text-align:center;margin-bottom:8px">📢</div>
+    <h3 style="color:var(--gold);margin-bottom:6px;text-align:center" id="anuncio-modal-titulo"></h3>
+    <p id="anuncio-modal-texto" style="color:var(--muted);font-size:13px;margin-bottom:16px;line-height:1.6;white-space:pre-wrap"></p>
+    <div style="font-size:11px;color:var(--muted);text-align:right;margin-bottom:12px" id="anuncio-modal-fecha"></div>
+    <button class="btn btn-primary btn-full" id="btn-anuncio-ok">Entendido</button>
+  </div>
+</div>
+
+<!-- CUOTA MODAL -->
+<div id="cuota-modal" class="modal" style="z-index:700">
+  <div class="modal-box" style="text-align:center;max-width:320px">
+    <div style="font-size:48px;margin-bottom:12px">💰</div>
+    <h3 style="color:var(--gold);margin-bottom:8px">Cuota pendiente</h3>
+    <p id="cuota-modal-msg" style="color:var(--muted);font-size:13px;margin-bottom:16px;line-height:1.5"></p>
+    <button class="btn btn-primary btn-full" id="btn-cuota-ok">Entendido</button>
+  </div>
+</div>
+
+<!-- MODO SERVICIO -->
+<div id="modo-servicio">
+  <div class="ms-header">
+    <div>
+      <div style="font-size:11px;color:var(--muted)">⭐ Modo Servicio</div>
+      <div class="ms-evento-titulo" id="ms-ev-titulo"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span class="ms-progreso-txt" id="ms-progreso"></span>
+      <button onclick="salirModoServicio()" style="border:none;background:var(--danger);color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer">✕ Salir</button>
+    </div>
+  </div>
+  <div class="ms-progress-bar"><div class="ms-progress-fill" id="ms-progress-fill"></div></div>
+  <div class="ms-actual" id="ms-actual-content"></div>
+  <div class="ms-siguiente-preview" id="ms-siguiente-preview" style="display:none">
+    <span style="font-size:24px" id="ms-sig-icono"></span>
+    <div><div style="font-size:11px;color:var(--muted)">A continuación:</div><div style="font-size:13px;font-weight:700" id="ms-sig-titulo"></div></div>
+  </div>
+  <div class="ms-nav-btns">
+    <button class="ms-btn-prev" onclick="msAnterior()">← Anterior</button>
+    <button class="ms-btn-next" onclick="msSiguiente()" id="ms-btn-next">Siguiente →</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
+
+const FB = { apiKey:"AIzaSyC1OvY10grOXME6_Kdb28LTyyITIxxcjm0", authDomain:"ministerio-de-alabanza-ac3f2.firebaseapp.com", projectId:"ministerio-de-alabanza-ac3f2", storageBucket:"ministerio-de-alabanza-ac3f2.firebasestorage.app", messagingSenderId:"314404534308", appId:"1:314404534308:web:cbb3543a559a71c7a780b1" };
+const db = getFirestore(initializeApp(FB));
+
+let messaging;
+try { messaging = getMessaging(); } catch(e) { console.log('FCM not supported:', e); }
+
+const VAPID_KEY = 'BO0ZwQdxZO-eKCOs2w55rPWT98YnZXyJQRvXJy2eGB179ikruI5CwUDpG3TrxHXz7hFBjwEgQHA-4WFnaHdrWqA';
+
+const registerFCMToken = async () => {
+  if(!messaging) return;
+  try {
+    const perm = await Notification.requestPermission();
+    console.log('Notification permission:', perm);
+    if(perm !== 'granted') return;
+    const swReg = await navigator.serviceWorker.register('/Ministerio-de-Alabanza-Fuente-Vida/firebase-messaging-sw.js');
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    console.log('FCM token:', token ? token.slice(0,20)+'...' : 'none');
+    if(token && CU) {
+      const m = musicos.find(x => x.username === CU.key);
+      if(m) {
+        await updateDoc(doc(db, 'musicos', m.id), { fcmToken: token });
+        console.log('Token saved for:', m.nombre);
+      } else if(CU.admin) {
+        // Save admin token in a separate collection
+        await setDoc(doc(db, 'admins', CU.key), { fcmToken: token, nombre: CU.nombre });
+        console.log('Admin token saved for:', CU.nombre);
+      }
+    }
+  } catch(e) { console.log('FCM error:', e); }
+};
+
+// ── STATE ──
+let CU = null, canciones = [], musicos = [], eventos = [], cantantes = [], allUsers = [];
+let evAssigned = [], evVoz = [], evSonido = [], evMulti = [], evSetlist = [], evOrden = [], evPulperia = [], editingEvId = null, editingEstructuraIdx = null;
+let sortMode = 'artist', musMode = 'rol';
+let calY, calM, calDates = [];
+
+// ── HELPERS ──
+const $ = id => document.getElementById(id);
+const fmt = d => { if(!d) return ''; const [y,m,day]=d.split('-'); return day+'/'+m+'/'+y; };
+const fmtBday = d => { if(!d) return ''; const [y,m,day]=d.split('-'); return day+'/'+m; };
+const toast = m => { const t=$('toast'); t.textContent=m; t.style.opacity=1; setTimeout(()=>t.style.opacity=0,2500); };
+const roleIcon = r => ({'Líder':'🎤','Voz':'🎙️','Guitarra':'🎸','Bajo':'🎵','Teclado/Piano':'🎹','Batería':'🥁','Saxofón':'🎷','Presentación':'📽️','Transmisión':'📡','Sonidista':'🔊'}[r]||'🎶');
+const tipoColor = t => ({'Servicio':'var(--accent)','Ensayo':'var(--gold)','Ayuno':'var(--success)'}[t]||'var(--muted)');
+const tipoBg = t => ({'Servicio':'#7B6FD422','Ensayo':'#E8C96A22','Ayuno':'#7EC8A022'}[t]||'');
+const ROLES_EV = ['Líder','Voz','Guitarra','Bajo','Teclado/Piano','Batería','Saxofón','Presentación','Transmisión','Sonidista','Otros'];
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+// Fill day/year selects
+[...document.querySelectorAll('[id$="-bday-d"],[id$="-edit-bday-d"]')].forEach(sel => {
+  for(let d=1;d<=31;d++) sel.innerHTML += `<option value="${String(d).padStart(2,'0')}">${String(d).padStart(2,'0')}</option>`;
+});
+[...document.querySelectorAll('[id$="-bday-y"],[id$="-edit-bday-y"]')].forEach(sel => {
+  for(let y=2010;y>=1940;y--) sel.innerHTML += `<option value="${y}">${y}</option>`;
+});
+
+// ── AUTH ──
+const ADMINS = { carlitos:{pass:'soto2024',nombre:'Carlitos Soto',admin:true}, jeaneth:{pass:'hernandez2024',nombre:'Jeaneth Hernández',admin:true} };
+const findUser = (u,p) => {
+  const a = ADMINS[u.toLowerCase()];
+  if(a&&a.pass===p) return {...a,key:u.toLowerCase()};
+  const m = allUsers.find(x=>(x.username||'').toLowerCase()===u.toLowerCase()&&(x.pass||'')===p);
+  if(m) return {nombre:m.nombre,admin:m.admin||false,key:m.username};
+  return null;
+};
+const applyLogin = user => {
+  CU = user;
+  $('login-screen').style.display='none';
+  $('hdr-user').textContent = CU.nombre+' · Salir';
+  $('welcome-msg').textContent = 'Bienvenido, '+CU.nombre;
+  if(CU.admin) {
+    ['btn-new-ev','btn-add-can','btn-add-mus','btn-add-cant'].forEach(id=>$(id).style.display='inline-block');
+    document.querySelectorAll('.nav-admin').forEach(b=>b.style.setProperty('display','flex','important'));
+    document.getElementById('sec-anuncios').style.display='block';
+    $('btn-add-anuncio').style.display='inline-block';
+  }
+  renderCalendar();
+  renderAyuno();
+  setTimeout(checkEventoProximo, 1500);
+  setTimeout(checkCuotaPendiente, 4000);
+  setTimeout(registerFCMToken, 5000);
+};
+const autoLogin = () => {
+  try { const s=localStorage.getItem('min_user'); if(s){const{u,p}=JSON.parse(s);const user=findUser(u,p);if(user){applyLogin(user);return true;}} } catch(e){}
+  return false;
+};
+$('btn-entrar').addEventListener('click', () => {
+  const u=$('login-user').value.trim(), p=$('login-pass').value.trim();
+  const user=findUser(u,p);
+  if(user){
+    if($('remember-me').checked) try{localStorage.setItem('min_user',JSON.stringify({u,p}));}catch(e){}
+    applyLogin(user);
+  } else $('login-err').style.display='block';
+});
+$('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')$('btn-entrar').click();});
+$('hdr-user').addEventListener('click',()=>{if(confirm('¿Cerrar sesión?')){try{localStorage.removeItem('min_user');}catch(e){}location.reload();}});
+
+// ── NAV ──
+const goTab = (tab, pushState=true) => {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>{b.classList.remove('active');b.querySelector('.dot')?.remove();});
+  $('sec-'+tab).classList.add('active');
+  const btn = document.querySelector(`.nav-btn[data-tab="${tab}"]`);
+  if(btn){btn.classList.add('active');const d=document.createElement('div');d.className='dot';btn.appendChild(d);}
+  if(tab==='calendario') renderCalendar();
+  if(tab==='ayuno') renderAyuno();
+  if(pushState) history.pushState({tab, view:'list'}, '', location.pathname);
+};
+
+// Handle back button
+window.addEventListener('popstate', e => {
+  const state = e.state || {tab:'inicio', view:'list'};
+  if(state.view==='detail' || state.view==='form') {
+    // Go back to list view of that tab
+    goTab(state.tab||'eventos', false);
+    hideEvForm();
+    if(state.tab==='calendario') {
+      $('cal-ev-detail').style.display='none';
+      $('cal-ev-list').style.display='block';
+      $('cal-grid').style.display='grid';
+      $('cal-hdr').style.display='grid';
+      $('cal-title-row').style.display='flex';
+      $('cal-legend').style.display='flex';
+    }
+  } else {
+    goTab(state.tab||'inicio', false);
+  }
+});
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => goTab(btn.dataset.tab));
+});
+
+// ── CANCIONES ──
+$('btn-add-can').addEventListener('click',()=>{const f=$('can-form');f.style.display=f.style.display==='none'?'block':'none';});
+$('btn-save-can').addEventListener('click', async () => {
+  const t=$('can-titulo').value.trim(); if(!t) return;
+  await addDoc(collection(db,'canciones'),{titulo:t,artista:$('can-artista').value.trim(),tono:$('can-tono').value,bpm:Number($('can-bpm').value)||80,linkLetra:$('can-link-letra').value.trim(),linkAcordes:$('can-link-acordes').value.trim(),linkYoutube:$('can-link-youtube').value.trim(),tags:$('can-tags').value.split(',').map(x=>x.trim()).filter(Boolean),nueva:$('can-nueva').checked,aprender:$('can-aprender').checked,creadoEn:Date.now()});
+  ['can-titulo','can-artista','can-bpm','can-tags','can-link-letra','can-link-acordes','can-link-youtube'].forEach(id=>$(id).value='');
+  $('can-nueva').checked=false; $('can-aprender').checked=false; $('can-form').style.display='none'; toast('✅ Canción guardada');
+});
+$('can-search').addEventListener('input', renderCanciones);
+$('btn-sort-az').addEventListener('click',()=>{sortMode='az';$('btn-sort-az').className='btn btn-accent btn-sm';$('btn-sort-artist').className='btn btn-ghost btn-sm';renderCanciones();});
+$('btn-sort-artist').addEventListener('click',()=>{sortMode='artist';$('btn-sort-artist').className='btn btn-accent btn-sm';$('btn-sort-az').className='btn btn-ghost btn-sm';renderCanciones();});
+
+// Edit cancion modal
+$('btn-close-can-edit').addEventListener('click',()=>$('can-edit-modal').style.display='none');
+$('btn-save-can-edit').addEventListener('click', async () => {
+  const id=$('can-edit-id').value;
+  await updateDoc(doc(db,'canciones',id),{titulo:$('can-edit-titulo').value.trim(),artista:$('can-edit-artista').value.trim(),tono:$('can-edit-tono').value,bpm:Number($('can-edit-bpm').value)||80,linkLetra:$('can-edit-letra').value.trim(),linkAcordes:$('can-edit-acordes').value.trim(),linkYoutube:$('can-edit-youtube').value.trim(),tags:$('can-edit-tags').value.split(',').map(x=>x.trim()).filter(Boolean),nueva:$('can-edit-nueva').checked,aprender:$('can-edit-aprender').checked});
+  $('can-edit-modal').style.display='none'; toast('✅ Canción actualizada');
+});
+
+const editCancion = id => {
+  const c=canciones.find(x=>x.id===id); if(!c) return;
+  $('can-edit-id').value=id; $('can-edit-titulo').value=c.titulo||''; $('can-edit-artista').value=c.artista||'';
+  $('can-edit-tono').value=c.tono||'G'; $('can-edit-bpm').value=c.bpm||'';
+  $('can-edit-letra').value=c.linkLetra||''; $('can-edit-acordes').value=c.linkAcordes||''; $('can-edit-youtube').value=c.linkYoutube||'';
+  $('can-edit-tags').value=(c.tags||[]).join(', '); $('can-edit-nueva').checked=c.nueva||false;
+  $('can-edit-aprender').checked=c.aprender||false;
+  $('can-edit-modal').style.display='flex';
+};
+const deleteCancion = async id => { if(confirm('¿Eliminar?')){await deleteDoc(doc(db,'canciones',id));toast('🗑️ Eliminada');} };
+
+function renderCanciones() {
+  const q=$('can-search').value.toLowerCase();
+  const filtered=canciones.filter(c=>c.titulo.toLowerCase().includes(q)||(c.artista||'').toLowerCase().includes(q)||(c.tags||[]).some(t=>t.toLowerCase().includes(q))).sort((a,b)=>a.titulo.localeCompare(b.titulo));
+  const el=$('canciones-list'); el.innerHTML='';
+  if(!filtered.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No se encontraron canciones</div>';return;}
+  const makeCard = c => {
+    const card=document.createElement('div'); card.className='card';
+    const badges='<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">🎼 '+c.tono+'</span>'+(c.bpm?' <span class="badge" style="background:#9590B022;color:var(--muted);border:1px solid #9590B044">'+c.bpm+' BPM</span>':'')+(c.nueva?' <span class="badge" style="background:#F0A50022;color:var(--warn);border:1px solid #F0A50044">🆕 Nueva</span>':'')+(c.aprender?' <span class="badge" style="background:#7EC8A022;color:var(--success);border:1px solid #7EC8A044">📚 Por aprender</span>':'')+(c.tags||[]).map(t=>' <span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+t+'</span>').join('');
+    const links=(c.linkLetra?'<a href="'+c.linkLetra+'" target="_blank" class="link-btn">📄 Letra</a>':'')+(c.linkAcordes?' <a href="'+c.linkAcordes+'" target="_blank" class="link-btn">🎼 Acordes</a>':'')+(c.linkYoutube?' <a href="'+c.linkYoutube+'" target="_blank" class="link-btn" style="background:#FF000011;border-color:#FF000044;color:#FF4444">🎬 YouTube</a>':'');
+    card.innerHTML='<div class="row" style="align-items:flex-start"><div style="flex:1"><div style="font-weight:700;font-size:14px">'+c.titulo+'</div><div style="color:var(--muted);font-size:12px;margin-bottom:7px">'+(c.artista||'')+'</div><div style="margin-bottom:8px">'+badges+'</div><div>'+links+'</div></div></div>';
+    if(CU&&CU.admin){
+      const btns=document.createElement('div'); btns.style.cssText='display:flex;gap:4px;flex-direction:column';
+      const eBtn=document.createElement('button'); eBtn.className='btn btn-accent btn-sm'; eBtn.textContent='✏️';
+      eBtn.addEventListener('click',e=>{e.stopPropagation();editCancion(c.id);});
+      const dBtn=document.createElement('button'); dBtn.className='btn btn-danger btn-sm'; dBtn.textContent='✕';
+      dBtn.addEventListener('click',e=>{e.stopPropagation();deleteCancion(c.id);});
+      btns.appendChild(eBtn); btns.appendChild(dBtn);
+      card.querySelector('.row').appendChild(btns);
+    }
+    return card;
+  };
+  if(sortMode==='az'){
+    filtered.forEach(c=>el.appendChild(makeCard(c)));
+  } else {
+    const groups={};
+    filtered.forEach(c=>{const k=c.artista||'Sin artista';if(!groups[k])groups[k]=[];groups[k].push(c);});
+    Object.keys(groups).sort().forEach(artist=>{
+      const id='cgrp-'+artist.replace(/[^a-zA-Z0-9]/g,'').slice(0,10);
+      const wrap=document.createElement('div'); wrap.style.marginBottom='8px';
+      const hdr=document.createElement('div'); hdr.className='grp-header';
+      hdr.dataset.open='false';
+      hdr.innerHTML='<span style="font-size:16px">🎵</span><span style="flex:1;font-weight:700;font-size:14px;color:var(--text)">'+artist+'</span><span style="color:var(--muted);font-size:12px">'+groups[artist].length+' canciones</span><span style="color:var(--gold);font-size:14px">▸</span>';
+      const list=document.createElement('div'); list.style.display='none';
+      groups[artist].forEach(c=>list.appendChild(makeCard(c)));
+      hdr.addEventListener('click',()=>{const open=hdr.dataset.open==='true';hdr.dataset.open=open?'false':'true';list.style.display=open?'none':'block';hdr.querySelector('span:last-child').textContent=open?'▸':'▾';});
+      wrap.appendChild(hdr); wrap.appendChild(list); el.appendChild(wrap);
+    });
+  }
+}
+
+// ── MUSICOS ──
+$('btn-add-mus').addEventListener('click',()=>{const f=$('mus-form');f.style.display=f.style.display==='none'?'block':'none';});
+$('btn-save-mus').addEventListener('click', async () => {
+  const n=$('mus-nombre').value.trim(); if(!n) return;
+  const roles=[...document.querySelectorAll('#mus-roles-check input:checked')].map(x=>x.value);
+  if(!roles.length){alert('Seleccioná al menos un rol');return;}
+  const bd=$('mus-bday-d').value, bm=$('mus-bday-m').value, by=$('mus-bday-y').value;
+  await addDoc(collection(db,'musicos'),{nombre:n,roles,rol:roles[0],tel:$('mus-tel').value.trim(),username:$('mus-username').value.trim(),pass:$('mus-pass').value.trim(),bday:(bd&&bm&&by)?by+'-'+bm+'-'+bd:'',admin:$('mus-admin').checked,disponible:$('mus-disp').checked,creadoEn:Date.now()});
+  ['mus-nombre','mus-tel','mus-username','mus-pass'].forEach(id=>$(id).value='');
+  document.querySelectorAll('#mus-roles-check input').forEach(x=>x.checked=false);
+  ['mus-bday-d','mus-bday-m','mus-bday-y'].forEach(id=>$(id).value='');
+  $('mus-admin').checked=false; $('mus-disp').checked=true; $('mus-form').style.display='none'; toast('✅ Músico guardado');
+});
+$('mus-search').addEventListener('input',renderMusicos);
+$('btn-mus-az').addEventListener('click',()=>{musMode='az';$('btn-mus-az').className='btn btn-accent btn-sm';$('btn-mus-rol').className='btn btn-ghost btn-sm';renderMusicos();});
+$('btn-mus-rol').addEventListener('click',()=>{musMode='rol';$('btn-mus-rol').className='btn btn-accent btn-sm';$('btn-mus-az').className='btn btn-ghost btn-sm';renderMusicos();});
+
+$('btn-close-mus-edit').addEventListener('click',()=>$('mus-edit-modal').style.display='none');
+$('btn-save-mus-edit').addEventListener('click', async () => {
+  const id=$('mus-edit-id').value;
+  const roles=[...document.querySelectorAll('#mus-edit-roles input:checked')].map(x=>x.value);
+  if(!roles.length){alert('Seleccioná al menos un rol');return;}
+  const bd=$('mus-edit-bday-d').value, bm=$('mus-edit-bday-m').value, by=$('mus-edit-bday-y').value;
+  await updateDoc(doc(db,'musicos',id),{nombre:$('mus-edit-nombre').value.trim(),roles,rol:roles[0],tel:$('mus-edit-tel').value.trim(),username:$('mus-edit-username').value.trim(),pass:$('mus-edit-pass').value.trim(),bday:(bd&&bm&&by)?by+'-'+bm+'-'+bd:'',admin:$('mus-edit-admin').checked,disponible:$('mus-edit-disp').checked});
+  $('mus-edit-modal').style.display='none'; toast('✅ Músico actualizado');
+});
+
+const editMusico = id => {
+  const m=musicos.find(x=>x.id===id); if(!m) return;
+  $('mus-edit-id').value=id; $('mus-edit-nombre').value=m.nombre||''; $('mus-edit-tel').value=m.tel||'';
+  $('mus-edit-username').value=m.username||''; $('mus-edit-pass').value=m.pass||'';
+  $('mus-edit-admin').checked=m.admin||false; $('mus-edit-disp').checked=m.disponible;
+  document.querySelectorAll('#mus-edit-roles input').forEach(x=>x.checked=(m.roles||[m.rol]).includes(x.value));
+  if(m.bday){const[y,mm,dd]=m.bday.split('-');$('mus-edit-bday-d').value=dd||'';$('mus-edit-bday-m').value=mm||'';$('mus-edit-bday-y').value=y||'';}
+  else{['mus-edit-bday-d','mus-edit-bday-m','mus-edit-bday-y'].forEach(id=>$(id).value='');}
+  $('mus-edit-modal').style.display='flex';
+};
+const toggleDisp = async (id,cur) => await updateDoc(doc(db,'musicos',id),{disponible:!cur});
+const deleteMusico = async id => { if(confirm('¿Eliminar?')){await deleteDoc(doc(db,'musicos',id));toast('🗑️ Eliminado');} };
+
+function renderMusicos() {
+  const el=$('musicos-list'); el.innerHTML='';
+  if(!musicos.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No hay músicos</div>';return;}
+  const q=($('mus-search')||{value:''}).value.toLowerCase();
+  const filtered=musicos.filter(m=>m.nombre.toLowerCase().includes(q)||(m.roles||[m.rol]).some(r=>r.toLowerCase().includes(q))).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const makeCard = m => {
+    const card=document.createElement('div'); card.className='card';
+    const rolesBadges=(m.roles||[m.rol]).map(r=>'<span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+roleIcon(r)+' '+r+'</span>').join(' ');
+    const dispBadge='<span class="badge" style="background:'+(m.disponible?'#7EC8A022':'#E06C7522')+';color:'+(m.disponible?'var(--success)':'var(--danger)')+';border:1px solid '+(m.disponible?'#7EC8A044':'#E06C7544')+'">'+(m.disponible?'Disponible':'No disponible')+'</span>';
+    card.innerHTML='<div class="row" style="align-items:flex-start"><div class="avatar">'+roleIcon(m.rol)+'</div><div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="margin-top:4px">'+rolesBadges+' '+dispBadge+'</div>'+(m.admin?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44;margin-top:4px">🔑 Admin</span>':'')+(m.username?'<div style="color:var(--muted);font-size:11px;margin-top:3px">👤 '+m.username+'</div>':'')+(m.bday?'<div style="color:var(--muted);font-size:11px;margin-top:2px">🎂 '+fmtBday(m.bday)+'</div>':'')+'</div></div>';
+    if(CU&&CU.admin){
+      const btns=document.createElement('div'); btns.style.cssText='display:flex;flex-direction:column;gap:4px;flex-shrink:0';
+      const eBtn=document.createElement('button'); eBtn.className='btn btn-accent btn-sm'; eBtn.textContent='✏️ Editar';
+      eBtn.addEventListener('click',e=>{e.stopPropagation();editMusico(m.id);});
+      const dBtn=document.createElement('button'); dBtn.className='btn btn-ghost btn-sm'; dBtn.textContent=m.disponible?'🔴 Ocupado':'🟢 Disponible';
+      dBtn.addEventListener('click',e=>{e.stopPropagation();toggleDisp(m.id,m.disponible);});
+      const xBtn=document.createElement('button'); xBtn.className='btn btn-danger btn-sm'; xBtn.textContent='✕ Borrar';
+      xBtn.addEventListener('click',e=>{e.stopPropagation();deleteMusico(m.id);});
+      btns.appendChild(eBtn); btns.appendChild(dBtn); btns.appendChild(xBtn);
+      card.querySelector('.row').appendChild(btns);
+    }
+    return card;
+  };
+  if(musMode==='az'){
+    filtered.forEach(m=>el.appendChild(makeCard(m)));
+  } else {
+    const groups={};
+    filtered.forEach(m=>(m.roles||[m.rol]).forEach(r=>{if(!groups[r])groups[r]=[];if(!groups[r].find(x=>x.id===m.id))groups[r].push(m);}));
+    const rolOrder=['Líder','Voz','Guitarra','Bajo','Teclado/Piano','Batería','Saxofón','Presentación','Transmisión','Otros'];
+    Object.keys(groups).sort((a,b)=>{const ia=rolOrder.indexOf(a),ib=rolOrder.indexOf(b);return(ia===-1?99:ia)-(ib===-1?99:ib);}).forEach(rol=>{
+      const wrap=document.createElement('div'); wrap.style.marginBottom='8px';
+      const hdr=document.createElement('div'); hdr.className='grp-header'; hdr.dataset.open='false';
+      hdr.innerHTML='<span style="font-size:18px">'+roleIcon(rol)+'</span><span style="flex:1;font-weight:700;font-size:14px;color:var(--text)">'+rol+'</span><span style="color:var(--muted);font-size:12px">'+groups[rol].length+' músicos</span><span style="color:var(--gold);font-size:14px">▸</span>';
+      const list=document.createElement('div'); list.style.display='none';
+      groups[rol].forEach(m=>list.appendChild(makeCard(m)));
+      hdr.addEventListener('click',()=>{const open=hdr.dataset.open==='true';hdr.dataset.open=open?'false':'true';list.style.display=open?'none':'block';hdr.querySelector('span:last-child').textContent=open?'▸':'▾';});
+      wrap.appendChild(hdr); wrap.appendChild(list); el.appendChild(wrap);
+    });
+  }
+}
+
+// ── CANTANTES ──
+$('btn-add-cant').addEventListener('click',()=>{const f=$('cant-form');f.style.display=f.style.display==='none'?'block':'none';});
+$('btn-save-cant').addEventListener('click', async () => {
+  const n=$('cant-nombre').value.trim(); if(!n) return;
+  await addDoc(collection(db,'cantantes'),{nombre:n,notas:$('cant-notas').value.trim(),creadoEn:Date.now()});
+  ['cant-nombre','cant-notas'].forEach(id=>$(id).value=''); $('cant-form').style.display='none'; toast('✅ Cantante guardado');
+});
+$('btn-close-cant-edit').addEventListener('click',()=>$('cant-edit-modal').style.display='none');
+$('btn-save-cant-edit').addEventListener('click', async () => {
+  const id=$('cant-edit-id').value;
+  await updateDoc(doc(db,'cantantes',id),{nombre:$('cant-edit-nombre').value.trim(),notas:$('cant-edit-notas').value.trim()});
+  $('cant-edit-modal').style.display='none'; toast('✅ Actualizado');
+});
+const editCantante = id => {
+  const c=cantantes.find(x=>x.id===id); if(!c) return;
+  $('cant-edit-id').value=id; $('cant-edit-nombre').value=c.nombre||''; $('cant-edit-notas').value=c.notas||'';
+  $('cant-edit-modal').style.display='flex';
+};
+const deleteCantante = async id => { if(confirm('¿Eliminar?')){await deleteDoc(doc(db,'cantantes',id));toast('🗑️ Eliminado');} };
+function renderCantantes() {
+  const el=$('cantantes-list'); el.innerHTML='';
+  if(!cantantes.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No hay cantantes</div>';return;}
+  cantantes.forEach(c=>{
+    const div=document.createElement('div'); div.className='card row';
+    div.innerHTML='<div class="avatar">🎤</div><div style="flex:1"><div style="font-weight:600;font-size:14px">'+c.nombre+'</div>'+(c.notas?'<div style="color:var(--muted);font-size:12px">'+c.notas+'</div>':'')+'</div>';
+    if(CU&&CU.admin){
+      const btns=document.createElement('div'); btns.style.cssText='display:flex;gap:4px';
+      const eBtn=document.createElement('button'); eBtn.className='btn btn-accent btn-sm'; eBtn.textContent='✏️ Editar';
+      eBtn.addEventListener('click',e=>{e.stopPropagation();editCantante(c.id);});
+      const dBtn=document.createElement('button'); dBtn.className='btn btn-danger btn-sm'; dBtn.textContent='✕';
+      dBtn.addEventListener('click',e=>{e.stopPropagation();deleteCantante(c.id);});
+      btns.appendChild(eBtn); btns.appendChild(dBtn); div.appendChild(btns);
+    }
+    el.appendChild(div);
+  });
+}
+
+// ── DIRECTOR SELECT ──
+const populatePresididorSelect = (sel, selectedVal) => {
+  if(!sel) return;
+  let html='<option value="">-- Seleccionar presididor --</option>';
+  if(musicos.length) html+='<optgroup label="Músicos">'+musicos.map(m=>'<option value="m_'+m.id+'"'+((selectedVal==='m_'+m.id)?' selected':'')+'>'+m.nombre+' ('+m.rol+')</option>').join('')+'</optgroup>';
+  if(cantantes.length) html+='<optgroup label="Cantantes">'+cantantes.map(c=>'<option value="c_'+c.id+'"'+((selectedVal==='c_'+c.id)?' selected':'')+'>'+c.nombre+'</option>').join('')+'</optgroup>';
+  sel.innerHTML=html;
+};
+const resolvePresididor = val => { if(!val) return null; if(val.startsWith('c_')) return cantantes.find(x=>x.id===val.slice(2)); if(val.startsWith('m_')) return musicos.find(x=>x.id===val.slice(2)); return musicos.find(x=>x.id===val); };
+const presididorRolStr = val => { if(!val) return ''; if(val.startsWith('c_')){const c=cantantes.find(x=>x.id===val.slice(2));return c?(c.notas||'Cantante'):'';} const m=musicos.find(x=>x.id===(val.startsWith('m_')?val.slice(2):val));return m?(m.rol||''):''; };
+
+// ── EVENTOS ──
+$('btn-new-ev').addEventListener('click',()=>showEvForm(null));
+$('btn-ev-back').addEventListener('click',()=>hideEvForm());
+$('ev-tipo').addEventListener('change',()=>{
+  const isAyuno = $('ev-tipo').value==='Ayuno';
+  $('ev-extra').style.display=isAyuno?'none':'block';
+  if(isAyuno){
+    // Auto-assign all musicians
+    evAssigned = musicos.map(m=>({musId:m.id, rol:m.rol||'Voz'}));
+    evVoz = []; evSonido = []; evMulti = []; evPulperia = [];
+  }
+});
+$('ev-orden-tipo').addEventListener('change', renderEvCanTags);
+$('btn-add-orden').addEventListener('click', () => {
+  const tipo = $('ev-orden-tipo').value;
+  if(tipo === 'cancion') return; // handled by tag click
+  const labels={'oracion':'Oración','lectura':'Lectura bíblica','ofrendas':'Ofrendas','anuncio':'Anuncio','otro':'Momento especial'};
+  evOrden.push({tipo, titulo:labels[tipo]||tipo});
+  renderEvOrden();
+});
+$('btn-save-ev').addEventListener('click', async () => {
+  const titulo=$('ev-titulo').value.trim(), fecha=$('ev-fecha').value;
+  if(!titulo||!fecha){alert('Título y fecha son requeridos');return;}
+  const tipo=$('ev-tipo').value;
+  const todosAsignados = tipo==='Ayuno' ? musicos.map(m=>({musId:m.id, rol:m.rol||'Voz'})) : evAssigned;
+  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),director:tipo!=='Ayuno'?$('ev-presididor').value:'',asignados:todosAsignados,vozAsignados:tipo!=='Ayuno'?evVoz:[],sonidoAsignados:tipo!=='Ayuno'?evSonido:[],multiAsignados:tipo!=='Ayuno'?evMulti:[],setlist:tipo!=='Ayuno'?evSetlist:[],orden:tipo!=='Ayuno'?evOrden:[],pulperia:tipo!=='Ayuno'?evPulperia:[]};
+  if(editingEvId){await updateDoc(doc(db,'eventos',editingEvId),data);toast('✅ Evento actualizado');}
+  else{await addDoc(collection(db,'eventos'),{...data,creadoEn:Date.now()});toast('✅ Evento guardado');}
+  editingEvId=null; hideEvForm();
+});
+
+const showEvForm = evId => {
+  editingEvId=evId;
+  const ev=evId?eventos.find(e=>e.id===evId):null;
+  evAssigned=ev?[...(ev.asignados||[])]:[];
+  evSetlist=ev?[...(ev.setlist||[])]:[];
+  evOrden=ev?[...(ev.orden||[])]:[];
+  evPulperia=ev?[...(ev.pulperia||[])]:[];
+  evVoz=ev?[...(ev.vozAsignados||[])]:[];
+  evSonido=ev?[...(ev.sonidoAsignados||[])]:[];
+  evMulti=ev?[...(ev.multiAsignados||[])]:[];
+  ['ev-titulo','ev-notas'].forEach(id=>$(id).value=ev?ev[id==='ev-titulo'?'titulo':'notas']||'':'');
+  $('ev-fecha').value=ev?ev.fecha:''; $('ev-tipo').value=ev?ev.tipo:'Servicio';
+  $('ev-hora-ini').value=ev?ev.horaIni:''; $('ev-hora-fin').value=ev?ev.horaFin:'';
+  $('ev-form-title').textContent=ev?'Editar evento':'Nuevo evento';
+  $('ev-extra').style.display=(ev&&ev.tipo==='Ayuno')?'none':'block';
+  populatePresididorSelect($('ev-presididor'),ev?ev.director:'');
+  renderEvMusTags(); renderEvVozTags(); renderEvSonidoTags(); renderEvMultiTags(); renderEvPulperiaTags(); renderEvCanTags(); renderEvOrden();
+  $('ev-list-view').style.display='none'; $('ev-form-view').style.display='block'; $('ev-detail-view').style.display='none';
+  history.pushState({tab:'eventos', view:'form'}, '', location.pathname);
+};
+const hideEvForm = () => { $('ev-list-view').style.display='block'; $('ev-form-view').style.display='none'; $('ev-detail-view').style.display='none'; editingEvId=null; };
+const MUS_ROLES = ['Guitarra','Bajo','Teclado/Piano','Batería','Saxofón','Otros'];
+const VOZ_ROLES = ['Voz','Líder'];
+const SON_ROLES = ['Sonidista'];
+const MUL_ROLES = ['Presentación','Transmisión'];
+
+const makeGroupTags = (elId, listElId, arr, filterFn, label) => {
+  const tagsEl=$(elId); if(!tagsEl) return; tagsEl.innerHTML='';
+  musicos.filter(m=>(m.roles||[m.rol]).some(filterFn)).forEach(m=>{
+    const sel = arr.findIndex?arr.findIndex(a=>a.musId===m.id)>=0:arr.includes(m.id);
+    const span=document.createElement('span'); span.className='tag '+(sel?'sel-accent':'');
+    span.textContent=roleIcon(m.rol)+' '+m.nombre;
+    span.addEventListener('click',()=>{
+      if(arr.findIndex){
+        const i=arr.findIndex(a=>a.musId===m.id);
+        if(i>=0) arr.splice(i,1); else arr.push({musId:m.id,rol:(m.roles||[m.rol]).find(filterFn)||m.rol});
+      } else {
+        const i=arr.indexOf(m.id); if(i>=0) arr.splice(i,1); else arr.push(m.id);
+      }
+      makeGroupTags(elId, listElId, arr, filterFn, label);
+      if(listElId) renderGroupList(listElId, arr);
+    });
+    tagsEl.appendChild(span);
+  });
+  if(listElId) renderGroupList(listElId, arr);
+};
+
+const renderGroupList = (listElId, arr) => {
+  const listEl=$(listElId); if(!listEl) return; listEl.innerHTML='';
+  const ids = arr.map?.(a=>a.musId||a) || arr;
+  ids.forEach((item,i)=>{
+    const musId = item.musId||item;
+    const m=musicos.find(x=>x.id===musId); if(!m) return;
+    const div=document.createElement('div'); div.className='assigned-item';
+    div.innerHTML='<span style="font-size:15px">'+roleIcon(m.rol)+'</span><span style="flex:1;font-size:13px;font-weight:600">'+m.nombre+'</span>';
+    if(item.rol){
+      const sel=document.createElement('select'); sel.style.cssText='width:auto;margin:0;padding:4px 8px;font-size:11px';
+      ROLES_EV.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;if(item.rol===r)o.selected=true;sel.appendChild(o);});
+      sel.addEventListener('change',()=>item.rol=sel.value);
+      div.appendChild(sel);
+    }
+    const rmBtn=document.createElement('button'); rmBtn.className='btn btn-danger btn-sm'; rmBtn.textContent='✕';
+    rmBtn.addEventListener('click',()=>{arr.splice(i,1);renderGroupList(listElId,arr);makeGroupTags(listElId.replace('-list','-tags'),listElId,arr,()=>true,'');});
+    div.appendChild(rmBtn); listEl.appendChild(div);
+  });
+};
+
+function renderEvMusTags() {
+  makeGroupTags('ev-mus-tags','ev-assigned-list',evAssigned,r=>MUS_ROLES.includes(r),'Músicos');
+};
+function renderEvVozTags() {
+  makeGroupTags('ev-voz-tags','ev-voz-list',evVoz,r=>VOZ_ROLES.includes(r),'Voces');
+}
+function renderEvSonidoTags() {
+  makeGroupTags('ev-sonido-tags','ev-sonido-list',evSonido,r=>SON_ROLES.includes(r),'Sonido');
+}
+function renderEvMultiTags() {
+  makeGroupTags('ev-multi-tags','ev-multi-list',evMulti,r=>MUL_ROLES.includes(r),'Multimedia');
+}
+function renderEvPulperiaTags() {
+  const tagsEl=$('ev-pulperia-tags'); if(!tagsEl) return; tagsEl.innerHTML='';
+  musicos.forEach(m=>{
+    const sel = evPulperia.includes(m.id);
+    const span=document.createElement('span'); span.className='tag '+(sel?'sel-accent':'');
+    span.textContent=roleIcon(m.rol)+' '+m.nombre;
+    span.addEventListener('click',()=>{
+      const i=evPulperia.indexOf(m.id);
+      if(i>=0) evPulperia.splice(i,1); else evPulperia.push(m.id);
+      renderEvPulperiaTags();
+    });
+    tagsEl.appendChild(span);
+  });
+  // Show selected list
+  const listEl=$('ev-pulperia-list'); if(!listEl) return; listEl.innerHTML='';
+  evPulperia.forEach(musId=>{
+    const m=musicos.find(x=>x.id===musId); if(!m) return;
+    const div=document.createElement('div'); div.className='assigned-item';
+    div.innerHTML='<span style="font-size:15px">'+roleIcon(m.rol)+'</span><span style="flex:1;font-size:13px;font-weight:600">'+m.nombre+'</span>';
+    const rmBtn=document.createElement('button'); rmBtn.className='btn btn-danger btn-sm'; rmBtn.textContent='✕';
+    rmBtn.addEventListener('click',()=>{evPulperia.splice(evPulperia.indexOf(musId),1);renderEvPulperiaTags();});
+    div.appendChild(rmBtn); listEl.appendChild(div);
+  });
+}
+function renderEvCanTags() {
+  const tagsEl=$('ev-can-tags'); tagsEl.innerHTML='';
+  // Only show cancion selector when tipo is cancion
+  const tipo = $('ev-orden-tipo') ? $('ev-orden-tipo').value : 'cancion';
+  if(tipo !== 'cancion') return;
+  canciones.sort((a,b)=>a.titulo.localeCompare(b.titulo)).forEach(c=>{
+    const span=document.createElement('span'); span.className='tag';
+    span.style.cssText='font-size:11px;padding:3px 8px';
+    span.textContent=c.titulo;
+    span.addEventListener('click',()=>{
+      evOrden.push({tipo:'cancion', cancionId:c.id, titulo:c.titulo, tono:c.tono||''});
+      renderEvOrden();
+    });
+    tagsEl.appendChild(span);
+  });
+};
+function renderEstruturaPanel(idx) {
+  editingEstructuraIdx = idx;
+  const item = evOrden[idx];
+  $('estructura-song-name').textContent = item.titulo;
+  $('estructura-panel').style.display = 'block';
+  renderEstructuraPartes(item.estructura || []);
+}
+function renderEstructuraPartes(partes) {
+  const el = $('estructura-partes-list'); el.innerHTML = '';
+  partes.forEach((p, i) => {
+    const span = document.createElement('div');
+    span.style.cssText = 'display:flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 8px;font-size:12px';
+    span.innerHTML = '<span style="font-weight:600">'+p.nombre+'</span><span style="background:var(--accent);color:#fff;border-radius:99px;padding:1px 7px;font-size:10px">×'+p.veces+'</span>';
+    const rmBtn=document.createElement('button'); rmBtn.style.cssText='border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;padding:0 2px'; rmBtn.textContent='✕';
+    rmBtn.addEventListener('click',()=>{if(editingEstructuraIdx!==null){evOrden[editingEstructuraIdx].estructura.splice(i,1);renderEstructuraPartes(evOrden[editingEstructuraIdx].estructura);}});
+    span.appendChild(rmBtn);
+    el.appendChild(span);
+    if(i<partes.length-1){const arr=document.createElement('span');arr.style.cssText='color:var(--muted);font-size:11px;margin:0 2px';arr.textContent='→';el.appendChild(arr);}
+  });
+}
+function buildEstructuraEditor(idx) {
+  const item = evOrden[idx];
+  const panel = document.createElement('div');
+  panel.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px;margin-top:6px';
+  
+  const renderPartes = () => {
+    panel.innerHTML = '';
+    const partes = item.estructura || [];
+    // Show current parts
+    if(partes.length) {
+      const partesRow = document.createElement('div');
+      partesRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;align-items:center';
+      partes.forEach((p,pi) => {
+        const sp = document.createElement('div');
+        sp.style.cssText = 'display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px';
+        sp.innerHTML = '<span style="font-weight:600">'+p.nombre+'</span><span style="background:var(--accent);color:#fff;border-radius:99px;padding:0 6px;font-size:10px">×'+p.veces+'</span>';
+        const rm = document.createElement('button');
+        rm.style.cssText = 'border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:11px;padding:0 2px';
+        rm.textContent = '✕';
+        rm.addEventListener('click', () => { partes.splice(pi,1); item.estructura=partes; renderPartes(); });
+        sp.appendChild(rm);
+        partesRow.appendChild(sp);
+        if(pi < partes.length-1) { const arr=document.createElement('span'); arr.style.cssText='color:var(--muted);font-size:12px'; arr.textContent='→'; partesRow.appendChild(arr); }
       });
-      console.log(`Notificación enviada para: ${ev.titulo} a ${tokens.length} músicos`);
-    } catch (e) {
-      console.error("Error:", e);
+      panel.appendChild(partesRow);
+    }
+    // Add new parte row
+    const addRow = document.createElement('div');
+    addRow.style.cssText = 'display:flex;gap:6px;align-items:center';
+    const tipoSel = document.createElement('select');
+    tipoSel.style.cssText = 'flex:1;margin:0;font-size:12px;padding:5px';
+    ['Intro','Estrofa','Coro','Pre-Coro','Bridge','Outro','Instrumental'].forEach(t => {
+      const o = document.createElement('option'); o.value=t; o.textContent=t; tipoSel.appendChild(o);
+    });
+    const vecesSel = document.createElement('select');
+    vecesSel.style.cssText = 'width:55px;margin:0;font-size:12px;padding:5px';
+    [1,2,3,4,5,6].forEach(n => {
+      const o = document.createElement('option'); o.value=n; o.textContent='×'+n; vecesSel.appendChild(o);
+    });
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn btn-accent btn-sm';
+    addBtn.textContent = '+ Agregar';
+    addBtn.addEventListener('click', () => {
+      if(!item.estructura) item.estructura = [];
+      item.estructura.push({nombre:tipoSel.value, veces:parseInt(vecesSel.value)});
+      renderPartes();
+    });
+    const doneBtn = document.createElement('button');
+    doneBtn.className = 'btn btn-ghost btn-sm';
+    doneBtn.textContent = '✓ Listo';
+    doneBtn.addEventListener('click', () => { renderEvOrden(); toast('✅ Estructura guardada'); });
+    addRow.appendChild(tipoSel); addRow.appendChild(vecesSel); addRow.appendChild(addBtn); addRow.appendChild(doneBtn);
+    panel.appendChild(addRow);
+  };
+  renderPartes();
+  return panel;
+}
+
+function renderEvOrden() {
+  const el = $('ev-orden-list'); el.innerHTML='';
+  if(!evOrden.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:12px">Sin items aún</div>';return;}
+  evOrden.forEach((item,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:6px';
+    const icons={'cancion':'🎵','oracion':'🙏','lectura':'📖','ofrendas':'💝','anuncio':'📢','otro':'✨'};
+    const topRow=document.createElement('div'); topRow.style.cssText='display:flex;align-items:center;gap:8px';
+    topRow.innerHTML='<span style="color:var(--gold);font-weight:700;font-size:12px;width:18px">'+(i+1)+'</span>'
+      +'<span style="font-size:15px">'+icons[item.tipo]+'</span>'
+      +'<div style="flex:1"><div style="font-size:13px;font-weight:600">'+item.titulo+'</div>'
+      +(item.tono?'<div style="font-size:11px;color:var(--muted)">Tono: '+item.tono+'</div>':'')+'</div>';
+    const upBtn=document.createElement('button'); upBtn.className='btn btn-ghost btn-sm'; upBtn.textContent='↑'; upBtn.style.padding='3px 7px';
+    upBtn.addEventListener('click',()=>{if(i>0){[evOrden[i-1],evOrden[i]]=[evOrden[i],evOrden[i-1]];renderEvOrden();}});
+    const downBtn=document.createElement('button'); downBtn.className='btn btn-ghost btn-sm'; downBtn.textContent='↓'; downBtn.style.padding='3px 7px';
+    downBtn.addEventListener('click',()=>{if(i<evOrden.length-1){[evOrden[i+1],evOrden[i]]=[evOrden[i],evOrden[i+1]];renderEvOrden();}});
+    const delBtn=document.createElement('button'); delBtn.className='btn btn-danger btn-sm'; delBtn.textContent='✕'; delBtn.style.padding='3px 7px';
+    delBtn.addEventListener('click',()=>{evOrden.splice(i,1);$('estructura-panel').style.display='none';renderEvOrden();});
+    topRow.appendChild(upBtn); topRow.appendChild(downBtn); topRow.appendChild(delBtn);
+    div.appendChild(topRow);
+    if(item.tipo==='cancion'){
+      const estBtn=document.createElement('button');
+      estBtn.className='btn btn-ghost btn-sm';
+      estBtn.style.cssText='margin-top:6px;font-size:11px;width:100%;text-align:left';
+      const partes=item.estructura||[];
+      estBtn.textContent=partes.length?'🎼 '+partes.map(p=>p.nombre+' ×'+p.veces).join(' → '):'+ Agregar estructura';
+      estBtn.addEventListener('click',()=>{
+        // Toggle inline editor
+        const existing = div.querySelector('.estructura-editor');
+        if(existing){ existing.remove(); return; }
+        const editor = buildEstructuraEditor(i);
+        editor.className = 'estructura-editor';
+        div.appendChild(editor);
+      });
+      div.appendChild(estBtn);
+    }
+    el.appendChild(div);
+  });
+}
+
+// ── EVENTO DETAIL ──
+const marcarAsist = async (evId,musId,estado) => {
+  const realEvId = evId.endsWith('_pulp') ? evId.slice(0,-5) : evId;
+  const isPulp = evId.endsWith('_pulp');
+  const ev=eventos.find(e=>e.id===realEvId); if(!ev) return;
+  if(isPulp){
+    const asistenciaPulperia=ev.asistenciaPulperia||{}; asistenciaPulperia[musId]=estado;
+    await updateDoc(doc(db,'eventos',realEvId),{asistenciaPulperia});
+  } else {
+    const asistencia=ev.asistencia||{}; asistencia[musId]=estado;
+    await updateDoc(doc(db,'eventos',realEvId),{asistencia});
+  }
+  toast(estado==='llego'?'✅ Llegó':'❌ No llegó');
+};
+const addComentario = async evId => {
+  const inp=$('com-inp-'+evId); const txt=inp?inp.value.trim():''; if(!txt) return;
+  const ev=eventos.find(e=>e.id===evId); if(!ev) return;
+  const comentarios=[...(ev.comentarios||[])]; comentarios.push({texto:txt,autor:CU.nombre,fecha:new Date().toLocaleDateString('es-CR'),ts:Date.now()});
+  await updateDoc(doc(db,'eventos',evId),{comentarios}); if(inp)inp.value=''; toast('💬 Comentario agregado');
+};
+const delComentario = async (evId,idx) => {
+  const ev=eventos.find(e=>e.id===evId); if(!ev) return;
+  const comentarios=[...(ev.comentarios||[])]; comentarios.splice(idx,1);
+  await updateDoc(doc(db,'eventos',evId),{comentarios}); toast('🗑️ Eliminado');
+};
+const deleteEvento = async id => { if(confirm('¿Eliminar?')){await deleteDoc(doc(db,'eventos',id));hideEvForm();toast('🗑️ Eliminado');} };
+
+const buildEvDetail = (ev, backFn) => {
+  const evCans=canciones.filter(c=>(ev.setlist||[]).includes(c.id)); // legacy
+  const presididor=resolvePresididor(ev.director);
+  const dirRol=presididorRolStr(ev.director);
+  const horaStr=(ev.horaIni||ev.horaFin)?' · '+(ev.horaIni||'')+(ev.horaFin?' - '+ev.horaFin:''):'';
+  const wrap=document.createElement('div');
+  // Header
+  const hdr=document.createElement('div'); hdr.className='row'; hdr.style.marginBottom='14px';
+  const backBtn=document.createElement('button'); backBtn.className='btn btn-ghost btn-sm'; backBtn.textContent='← Volver';
+  backBtn.addEventListener('click',backFn);
+  const title=document.createElement('h2'); title.style.cssText='color:var(--gold);font-size:15px;margin:0;flex:1'; title.textContent=ev.titulo;
+  hdr.appendChild(backBtn); hdr.appendChild(title);
+  // Modo Servicio button (visible for all if event has orden)
+  if((ev.orden||[]).length > 0) {
+    const msBtn=document.createElement('button');
+    msBtn.style.cssText='border:none;background:var(--gold);color:#0F0E1A;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap';
+    msBtn.textContent='⭐ Modo Servicio';
+    msBtn.addEventListener('click',()=>iniciarModoServicio(ev));
+    hdr.appendChild(msBtn);
+  }
+  if(CU&&CU.admin){
+    const editBtn=document.createElement('button'); editBtn.className='btn btn-accent btn-sm'; editBtn.textContent='✏️';
+    editBtn.addEventListener('click',()=>showEvForm(ev.id));
+    const delBtn=document.createElement('button'); delBtn.className='btn btn-danger btn-sm'; delBtn.textContent='🗑️';
+    delBtn.addEventListener('click',()=>deleteEvento(ev.id));
+    const btnRow=document.createElement('div'); btnRow.style.cssText='display:flex;gap:6px';
+    btnRow.appendChild(editBtn); btnRow.appendChild(delBtn); hdr.appendChild(btnRow);
+  }
+  wrap.appendChild(hdr);
+  // Info
+  const info=document.createElement('div'); info.className='ev-sec';
+  info.innerHTML='<div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">📅 '+fmt(ev.fecha)+horaStr+'</span><span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span></div>'+(ev.notas?'<p style="color:var(--muted);font-size:13px;margin-top:8px">'+ev.notas+'</p>':'');
+  wrap.appendChild(info);
+  if(ev.tipo==='Ayuno'){
+    const ay=document.createElement('div'); ay.className='ev-sec'; ay.style.textAlign='center'; ay.style.padding='32px';
+    ay.innerHTML='<div style="font-size:48px">🙏</div><div style="color:var(--success);font-size:16px;font-weight:700;margin-top:12px">Día de Ayuno</div>';
+    wrap.appendChild(ay);
+  } else {
+    if(presididor){const ds=document.createElement('div');ds.className='ev-sec';ds.innerHTML='<h4>🎤 Presididor</h4><div class="row"><div class="avatar">'+roleIcon(dirRol)+'</div><div style="font-weight:600;font-size:14px">'+presididor.nombre+'</div><span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+dirRol+'</span></div>';wrap.appendChild(ds);}
+    // Define role groups
+    const VOICE_ROLES = ['Voz','Líder'];
+    const SOUND_ROLES = ['Sonidista'];
+    const MULTI_ROLES = ['Presentación','Transmisión'];
+
+    const getGroup = (rol) => {
+      if(VOICE_ROLES.includes(rol)) return 'voces';
+      if(SOUND_ROLES.includes(rol)) return 'sonido';
+      if(MULTI_ROLES.includes(rol)) return 'multimedia';
+      return 'musicos';
+    };
+
+    // Helper to build attendance row
+    const makeAsistRow = (m, rol, asist, evId, colorAccent) => {
+      const est=asist[m.id]||'pendiente';
+      const estColor=est==='llego'?'var(--success)':est==='no-llego'?'var(--danger)':'var(--muted)';
+      const esMio=CU&&!CU.admin&&CU.key===m.username;
+      const row=document.createElement('div'); row.className='rol-row';
+      row.innerHTML='<div class="avatar" style="width:30px;height:30px;font-size:13px">'+roleIcon(m.rol)+'</div><div style="flex:1;font-size:13px;font-weight:600">'+m.nombre+'</div>'+(rol?'<span class="badge" style="background:'+colorAccent+'22;color:'+colorAccent+';border:1px solid '+colorAccent+'44;margin-right:4px">'+rol+'</span>':'');
+      if(CU&&CU.admin||esMio){
+        const bg1=est==='llego'?'#7EC8A0':'#7EC8A022',c1=est==='llego'?'#0F0E1A':'var(--success)';
+        const bg2=est==='no-llego'?'#E06C75':'#E06C7522',c2=est==='no-llego'?'#fff':'var(--danger)';
+        const b1=document.createElement('button'); b1.style.cssText='border:none;border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;background:'+bg1+';color:'+c1; b1.textContent=CU&&CU.admin?'✅':'✅ Voy';
+        b1.addEventListener('click',()=>marcarAsist(evId,m.id,'llego'));
+        const b2=document.createElement('button'); b2.style.cssText='border:none;border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;background:'+bg2+';color:'+c2; b2.textContent=CU&&CU.admin?'❌':'❌ No voy';
+        b2.addEventListener('click',()=>marcarAsist(evId,m.id,'no-llego'));
+        const btnRow=document.createElement('div'); btnRow.style.cssText='display:flex;gap:3px'; btnRow.appendChild(b1); btnRow.appendChild(b2); row.appendChild(btnRow);
+      } else { const sp=document.createElement('span'); sp.style.cssText='font-size:11px;color:'+estColor; sp.textContent=est==='llego'?'✅ Llegó':est==='no-llego'?'❌ No llegó':'⏳ Pendiente'; row.appendChild(sp); }
+      return row;
+    };
+
+    const asist=ev.asistencia||{};
+    const pulpAsist=ev.asistenciaPulperia||{};
+
+    // Render each group separately
+    const groupDefs = [
+      {label:'🎸 Músicos', color:'#7B6FD4', items: ev.asignados||[]},
+      {label:'🎙️ Voces',   color:'#F0A500', items: (ev.vozAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Voz'}:a)},
+      {label:'🔊 Sonido',  color:'#E8C96A', items: (ev.sonidoAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Sonidista'}:a)},
+      {label:'📡 Multimedia', color:'#7EC8A0', items: (ev.multiAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Multimedia'}:a)},
+    ];
+    groupDefs.forEach(grp=>{
+      if(!grp.items.length) return;
+      const es=document.createElement('div'); es.className='ev-sec';
+      es.innerHTML='<h4 style="color:'+grp.color+'">'+grp.label+' ('+grp.items.length+')</h4>';
+      grp.items.forEach(a=>{
+        const m=musicos.find(x=>x.id===a.musId); if(!m) return;
+        es.appendChild(makeAsistRow(m, a.rol, asist, ev.id, grp.color));
+      });
+      wrap.appendChild(es);
+    });
+
+    // Pulpería section
+    const pulpAsign = ev.pulperia||[];
+    if(pulpAsign.length){
+      const ps=document.createElement('div'); ps.className='ev-sec';
+      ps.innerHTML='<h4 style="color:var(--success)">🛒 Pulpería ('+pulpAsign.length+')</h4>';
+      pulpAsign.forEach(musId=>{
+        const m=musicos.find(x=>x.id===musId); if(!m) return;
+        ps.appendChild(makeAsistRow(m, '', pulpAsist, ev.id+'_pulp', '#7EC8A0'));
+      });
+      wrap.appendChild(ps);
+    }
+    const orden = ev.orden||[];
+    if(orden.length){
+      const icons={'cancion':'🎵','oracion':'🙏','lectura':'📖','ofrendas':'💝','anuncio':'📢','otro':'✨'};
+      const rs=document.createElement('div'); rs.className='ev-sec';
+      rs.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><h4 style="margin:0">📋 Orden del servicio</h4>'+(CU&&CU.admin?'<span id="orden-actual-lbl" style="font-size:11px;color:var(--muted)">Toca un ítem para marcarlo activo</span>':'')+'</div>';
+      orden.forEach((item,i)=>{
+        const cancion = item.tipo==='cancion' ? canciones.find(c=>c.id===item.cancionId) : null;
+        const isActivo = ev.ordenActivo === i;
+        const row=document.createElement('div');
+        row.style.cssText='display:flex;align-items:center;gap:8px;padding:10px;border-radius:10px;margin-bottom:6px;transition:background .2s;cursor:'+(CU&&CU.admin?'pointer':'default')+';background:'+(isActivo?'linear-gradient(135deg,#7B6FD433,#E8C96A22)':'var(--bg)')+';border:1px solid '+(isActivo?'var(--gold)':'var(--border)');
+        // Build estructura display
+        const estructuraHtml = (item.estructura||[]).length ? 
+          '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;padding-left:40px">'+
+          (item.estructura||[]).map((p,pi)=>'<div style="display:flex;align-items:center;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px"><span style="font-weight:600">'+p.nombre+'</span><span style="background:var(--accent);color:#fff;border-radius:99px;padding:0px 5px;font-size:9px">×'+p.veces+'</span></div>'+(pi<(item.estructura||[]).length-1?'<span style="color:var(--muted);font-size:11px;align-self:center">→</span>':'')).join('')+
+          '</div>' : '';
+        row.innerHTML='<span style="color:'+(isActivo?'var(--gold)':'var(--muted)')+';font-weight:700;font-size:13px;width:22px">'+(i+1)+'</span>'
+          +'<span style="font-size:18px">'+icons[item.tipo]+'</span>'
+          +'<div style="flex:1"><div style="font-size:13px;font-weight:'+(isActivo?'700':'600')+';color:'+(isActivo?'var(--gold)':'var(--text)')+'">'+item.titulo+'</div>'
+          +(cancion&&cancion.artista?'<div style="font-size:11px;color:var(--muted)">'+cancion.artista+'</div>':'')+'</div>'
+          +(item.tono?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">'+item.tono+'</span>':'')
+          +(isActivo?'<span style="color:var(--gold);font-size:11px;font-weight:700">▶ ACTUAL</span>':'');
+        if(estructuraHtml) row.innerHTML += estructuraHtml;
+        if(CU&&CU.admin){
+          row.addEventListener('click',async()=>{
+            const newActivo = ev.ordenActivo===i ? null : i;
+            await updateDoc(doc(db,'eventos',ev.id),{ordenActivo:newActivo});
+          });
+        }
+        if(cancion&&(cancion.linkLetra||cancion.linkAcordes)){
+          const links=document.createElement('div'); links.style.cssText='display:flex;gap:6px;padding:4px 0 0 40px';
+          links.innerHTML=(cancion.linkLetra?'<a href="'+cancion.linkLetra+'" target="_blank" class="link-btn">📄 Letra</a>':'')+(cancion.linkAcordes?' <a href="'+cancion.linkAcordes+'" target="_blank" class="link-btn">🎼 Acordes</a>':'')+(cancion.linkYoutube?' <a href="'+cancion.linkYoutube+'" target="_blank" class="link-btn" style="background:#FF000011;border-color:#FF000044;color:#FF4444">🎬 YouTube</a>':'');
+          const wrap2=document.createElement('div'); wrap2.appendChild(row); wrap2.appendChild(links); rs.appendChild(wrap2);
+        } else {
+          rs.appendChild(row);
+        }
+      });
+      wrap.appendChild(rs);
     }
   }
-  return null;
+  // Comentarios
+  const coms=ev.comentarios||[];
+  const cs=document.createElement('div'); cs.className='ev-sec'; cs.innerHTML='<h4>💬 Comentarios ('+coms.length+')</h4>';
+  coms.forEach((c,i)=>{
+    const cd=document.createElement('div'); cd.style.cssText='background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:6px';
+    cd.innerHTML='<div style="display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:600;color:var(--accent)">'+c.autor+'</span><div style="display:flex;gap:6px;align-items:center"><span style="font-size:10px;color:var(--muted)">'+c.fecha+'</span></div></div><div style="font-size:13px;color:var(--text);margin-top:4px">'+c.texto+'</div>';
+    if(CU&&CU.admin){const db2=cd.querySelector('.row-inner')||cd.querySelector('div div');const xBtn=document.createElement('button');xBtn.style.cssText='border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:12px';xBtn.textContent='✕';xBtn.addEventListener('click',()=>delComentario(ev.id,i));cd.querySelector('div').lastElementChild.appendChild(xBtn);}
+    cs.appendChild(cd);
+  });
+  const comRow=document.createElement('div'); comRow.style.cssText='display:flex;gap:6px;margin-top:8px';
+  const comInp=document.createElement('input'); comInp.id='com-inp-'+ev.id; comInp.placeholder='Escribí un comentario...'; comInp.style.cssText='flex:1;margin:0;padding:8px 10px;font-size:12px';
+  const comBtn=document.createElement('button'); comBtn.style.cssText='border:none;background:var(--accent);color:#fff;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap'; comBtn.textContent='Enviar';
+  comBtn.addEventListener('click',()=>addComentario(ev.id));
+  comRow.appendChild(comInp); comRow.appendChild(comBtn); cs.appendChild(comRow);
+  wrap.appendChild(cs);
+  return wrap;
+};
+
+const showEvDetail = id => {
+  const ev=eventos.find(e=>e.id===id); if(!ev) return;
+  const detEl=$('ev-detail-view'); detEl.innerHTML='';
+  detEl.appendChild(buildEvDetail(ev,hideEvForm));
+  $('ev-list-view').style.display='none'; $('ev-form-view').style.display='none'; detEl.style.display='block';
+  history.pushState({tab:'eventos', view:'detail', id}, '', location.pathname);
+};
+
+function renderEventos() {
+  const el=$('eventos-list'); el.innerHTML='';
+  const sorted=[...eventos].sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+  if(!sorted.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No hay eventos</div>';return;}
+  sorted.forEach(ev=>{
+    const div=document.createElement('div'); div.className='card row'; div.style.cursor='pointer';
+    div.addEventListener('click',()=>showEvDetail(ev.id));
+    const horaStr=ev.horaIni?'<div style="color:var(--muted);font-size:11px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'';
+    const badges='<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>'+(ev.tipo!=='Ayuno'?' <span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">'+(ev.setlist||[]).length+'🎵</span> <span class="badge" style="background:#9590B022;color:var(--muted);border:1px solid #9590B044">'+(ev.asignados||[]).length+'🎸</span>':'');
+    div.innerHTML='<div style="width:42px;height:42px;border-radius:10px;background:'+tipoBg(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:8px;color:var(--muted)">'+(ev.fecha||'').slice(5,7)+'/'+(ev.fecha||'').slice(2,4)+'</span><span style="font-size:17px;font-weight:800;color:'+tipoColor(ev.tipo)+';line-height:1">'+(ev.fecha||'?').slice(8)+'</span></div><div style="flex:1"><div style="font-weight:700;font-size:14px">'+ev.titulo+'</div>'+horaStr+'<div style="margin-top:3px">'+badges+'</div></div><span style="color:var(--muted)">›</span>';
+    el.appendChild(div);
+  });
+}
+
+// ── CALENDAR ──
+$('cal-prev-btn').addEventListener('click',()=>{calM--;if(calM<0){calM=11;calY--;}renderCalendar();});
+$('cal-next-btn').addEventListener('click',()=>{calM++;if(calM>11){calM=0;calY++;}renderCalendar();});
+
+function renderCalendar() {
+  const now=new Date();
+  if(calY===undefined){calY=now.getFullYear();calM=now.getMonth();}
+  $('cal-title').textContent=MESES[calM]+' '+calY;
+  const DNS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  $('cal-hdr').innerHTML=DNS.map(d=>'<div class="cal-dn">'+d+'</div>').join('');
+  const first=new Date(calY,calM,1).getDay(), days=new Date(calY,calM+1,0).getDate();
+  const todayStr=now.toISOString().slice(0,10);
+  const grid=$('cal-grid'); grid.innerHTML='';
+  calDates=[];
+  for(let i=0;i<first;i++){const e=document.createElement('div');grid.appendChild(e);}
+  for(let d=1;d<=days;d++){
+    const ds=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    calDates.push(ds);
+    const devs=eventos.filter(e=>e.fecha===ds);
+    const cell=document.createElement('div');
+    cell.className='cal-day'+(devs.length?' has-ev':'')+(ds===todayStr?' today':'');
+    cell.innerHTML='<div class="cal-day-num">'+d+'</div>'+devs.map(e=>'<div class="cal-dot" style="background:'+tipoColor(e.tipo)+';"></div>').join('');
+    cell.addEventListener('click',()=>{
+      document.querySelectorAll('.cal-day.selected').forEach(x=>x.classList.remove('selected'));
+      cell.classList.add('selected');
+      renderCalList(ds);
+    });
+    grid.appendChild(cell);
+  }
+  renderCalList(todayStr);
+}
+
+function renderCalList(date) {
+  const devs=eventos.filter(e=>e.fecha===date);
+  // Show calendar views
+  $('cal-ev-list').style.display='block';
+  $('cal-grid').style.display='grid';
+  $('cal-hdr').style.display='grid';
+  $('cal-title-row').style.display='flex';
+  $('cal-legend').style.display='flex';
+  $('cal-ev-detail').style.display='none';
+  $('cal-ev-detail').innerHTML='';
+
+  const el=$('cal-ev-list'); el.innerHTML='';
+  if(!devs.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">'+fmt(date)+' — Sin eventos</div>';return;}
+  el.innerHTML='<div style="color:var(--muted);font-size:12px;margin-bottom:6px;padding-top:4px">'+fmt(date)+'</div>';
+  devs.forEach(ev=>{
+    const div=document.createElement('div'); div.className='card row'; div.style.cssText='cursor:pointer;padding:10px 12px';
+    div.innerHTML='<div style="flex:1"><div style="font-weight:700;font-size:13px">'+ev.titulo+'</div>'+(ev.horaIni?'<div style="color:var(--muted);font-size:11px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'')+'<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;margin-top:4px">'+ev.tipo+'</span></div><span style="color:var(--muted)">›</span>';
+    div.addEventListener('click',()=>{
+      // Hide calendar, show detail
+      $('cal-ev-list').style.display='none';
+      $('cal-grid').style.display='none';
+      $('cal-hdr').style.display='none';
+      $('cal-title-row').style.display='none';
+      $('cal-legend').style.display='none';
+      const detEl=$('cal-ev-detail'); detEl.style.display='block'; detEl.innerHTML='';
+      const backFn=()=>{
+        detEl.style.display='none'; detEl.innerHTML='';
+        $('cal-ev-list').style.display='block';
+        $('cal-grid').style.display='grid';
+        $('cal-hdr').style.display='grid';
+        $('cal-title-row').style.display='flex';
+        $('cal-legend').style.display='flex';
+      };
+      detEl.appendChild(buildEvDetail(ev,backFn));
+    });
+    el.appendChild(div);
+  });
+}
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  $('st-c').textContent=canciones.length; $('st-m').textContent=musicos.length; $('st-e').textContent=eventos.length;
+  const hoy=new Date().toISOString().slice(0,10);
+  const prox=[...eventos].filter(e=>e.fecha>=hoy).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(0,4);
+  const proxEl=$('proximos-list'); proxEl.innerHTML='';
+  if(!prox.length){proxEl.innerHTML='<div style="color:var(--muted);font-size:13px">No hay eventos próximos</div>';}
+  else prox.forEach(ev=>{
+    const div=document.createElement('div'); div.className='card row'; div.style.cssText='cursor:pointer;padding:10px 12px;margin-bottom:8px';
+    div.addEventListener('click',()=>{goTab('eventos');showEvDetail(ev.id);});
+    div.innerHTML='<span style="font-size:18px">'+(ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':'🎵')+'</span><div style="flex:1"><div style="font-weight:600;font-size:13px">'+ev.titulo+'</div><div style="color:var(--muted);font-size:11px">'+fmt(ev.fecha)+(ev.horaIni?' · '+ev.horaIni:'')+' · '+ev.tipo+'</div></div><span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>';
+    proxEl.appendChild(div);
+  })
+  // Cumpleaños
+  const hoyDate=new Date(), hoyM=hoyDate.getMonth()+1, hoyD=hoyDate.getDate();
+  const bdayHoy=musicos.filter(m=>{if(!m.bday)return false;const[y,mm,dd]=m.bday.split('-');return parseInt(mm)===hoyM&&parseInt(dd)===hoyD;});
+  const bdayMes=musicos.filter(m=>{if(!m.bday)return false;const[y,mm]=m.bday.split('-');return parseInt(mm)===hoyM;}).sort((a,b)=>parseInt(a.bday.split('-')[2])-parseInt(b.bday.split('-')[2]));
+  const bhEl=$('bday-hoy');
+  if(bdayHoy.length){bhEl.style.display='block';bhEl.innerHTML='<div style="font-size:20px;margin-bottom:6px">🎉🎂🎉</div><div style="font-weight:700;color:var(--gold);font-size:14px;margin-bottom:6px">¡Cumpleaños hoy!</div>'+bdayHoy.map(m=>'<div style="font-size:13px;color:var(--text)">🎂 '+m.nombre+'</div>').join('');}
+  else bhEl.style.display='none';
+  const bmEl=$('bday-mes');
+  if(bmEl){if(!bdayMes.length){bmEl.innerHTML='<div style="color:var(--muted);font-size:13px">No hay cumpleaños este mes</div>';}
+  else{bmEl.innerHTML=bdayMes.map(m=>{const[y,mm,dd]=m.bday.split('-');const esHoy=parseInt(mm)===hoyM&&parseInt(dd)===hoyD;return'<div class="card row" style="padding:10px 12px;margin-bottom:8px"><div class="avatar">'+roleIcon(m.rol)+'</div><div style="flex:1"><div style="font-weight:600;font-size:13px">'+m.nombre+'</div><div style="color:var(--muted);font-size:11px">'+m.rol+'</div></div><span class="badge" style="background:'+(esHoy?'#E8C96A33':'#7B6FD422')+';color:'+(esHoy?'var(--gold)':'var(--accent)')+';border:1px solid '+(esHoy?'var(--gold)':'var(--accent)')+'44">'+(esHoy?'🎂 Hoy':'📅 '+dd+'/'+mm)+'</span></div>';}).join('');}}
+  // Stats
+  const sEl=$('stats-section'); if(!sEl) return;
+  const musCount={},canCount={};
+  eventos.forEach(ev=>{(ev.asignados||[]).forEach(a=>{musCount[a.musId]=(musCount[a.musId]||0)+1;});(ev.setlist||[]).forEach(id=>{canCount[id]=(canCount[id]||0)+1;});});
+  const topMus=Object.entries(musCount).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,n])=>{const m=musicos.find(x=>x.id===id);if(!m)return'';return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span>'+roleIcon(m.rol)+'</span><span style="flex:1;font-size:13px">'+m.nombre+'</span><span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+n+' eventos</span></div>';}).join('');
+  const topCan=Object.entries(canCount).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,n])=>{const c=canciones.find(x=>x.id===id);if(!c)return'';return'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span>🎵</span><span style="flex:1;font-size:13px">'+c.titulo+'</span><span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">'+n+' veces</span></div>';}).join('');
+  const nuevas=canciones.filter(c=>c.nueva);
+  const aprender = canciones.filter(c=>c.aprender);
+  sEl.innerHTML=
+    (aprender.length?'<div class="card" style="margin-bottom:10px"><div style="font-weight:700;font-size:12px;color:var(--success);margin-bottom:8px">📚 CANCIONES POR APRENDER</div>'+aprender.map(c=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span>🎵</span><div style="flex:1"><div style="font-size:13px;font-weight:600">'+c.titulo+'</div><div style="font-size:11px;color:var(--muted)">'+(c.artista||'')+'</div></div>'+(c.tono?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">'+c.tono+'</span>':'')+'</div>').join('')+'</div>':'')
+    +'<div class="card" style="margin-bottom:10px"><div style="font-weight:700;font-size:12px;color:var(--muted);margin-bottom:8px">🎵 CANCIONES MÁS CANTADAS</div>'+(topCan||'<div style="color:var(--muted);font-size:12px">Sin datos aún</div>')+'</div>';
+}
+
+// ── CUOTAS ──
+let cuotaMes = new Date().getMonth(), cuotaYear = new Date().getFullYear();
+let cuotaData = {}; // {musId: {YYYY-MM: true/false}}
+let cuotaMonto = 0;
+const MESES_C = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+const cuotaKey = () => cuotaYear+'-'+String(cuotaMes+1).padStart(2,'0');
+
+$('btn-save-monto').addEventListener('click', async () => {
+  const m = parseInt($('cuota-monto').value);
+  if(!m||m<=0){alert('Ingresá un monto válido');return;}
+  await updateDoc(doc(db,'config','cuotas'), {monto:m}).catch(async ()=>{
+    await addDoc(collection(db,'config'), {monto:m});
+  });
+  // Use setDoc instead
+    await setDoc(doc(db,'config','cuotas'), {monto:m});
+  cuotaMonto = m; toast('✅ Monto guardado: ₡'+m.toLocaleString());
 });
 
-// Runs on the last day of each month at 8am Costa Rica time
-// Runs every Monday at 8am Costa Rica time
-exports.notificarEventosSemana = onSchedule("0 14 * * 1", async () => {
-  const hoy = new Date();
-  const finSemana = new Date(hoy);
-  finSemana.setDate(hoy.getDate() + 6);
+$('btn-cuota-prev').addEventListener('click',()=>{cuotaMes--;if(cuotaMes<0){cuotaMes=11;cuotaYear--;}renderCuotas();});
+$('btn-cuota-next').addEventListener('click',()=>{cuotaMes++;if(cuotaMes>11){cuotaMes=0;cuotaYear++;}renderCuotas();});
+$('btn-cuota-ok').addEventListener('click',()=>$('cuota-modal').style.display='none');
+$('btn-evento-ok').addEventListener('click',()=>$('evento-modal').style.display='none');
 
-  const fmtDate = d => d.toISOString().slice(0, 10);
-  const fmtFecha = f => { const [y,m,d]=f.split('-'); return d+'/'+m; };
-  const hoyStr = fmtDate(hoy);
-  const finStr = fmtDate(finSemana);
+const toggleCuota = async (musId, paid) => {
+  const key = cuotaKey();
+    if(!cuotaData[musId]) cuotaData[musId]={};
+  cuotaData[musId][key] = !paid;
+  await setDoc(doc(db,'cuotas',musId), cuotaData[musId]);
+  renderCuotas();
+  toast(!paid ? '✅ Pago registrado' : '↩️ Pago removido');
+};
 
-  // Get events this week
-  const eventosSnap = await db.collection("eventos").get();
-  const eventos = eventosSnap.docs
-    .map(d => ({ id: d.id, ...d.data() }))
-    .filter(ev => ev.fecha >= hoyStr && ev.fecha <= finStr)
-    .sort((a,b) => a.fecha.localeCompare(b.fecha));
+function renderCuotas() {
+  const key = cuotaKey();
+  $('cuota-mes-titulo').textContent = MESES_C[cuotaMes]+' '+cuotaYear;
+  if($('cuota-monto').value==='') $('cuota-monto').value = cuotaMonto||'';
+  const el=$('cuotas-list'); el.innerHTML='';
+  const musList = musicos.filter(m=>m.username).sort((a,b)=>a.nombre.localeCompare(b.nombre)); // only musicians with accounts, sorted A-Z
+  let pagaron=0, deben=0;
+  musList.forEach(m=>{
+    const paid = cuotaData[m.id]?.[key]||false;
+    if(paid) pagaron++; else deben++;
+    const div=document.createElement('div'); div.className='card row';
+    div.innerHTML='<div class="avatar">'+roleIcon(m.rol)+'</div><div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="color:var(--muted);font-size:12px">'+(m.roles||[m.rol])[0]+'</div></div>';
+    const btn=document.createElement('button');
+    btn.className='btn btn-sm';
+    btn.style.cssText='background:'+(paid?'#7EC8A022':'#E06C7522')+';color:'+(paid?'var(--success)':'var(--danger)')+';border:1px solid '+(paid?'#7EC8A044':'#E06C7544')+';white-space:nowrap';
+    btn.textContent=paid?'✅ Pagó':'❌ Debe';
+    btn.addEventListener('click',()=>toggleCuota(m.id,paid));
+    div.appendChild(btn);
+    el.appendChild(div);
+  });
+  $('cuota-pagaron').textContent=pagaron;
+  $('cuota-deben').textContent=deben;
+  $('cuota-total').textContent='₡'+(pagaron*(cuotaMonto||0)).toLocaleString();
+}
 
-  if(!eventos.length) return null;
+const checkEventoProximo = () => {
+  if(!CU||CU.admin) return;
+  const m = musicos.find(x=>x.username===CU.key);
+  if(!m) return;
+  const now = new Date();
+  const en7d = new Date(now.getTime() + 7*24*60*60*1000);
+  const pad = n => String(n).padStart(2,'0');
+  const localDate = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  const hoyStr = localDate(now);
+  const en7Str = localDate(en7d);
+  // Find events this week where musician is assigned
+  const proximos = eventos.filter(ev => {
+    if(ev.fecha < hoyStr || ev.fecha > en7Str) return false;
+    return (ev.asignados||[]).some(a => a.musId === m.id);
+  }).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  if(!proximos.length) return;
+  const pad2 = n => String(n).padStart(2,'0');
+  const fmtFecha = f => { const [y,mo,d]=f.split('-'); return d+'/'+mo; };
+  const esHoy = f => f === hoyStr;
+  const esMañana = f => { const m2=new Date(now.getTime()+24*60*60*1000); return f===localDate(m2); };
+  $('evento-modal-icon').textContent = '📅';
+  $('evento-modal-titulo').textContent = 'Tus eventos esta semana';
+  let html = 'Hola <strong>'+CU.nombre+'</strong>, estos son tus eventos:<br><br>';
+  proximos.forEach(ev => {
+    const miRol = (ev.asignados||[]).find(a=>a.musId===m.id)?.rol||'';
+    const cuando = esHoy(ev.fecha)?'<span style="color:var(--danger);font-weight:700"> · HOY</span>':esMañana(ev.fecha)?'<span style="color:var(--warn);font-weight:700"> · Mañana</span>':'';
+    const icono = ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':'🎵';
+    html += '<div style="background:var(--surface);border-radius:10px;padding:10px;margin-bottom:8px;text-align:left">';
+    html += '<div style="font-weight:700;font-size:13px;color:var(--gold)">'+icono+' '+ev.titulo+cuando+'</div>';
+    html += '<div style="color:var(--muted);font-size:12px;margin-top:3px">📅 '+fmtFecha(ev.fecha)+(ev.horaIni?' · ⏰ '+ev.horaIni:'')+'</div>';
+    html += '<div style="margin-top:4px"><span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>'+(miRol?' <span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+miRol+'</span>':'')+'</div>';
+    html += '</div>';
+  });
+  // Add ayuno days this week
+  const weekKey = getWeekKey();
+  const myDays = CU ? (ayunoData[weekKey]?.[CU.key] || []) : [];
+  if(myDays.length > 0) {
+    const days = getWeekDays();
+    const diasNombres = myDays.sort().map(i => days[i]?.nombre).filter(Boolean);
+    html += '<div style="background:var(--surface);border-radius:10px;padding:10px;margin-bottom:8px;text-align:left;border:1px solid #7B6FD444">';
+    html += '<div style="font-weight:700;font-size:13px;color:var(--accent)">🙏 Mis días de ayuno esta semana</div>';
+    html += '<div style="color:var(--muted);font-size:12px;margin-top:4px">'+diasNombres.join(', ')+'</div>';
+    html += '</div>';
+  }
+  $('evento-modal-msg').innerHTML = html;
+  $('evento-modal').style.display='flex';
+};
 
-  const musicosSnap = await db.collection("musicos").get();
-  const musicos = musicosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+const checkCuotaPendiente = () => {
+  if(!CU||CU.admin) return;
+  const m = musicos.find(x=>x.username===CU.key);
+  if(!m) return;
+  // Check all months from Jan 2026 to current month
+  const now = new Date();
+  const pendientes = [];
+  let y = 2026, mo = 0; // Start Jan 2026
+  while(y < now.getFullYear() || (y === now.getFullYear() && mo < now.getMonth())) {
+    const key = y+'-'+String(mo+1).padStart(2,'0');
+    const paid = cuotaData[m.id]?.[key]||false;
+    if(!paid) pendientes.push(MESES_C[mo]+' '+y);
+    mo++;
+    if(mo>11){mo=0;y++;}
+  }
+  if(pendientes.length > 0 && cuotaMonto>0){
+    const total = pendientes.length * cuotaMonto;
+    $('cuota-modal-msg').innerHTML='Hola <strong>'+CU.nombre+'</strong>, tenés <strong>'+pendientes.length+' mes'+(pendientes.length>1?'es':'')+' pendiente'+(pendientes.length>1?'s':'')+'</strong> de pago:<br><br><span style="color:var(--danger)">'+pendientes.join(', ')+'</span><br><br>Monto por mes: <strong>₡'+cuotaMonto.toLocaleString()+'</strong><br>Total pendiente: <strong style="color:var(--danger)">₡'+total.toLocaleString()+'</strong><br><br><span style="color:var(--muted);font-size:12px">Coordiná el pago con tu administrador</span>';
+    $('cuota-modal').style.display='flex';
+  }
+};
 
-  const adminsSnap = await db.collection("admins").get();
-  const admins = adminsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+// Firestore listener for cuotas
+// Load config async
+(async () => {
+  try {
+    const cfgDoc = await getDoc(doc(db,'config','cuotas'));
+    if(cfgDoc.exists()) { cuotaMonto=cfgDoc.data().monto||0; $('cuota-monto').value=cuotaMonto; }
+  } catch(e){}
+})();
+// Load cuota payments
+onSnapshot(collection(db,'cuotas'), snap=>{
+  cuotaData={};
+  snap.docs.forEach(d=>{ cuotaData[d.id]=d.data(); });
+  renderCuotas();
+  // Check after login
+  if(CU) checkCuotaPendiente();
+});
 
-  // Send personalized notification to each musician
-  for (const musico of [...musicos, ...admins]) {
-    if (!musico.fcmToken) continue;
+// ── AYUNO ──
+let ayunoData = {}; // {userId: [0,2,4]} indices of days
 
-    const misEventos = eventos.filter(ev =>
-      (ev.asignados||[]).some(a => a.musId === musico.id) ||
-      (ev.vozAsignados||[]).some(a => a.musId === musico.id) ||
-      (ev.sonidoAsignados||[]).some(a => a.musId === musico.id) ||
-      (ev.multiAsignados||[]).some(a => a.musId === musico.id) ||
-      ev.tipo === 'Ayuno'
-    );
+const getWeekKey = () => {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day===0?6:day-1));
+  const pad = n => String(n).padStart(2,'0');
+  return monday.getFullYear()+'-'+pad(monday.getMonth()+1)+'-'+pad(monday.getDate());
+};
 
-    if (!misEventos.length) continue;
+const getWeekDays = () => {
+  const weekKey = getWeekKey();
+  const [y,m,d] = weekKey.split('-').map(Number);
+  const monday = new Date(y,m-1,d);
+  const dias = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const pad = n => String(n).padStart(2,'0');
+  return dias.map((nombre,i) => {
+    const fecha = new Date(monday);
+    fecha.setDate(monday.getDate()+i);
+    return { nombre, fecha: fecha.getFullYear()+'-'+pad(fecha.getMonth()+1)+'-'+pad(fecha.getDate()) };
+  });
+};
 
-    const resumen = misEventos.map(ev =>
-      ev.titulo + ' · ' + fmtFecha(ev.fecha) + (ev.horaIni ? ' ' + ev.horaIni : '')
-    ).join(' | ');
+function renderAyuno() {
+  const weekKey = getWeekKey();
+  const days = getWeekDays();
+  const [y,m,d] = weekKey.split('-');
+  $('ayuno-semana').textContent = 'Semana del '+d+'/'+m+'/'+y;
 
-    try {
-      await admin.messaging().send({
-        token: musico.fcmToken,
-        notification: {
-          title: '📅 Tus eventos esta semana',
-          body: resumen
-        },
-        webpush: { fcmOptions: { link: 'https://carlos40205sh-oss.github.io/Ministerio-de-Alabanza-Fuente-Vida/' } }
-      });
-      console.log('Resumen semanal enviado a:', musico.nombre);
-    } catch(e) {
-      console.error('Error:', e.message);
+  // My days selector
+  const myKey = CU ? CU.key : null;
+  const myDays = myKey ? (ayunoData[weekKey]?.[myKey] || []) : [];
+  const misDiasEl = $('ayuno-mis-dias');
+  misDiasEl.innerHTML = '';
+  days.forEach((dia, i) => {
+    const btn = document.createElement('button');
+    const sel = myDays.includes(i);
+    btn.className = 'btn btn-sm';
+    btn.style.cssText = 'background:'+(sel?'#7B6FD4':'var(--surface)')+';color:'+(sel?'#fff':'var(--muted)')+';border:1px solid '+(sel?'var(--accent)':'var(--border)');
+    btn.textContent = dia.nombre.slice(0,3);
+    btn.addEventListener('click', async () => {
+      if(!CU) return;
+      const weekData = ayunoData[weekKey] || {};
+      const userDays = [...(weekData[myKey]||[])];
+      const idx = userDays.indexOf(i);
+      if(idx>=0) userDays.splice(idx,1); else userDays.push(i);
+      weekData[myKey] = userDays;
+      ayunoData[weekKey] = weekData;
+      await setDoc(doc(db,'ayunos',weekKey), weekData);
+      renderAyuno();
+    });
+    misDiasEl.appendChild(btn);
+  });
+
+  // Summary list
+  const listaEl = $('ayuno-lista'); listaEl.innerHTML = '';
+  days.forEach((dia, i) => {
+    const participants = [];
+    const weekData = ayunoData[weekKey] || {};
+    Object.entries(weekData).forEach(([userId, userDays]) => {
+      if(userDays.includes(i)) {
+        const mus = musicos.find(x=>x.username===userId);
+        if(mus) participants.push(mus.nombre);
+        else if(userId === 'carlitos') participants.push('Carlitos Soto');
+        else if(userId === 'jeaneth') participants.push('Jeaneth Hernández');
+      }
+    });
+    if(!participants.length) return;
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.style.marginBottom = '8px';
+    div.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--gold);margin-bottom:8px">🙏 '+dia.nombre+' <span style="color:var(--muted);font-size:11px;font-weight:400">('+participants.length+')</span></div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px">'+participants.map(n=>'<span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+n+'</span>').join('')+'</div>';
+    listaEl.appendChild(div);
+  });
+  if(!listaEl.children.length) listaEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px">Nadie ha marcado días de ayuno esta semana</div>';
+};
+
+// Firestore listener for ayunos
+onSnapshot(collection(db,'ayunos'), snap => {
+  ayunoData = {};
+  snap.docs.forEach(d => { ayunoData[d.id] = d.data(); });
+  if(CU) renderAyuno();
+});
+
+// ── ANUNCIOS ──
+$('btn-anuncio-ok').addEventListener('click', () => {
+  $('anuncio-modal').style.display = 'none';
+  // Mark as seen
+  try { const seen = JSON.parse(localStorage.getItem('anuncios_vistos')||'[]'); if(!seen.includes(window._lastAnuncioId)){seen.push(window._lastAnuncioId);localStorage.setItem('anuncios_vistos',JSON.stringify(seen));} } catch(e){}
+});
+
+const checkAnuncioNuevo = (anuncios) => {
+  if(!CU||!anuncios.length) return;
+  try {
+    const seen = JSON.parse(localStorage.getItem('anuncios_vistos')||'[]');
+    const ultimo = anuncios[0]; // Most recent
+    if(!seen.includes(ultimo.id)){
+      window._lastAnuncioId = ultimo.id;
+      $('anuncio-modal-titulo').textContent = ultimo.titulo;
+      $('anuncio-modal-texto').textContent = ultimo.texto;
+      $('anuncio-modal-fecha').textContent = ultimo.fecha || '';
+      $('anuncio-modal').style.display = 'flex';
     }
-  }
+  } catch(e){}
+};
 
-  return null;
+function renderAnuncios(anuncios) {
+  const el = $('anuncios-list'); el.innerHTML = '';
+  const addBtn = $('anuncio-form');
+  if(CU&&CU.admin) addBtn.style.display = 'block';
+  if(!anuncios.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No hay anuncios</div>';return;}
+  anuncios.forEach(a => {
+    const div = document.createElement('div'); div.className = 'card';
+    div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div style="font-weight:700;font-size:14px;color:var(--gold)">📢 '+a.titulo+'</div>'+(CU&&CU.admin?'<button class="btn btn-danger btn-sm" style="flex-shrink:0">✕</button>':'')+'</div><div style="font-size:13px;color:var(--text);white-space:pre-wrap;margin-bottom:8px">'+a.texto+'</div><div style="font-size:11px;color:var(--muted)">'+a.fecha+'</div>';
+    if(CU&&CU.admin){
+      div.querySelector('.btn-danger').addEventListener('click', async () => {
+        if(confirm('¿Eliminar anuncio?')) { await deleteDoc(doc(db,'anuncios',a.id)); toast('🗑️ Eliminado'); }
+      });
+    }
+    el.appendChild(div);
+  });
+}
+
+$('btn-add-anuncio').addEventListener('click', () => {
+  const f = $('anuncio-form'); f.style.display = f.style.display==='none'?'block':'none';
 });
 
-exports.recordatorioCuotas = onSchedule("0 14 28-31 * *", async () => {
-  const hoy = new Date();
-  const manana = new Date(hoy);
-  manana.setDate(manana.getDate() + 1);
-  if (manana.getDate() !== 1) return null;
-
-  const musicosSnap = await db.collection("musicos").get();
-  const adminsSnap = await db.collection("admins").get();
-  const tokens = [
-    ...musicosSnap.docs.map(d => d.data().fcmToken),
-    ...adminsSnap.docs.map(d => d.data().fcmToken)
-  ].filter(Boolean);
-  if (!tokens.length) return null;
-
-  try {
-    await admin.messaging().sendEachForMulticast({
-      notification: {
-        title: "💰 Recordatorio de cuota",
-        body: "Hoy es el último día del mes. Si tenés cuotas pendientes, coordiná el pago con la tesorería. ¡Gracias!"
-      },
-      tokens,
-    });
-    console.log("Recordatorio de cuotas enviado!");
-  } catch (e) {
-    console.error("Error:", e);
-  }
-  return null;
+$('btn-save-anuncio').addEventListener('click', async () => {
+  const titulo = $('anuncio-titulo').value.trim();
+  const texto = $('anuncio-texto').value.trim();
+  if(!titulo||!texto){alert('Completá el título y el texto');return;}
+  const fecha = new Date().toLocaleDateString('es-CR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const notif = $('anuncio-notif').checked;
+  await addDoc(collection(db,'anuncios'), {titulo, texto, fecha, notif, creadoEn:Date.now()});
+  $('anuncio-titulo').value=''; $('anuncio-texto').value='';
+  $('anuncio-form').style.display='none';
+  toast('📢 Anuncio publicado!');
 });
 
-// Triggered when a new anuncio is created in Firestore
-exports.notificarAnuncio = onDocumentCreated("anuncios/{anuncioId}", async (event) => {
-  const anuncio = event.data.data();
-  if (!anuncio.notif) return null; // Skip if notifications disabled
-
-  const musicosSnap = await db.collection("musicos").get();
-  const adminsSnap = await db.collection("admins").get();
-  const tokens = [
-    ...musicosSnap.docs.map(d => d.data().fcmToken),
-    ...adminsSnap.docs.map(d => d.data().fcmToken)
-  ].filter(Boolean);
-  if (!tokens.length) return null;
-
-  try {
-    await admin.messaging().sendEachForMulticast({
-      notification: {
-        title: "📢 " + anuncio.titulo,
-        body: anuncio.texto.slice(0, 100) + (anuncio.texto.length > 100 ? "..." : "")
-      },
-      webpush: { fcmOptions: { link: "https://carlos40205sh-oss.github.io/Ministerio-de-Alabanza-Fuente-Vida/" } },
-      tokens,
-    });
-    console.log("Anuncio notificado:", anuncio.titulo);
-  } catch (e) {
-    console.error("Error:", e);
-  }
-  return null;
+let anunciosData = [];
+onSnapshot(collection(db,'anuncios'), snap => {
+  anunciosData = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.creadoEn-a.creadoEn);
+  renderAnuncios(anunciosData);
+  if(CU) setTimeout(()=>checkAnuncioNuevo(anunciosData), 6000);
 });
+
+// ── MODO SERVICIO ──
+let msEvento = null, msIdx = 0;
+const msIcons = {'cancion':'🎵','oracion':'🙏','lectura':'📖','ofrendas':'💝','anuncio':'📢','otro':'✨'};
+
+window.iniciarModoServicio = (ev) => {
+  msEvento = ev;
+  msIdx = 0;
+  $('modo-servicio').style.display = 'flex';
+  $('modo-servicio').style.flexDirection = 'column';
+  document.body.style.overflow = 'hidden';
+  $('ms-ev-titulo').textContent = ev.titulo;
+  msRender();
+};
+
+window.salirModoServicio = () => {
+  $('modo-servicio').style.display = 'none';
+  document.body.style.overflow = '';
+};
+
+window.msSiguiente = () => {
+  const orden = msEvento.orden || [];
+  if(msIdx < orden.length - 1) { msIdx++; msRender(); }
+  else { if(confirm('¿Finalizar el servicio?')) salirModoServicio(); }
+};
+
+window.msAnterior = () => {
+  if(msIdx > 0) { msIdx--; msRender(); }
+};
+
+const msRender = () => {
+  const orden = msEvento.orden || [];
+  if(!orden.length) return;
+  const item = orden[msIdx];
+  const total = orden.length;
+  
+  // Progress
+  $('ms-progreso').textContent = (msIdx+1)+' / '+total;
+  $('ms-progress-fill').style.width = ((msIdx+1)/total*100)+'%';
+  
+  // Next button text
+  $('ms-btn-next').textContent = msIdx === total-1 ? '🏁 Finalizar' : 'Siguiente →';
+  
+  // Build current item content
+  const el = $('ms-actual-content'); el.innerHTML = '';
+  
+  if(item.tipo === 'cancion') {
+    const cancion = canciones.find(c=>c.id===item.cancionId);
+    el.innerHTML = '<div class="ms-icono-big">🎵</div>'
+      +'<div class="ms-cancion-big">'+item.titulo+'</div>'
+      +(cancion&&cancion.artista?'<div class="ms-artista-big">'+cancion.artista+'</div>':'')
+      +(item.tono?'<div class="ms-tono-big">🎼 '+item.tono+'</div>':'');
+    
+    // Estructura
+    const partes = item.estructura || [];
+    if(partes.length) {
+      const estDiv = document.createElement('div'); estDiv.className='ms-estructura-big';
+      partes.forEach((p,i) => {
+        const pd = document.createElement('div'); pd.className='ms-parte-big';
+        pd.innerHTML='<div class="ms-parte-big-nombre">'+p.nombre+'</div><div class="ms-parte-big-veces">×'+p.veces+'</div>';
+        estDiv.appendChild(pd);
+        if(i<partes.length-1){const arr=document.createElement('span');arr.style.cssText='color:var(--muted);font-size:16px;align-self:center';arr.textContent='→';estDiv.appendChild(arr);}
+      });
+      el.appendChild(estDiv);
+    }
+    
+    // Links
+    if(cancion&&(cancion.linkLetra||cancion.linkAcordes||cancion.linkYoutube)){
+      const linksDiv = document.createElement('div'); linksDiv.style.cssText='display:flex;gap:10px;justify-content:center;margin-bottom:20px';
+      if(cancion.linkLetra) linksDiv.innerHTML+='<a href="'+cancion.linkLetra+'" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid #7B6FD444;color:var(--accent);background:#7B6FD411">📄 Letra</a>';
+      if(cancion.linkAcordes) linksDiv.innerHTML+='<a href="'+cancion.linkAcordes+'" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid #E8C96A44;color:var(--gold);background:#E8C96A11">🎼 Acordes</a>';
+      if(cancion.linkYoutube) linksDiv.innerHTML+='<a href="'+cancion.linkYoutube+'" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid #FF000044;color:#FF4444;background:#FF000011">🎬 YouTube</a>';
+      el.appendChild(linksDiv);
+    }
+  } else {
+    // Non-song item
+    const icon = msIcons[item.tipo]||'✨';
+    el.innerHTML = '<div style="font-size:72px;margin-bottom:20px">'+icon+'</div>'
+      +'<div style="font-size:24px;font-weight:800;color:var(--gold)">'+item.titulo+'</div>';
+  }
+  
+  // Next item preview
+  if(msIdx < total - 1) {
+    const next = orden[msIdx+1];
+    $('ms-siguiente-preview').style.display='flex';
+    $('ms-sig-icono').textContent = msIcons[next.tipo]||'✨';
+    $('ms-sig-titulo').textContent = next.titulo;
+  } else {
+    $('ms-siguiente-preview').style.display='none';
+  }
+};
+
+// Initialize history state
+if(!history.state) history.replaceState({tab:'inicio', view:'list'}, '', location.pathname);
+
+// ── FIRESTORE ──
+onSnapshot(collection(db,'cantantes'),snap=>{cantantes=snap.docs.map(d=>({id:d.id,...d.data()}));renderCantantes();populatePresididorSelect($('ev-presididor'),'');});
+onSnapshot(collection(db,'canciones'),snap=>{canciones=snap.docs.map(d=>({id:d.id,...d.data()}));renderCanciones();renderDashboard();});
+onSnapshot(collection(db,'musicos'),snap=>{musicos=snap.docs.map(d=>({id:d.id,...d.data()}));allUsers=musicos;renderMusicos();renderDashboard();if(!CU)autoLogin();});
+onSnapshot(collection(db,'eventos'),snap=>{
+  const hoy=new Date().toISOString().slice(0,10);
+  eventos=snap.docs.map(d=>({id:d.id,...d.data()})).filter(ev=>{if(ev.fecha&&ev.fecha<hoy){deleteDoc(doc(db,'eventos',ev.id));return false;}return true;});
+  renderEventos();renderDashboard();renderCalendar();
+});
+
+</script>
+<script>
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
