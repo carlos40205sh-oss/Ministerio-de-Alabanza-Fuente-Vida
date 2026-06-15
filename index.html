@@ -200,6 +200,10 @@ input::placeholder{color:var(--muted);}
         <div id="ev-assigned-list"></div>
       </div>
       <div class="form-sec">
+        <h4>🛒 Pulpería</h4>
+        <div id="ev-pulperia-tags" style="margin-bottom:8px"></div>
+      </div>
+      <div class="form-sec">
         <h4>📋 Orden del servicio</h4>
         <p style="color:var(--muted);font-size:11px;margin-bottom:8px">Agregá canciones o momentos especiales en orden</p>
         <div style="display:flex;gap:6px;margin-bottom:8px">
@@ -273,6 +277,7 @@ input::placeholder{color:var(--muted);}
       <label><input type="checkbox" value="Saxofón"/> 🎷 Saxofón</label>
       <label><input type="checkbox" value="Presentación"/> 📽️ Presentación</label>
       <label><input type="checkbox" value="Transmisión"/> 📡 Transmisión</label>
+      <label><input type="checkbox" value="Sonidista"/> 🔊 Sonidista</label>
       <label><input type="checkbox" value="Otros"/> 🎶 Otros</label>
     </div>
     <input id="mus-tel" placeholder="Teléfono (opcional)"/>
@@ -402,6 +407,7 @@ input::placeholder{color:var(--muted);}
       <label><input type="checkbox" value="Saxofón"/> 🎷 Saxofón</label>
       <label><input type="checkbox" value="Presentación"/> 📽️ Presentación</label>
       <label><input type="checkbox" value="Transmisión"/> 📡 Transmisión</label>
+      <label><input type="checkbox" value="Sonidista"/> 🔊 Sonidista</label>
       <label><input type="checkbox" value="Otros"/> 🎶 Otros</label>
     </div>
     <label class="lbl">Teléfono</label><input id="mus-edit-tel"/>
@@ -537,6 +543,10 @@ const registerFCMToken = async () => {
       if(m) {
         await updateDoc(doc(db, 'musicos', m.id), { fcmToken: token });
         console.log('Token saved for:', m.nombre);
+      } else if(CU.admin) {
+        // Save admin token in a separate collection
+        await setDoc(doc(db, 'admins', CU.key), { fcmToken: token, nombre: CU.nombre });
+        console.log('Admin token saved for:', CU.nombre);
       }
     }
   } catch(e) { console.log('FCM error:', e); }
@@ -544,7 +554,7 @@ const registerFCMToken = async () => {
 
 // ── STATE ──
 let CU = null, canciones = [], musicos = [], eventos = [], cantantes = [], allUsers = [];
-let evAssigned = [], evSetlist = [], evOrden = [], editingEvId = null, editingEstructuraIdx = null;
+let evAssigned = [], evSetlist = [], evOrden = [], evPulperia = [], editingEvId = null, editingEstructuraIdx = null;
 let sortMode = 'artist', musMode = 'rol';
 let calY, calM, calDates = [];
 
@@ -553,10 +563,10 @@ const $ = id => document.getElementById(id);
 const fmt = d => { if(!d) return ''; const [y,m,day]=d.split('-'); return day+'/'+m+'/'+y; };
 const fmtBday = d => { if(!d) return ''; const [y,m,day]=d.split('-'); return day+'/'+m; };
 const toast = m => { const t=$('toast'); t.textContent=m; t.style.opacity=1; setTimeout(()=>t.style.opacity=0,2500); };
-const roleIcon = r => ({'Líder':'🎤','Voz':'🎙️','Guitarra':'🎸','Bajo':'🎵','Teclado/Piano':'🎹','Batería':'🥁','Saxofón':'🎷','Presentación':'📽️','Transmisión':'📡'}[r]||'🎶');
+const roleIcon = r => ({'Líder':'🎤','Voz':'🎙️','Guitarra':'🎸','Bajo':'🎵','Teclado/Piano':'🎹','Batería':'🥁','Saxofón':'🎷','Presentación':'📽️','Transmisión':'📡','Sonidista':'🔊'}[r]||'🎶');
 const tipoColor = t => ({'Servicio':'var(--accent)','Ensayo':'var(--gold)','Ayuno':'var(--success)'}[t]||'var(--muted)');
 const tipoBg = t => ({'Servicio':'#7B6FD422','Ensayo':'#E8C96A22','Ayuno':'#7EC8A022'}[t]||'');
-const ROLES_EV = ['Líder','Voz','Guitarra','Bajo','Teclado/Piano','Batería','Saxofón','Presentación','Transmisión','Otros'];
+const ROLES_EV = ['Líder','Voz','Guitarra','Bajo','Teclado/Piano','Batería','Saxofón','Presentación','Transmisión','Sonidista','Otros'];
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 // Fill day/year selects
@@ -859,7 +869,7 @@ $('btn-save-ev').addEventListener('click', async () => {
   const titulo=$('ev-titulo').value.trim(), fecha=$('ev-fecha').value;
   if(!titulo||!fecha){alert('Título y fecha son requeridos');return;}
   const tipo=$('ev-tipo').value;
-  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),director:tipo!=='Ayuno'?$('ev-presididor').value:'',asignados:tipo!=='Ayuno'?evAssigned:[],setlist:tipo!=='Ayuno'?evSetlist:[],orden:tipo!=='Ayuno'?evOrden:[]};
+  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),director:tipo!=='Ayuno'?$('ev-presididor').value:'',asignados:tipo!=='Ayuno'?evAssigned:[],setlist:tipo!=='Ayuno'?evSetlist:[],orden:tipo!=='Ayuno'?evOrden:[],pulperia:tipo!=='Ayuno'?evPulperia:[]};
   if(editingEvId){await updateDoc(doc(db,'eventos',editingEvId),data);toast('✅ Evento actualizado');}
   else{await addDoc(collection(db,'eventos'),{...data,creadoEn:Date.now()});toast('✅ Evento guardado');}
   editingEvId=null; hideEvForm();
@@ -871,13 +881,14 @@ const showEvForm = evId => {
   evAssigned=ev?[...(ev.asignados||[])]:[];
   evSetlist=ev?[...(ev.setlist||[])]:[];
   evOrden=ev?[...(ev.orden||[])]:[];
+  evPulperia=ev?[...(ev.pulperia||[])]:[];
   ['ev-titulo','ev-notas'].forEach(id=>$(id).value=ev?ev[id==='ev-titulo'?'titulo':'notas']||'':'');
   $('ev-fecha').value=ev?ev.fecha:''; $('ev-tipo').value=ev?ev.tipo:'Servicio';
   $('ev-hora-ini').value=ev?ev.horaIni:''; $('ev-hora-fin').value=ev?ev.horaFin:'';
   $('ev-form-title').textContent=ev?'Editar evento':'Nuevo evento';
   $('ev-extra').style.display=(ev&&ev.tipo==='Ayuno')?'none':'block';
   populatePresididorSelect($('ev-presididor'),ev?ev.director:'');
-  renderEvMusTags(); renderEvCanTags(); renderEvOrden();
+  renderEvMusTags(); renderEvPulperiaTags(); renderEvCanTags(); renderEvOrden();
   $('ev-list-view').style.display='none'; $('ev-form-view').style.display='block'; $('ev-detail-view').style.display='none';
   history.pushState({tab:'eventos', view:'form'}, '', location.pathname);
 };
@@ -1040,9 +1051,17 @@ function renderEvOrden() {
 
 // ── EVENTO DETAIL ──
 const marcarAsist = async (evId,musId,estado) => {
-  const ev=eventos.find(e=>e.id===evId); if(!ev) return;
-  const asistencia=ev.asistencia||{}; asistencia[musId]=estado;
-  await updateDoc(doc(db,'eventos',evId),{asistencia}); toast(estado==='llego'?'✅ Llegó':'❌ No llegó');
+  const realEvId = evId.endsWith('_pulp') ? evId.slice(0,-5) : evId;
+  const isPulp = evId.endsWith('_pulp');
+  const ev=eventos.find(e=>e.id===realEvId); if(!ev) return;
+  if(isPulp){
+    const asistenciaPulperia=ev.asistenciaPulperia||{}; asistenciaPulperia[musId]=estado;
+    await updateDoc(doc(db,'eventos',realEvId),{asistenciaPulperia});
+  } else {
+    const asistencia=ev.asistencia||{}; asistencia[musId]=estado;
+    await updateDoc(doc(db,'eventos',realEvId),{asistencia});
+  }
+  toast(estado==='llego'?'✅ Llegó':'❌ No llegó');
 };
 const addComentario = async evId => {
   const inp=$('com-inp-'+evId); const txt=inp?inp.value.trim():''; if(!txt) return;
@@ -1096,32 +1115,55 @@ const buildEvDetail = (ev, backFn) => {
     wrap.appendChild(ay);
   } else {
     if(presididor){const ds=document.createElement('div');ds.className='ev-sec';ds.innerHTML='<h4>🎤 Presididor</h4><div class="row"><div class="avatar">'+roleIcon(dirRol)+'</div><div style="font-weight:600;font-size:14px">'+presididor.nombre+'</div><span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+dirRol+'</span></div>';wrap.appendChild(ds);}
+    // Helper to build attendance row
+    const makeAsistRow = (m, rol, asist, evId, colorAccent) => {
+      const est=asist[m.id]||'pendiente';
+      const estColor=est==='llego'?'var(--success)':est==='no-llego'?'var(--danger)':'var(--muted)';
+      const esMio=CU&&!CU.admin&&CU.key===m.username;
+      const row=document.createElement('div'); row.className='rol-row';
+      row.innerHTML='<div class="avatar" style="width:30px;height:30px;font-size:13px">'+roleIcon(m.rol)+'</div><div style="flex:1;font-size:13px;font-weight:600">'+m.nombre+'</div>'+(rol?'<span class="badge" style="background:'+colorAccent+'22;color:'+colorAccent+';border:1px solid '+colorAccent+'44;margin-right:4px">'+rol+'</span>':'');
+      if(CU&&CU.admin||esMio){
+        const bg1=est==='llego'?'#7EC8A0':'#7EC8A022',c1=est==='llego'?'#0F0E1A':'var(--success)';
+        const bg2=est==='no-llego'?'#E06C75':'#E06C7522',c2=est==='no-llego'?'#fff':'var(--danger)';
+        const b1=document.createElement('button'); b1.style.cssText='border:none;border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;background:'+bg1+';color:'+c1; b1.textContent=CU&&CU.admin?'✅':'✅ Voy';
+        b1.addEventListener('click',()=>marcarAsist(evId,m.id,'llego'));
+        const b2=document.createElement('button'); b2.style.cssText='border:none;border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;background:'+bg2+';color:'+c2; b2.textContent=CU&&CU.admin?'❌':'❌ No voy';
+        b2.addEventListener('click',()=>marcarAsist(evId,m.id,'no-llego'));
+        const btnRow=document.createElement('div'); btnRow.style.cssText='display:flex;gap:3px'; btnRow.appendChild(b1); btnRow.appendChild(b2); row.appendChild(btnRow);
+      } else { const sp=document.createElement('span'); sp.style.cssText='font-size:11px;color:'+estColor; sp.textContent=est==='llego'?'✅ Llegó':est==='no-llego'?'❌ No llegó':'⏳ Pendiente'; row.appendChild(sp); }
+      return row;
+    };
+
+    const asist=ev.asistencia||{};
+    // Split asignados into musicians and voices
+    const VOICE_ROLES = ['Voz','Líder'];
+    const musAsign = (ev.asignados||[]).filter(a=>{ const m=musicos.find(x=>x.id===a.musId); return m&&!VOICE_ROLES.includes(a.rol)&&a.rol!=='Voz'||false; });
+    const vocAsign = (ev.asignados||[]).filter(a=>VOICE_ROLES.includes(a.rol)||a.rol==='Voz');
+    const pulpAsign = (ev.pulperia||[]);
+
+    // Músicos section
     if((ev.asignados||[]).length){
       const es=document.createElement('div'); es.className='ev-sec';
-      es.innerHTML='<h4>🎸 Equipo ('+ev.asignados.length+')</h4>';
-      const asist=ev.asistencia||{};
+      es.innerHTML='<h4 style="color:var(--accent)">🎸 Músicos ('+(ev.asignados||[]).length+')</h4>';
       ev.asignados.forEach(a=>{
         const m=musicos.find(x=>x.id===a.musId); if(!m) return;
-        const est=asist[m.id]||'pendiente';
-        const estColor=est==='llego'?'var(--success)':est==='no-llego'?'var(--danger)':'var(--muted)';
-        const estLabel=est==='llego'?'✅ Llegó':est==='no-llego'?'❌ No llegó':'⏳ Pendiente';
-        const esMio=CU&&!CU.admin&&CU.key===m.username;
-        const row=document.createElement('div'); row.className='rol-row';
-        row.innerHTML='<div class="avatar" style="width:30px;height:30px;font-size:13px">'+roleIcon(m.rol)+'</div><div style="flex:1;font-size:13px;font-weight:600">'+m.nombre+'</div><span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444;margin-right:4px">'+a.rol+'</span>';
-        if(CU&&CU.admin||esMio){
-          const bg1=est==='llego'?'#7EC8A0':'#7EC8A022',c1=est==='llego'?'#0F0E1A':'var(--success)';
-          const bg2=est==='no-llego'?'#E06C75':'#E06C7522',c2=est==='no-llego'?'#fff':'var(--danger)';
-          const b1=document.createElement('button'); b1.style.cssText='border:none;border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;background:'+bg1+';color:'+c1; b1.textContent=CU&&CU.admin?'✅':'✅ Voy';
-          b1.addEventListener('click',()=>marcarAsist(ev.id,m.id,'llego'));
-          const b2=document.createElement('button'); b2.style.cssText='border:none;border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;background:'+bg2+';color:'+c2; b2.textContent=CU&&CU.admin?'❌':'❌ No voy';
-          b2.addEventListener('click',()=>marcarAsist(ev.id,m.id,'no-llego'));
-          const btnRow=document.createElement('div'); btnRow.style.cssText='display:flex;gap:3px'; btnRow.appendChild(b1); btnRow.appendChild(b2); row.appendChild(btnRow);
-        } else { const sp=document.createElement('span'); sp.style.cssText='font-size:11px;color:'+estColor; sp.textContent=estLabel; row.appendChild(sp); }
-        es.appendChild(row);
+        es.appendChild(makeAsistRow(m, a.rol, asist, ev.id, '#7B6FD4'));
       });
       const pres=Object.values(asist).filter(v=>v==='llego').length, aus=Object.values(asist).filter(v=>v==='no-llego').length;
-      if(pres||aus){const sum=document.createElement('div');sum.style.cssText='margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;gap:10px';sum.innerHTML='<span style="font-size:12px;color:var(--success)">✅ '+pres+' presentes</span><span style="font-size:12px;color:var(--danger)">❌ '+aus+' ausentes</span>';es.appendChild(sum);}
+      if(pres||aus){const sum=document.createElement('div');sum.style.cssText='margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;gap:10px';sum.innerHTML='<span style="font-size:12px;color:var(--success)">✅ '+pres+'</span><span style="font-size:12px;color:var(--danger)">❌ '+aus+'</span>';es.appendChild(sum);}
       wrap.appendChild(es);
+    }
+
+    // Pulpería section
+    if(pulpAsign.length){
+      const ps=document.createElement('div'); ps.className='ev-sec';
+      ps.innerHTML='<h4 style="color:var(--success)">🛒 Pulpería ('+pulpAsign.length+')</h4>';
+      const pulpAsist = ev.asistenciaPulperia||{};
+      pulpAsign.forEach(musId=>{
+        const m=musicos.find(x=>x.id===musId); if(!m) return;
+        ps.appendChild(makeAsistRow(m, '', pulpAsist, ev.id+'_pulp', '#7EC8A0'));
+      });
+      wrap.appendChild(ps);
     }
     const orden = ev.orden||[];
     if(orden.length){
