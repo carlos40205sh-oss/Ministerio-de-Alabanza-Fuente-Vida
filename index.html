@@ -653,6 +653,7 @@ const goTab = (tab, pushState=true) => {
   if(btn){btn.classList.add('active');const d=document.createElement('div');d.className='dot';btn.appendChild(d);}
   if(tab==='calendario') renderCalendar();
   if(tab==='ayuno') renderAyuno();
+  if(tab==='cuotas') renderCuotas();
   if(tab==='anuncios' && CU&&CU.admin) $('anuncio-form').style.display='none';
   if(pushState) history.pushState({tab, view:'list'}, '', location.pathname);
 };
