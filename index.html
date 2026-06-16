@@ -1570,7 +1570,7 @@ const checkEventoProximo = () => {
 };
 
 const checkCuotaPendiente = () => {
-  if(!CU||CU.admin) return;
+  if(!CU) return;
   const m = musicos.find(x=>x.username===CU.key);
   if(!m) return;
   // Check all months from Jan 2026 to current month
