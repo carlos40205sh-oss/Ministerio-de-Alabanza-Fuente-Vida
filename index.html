@@ -622,6 +622,7 @@ const applyLogin = user => {
   }
   renderCalendar();
   renderAyuno();
+  renderAnuncios(anunciosData);
   setTimeout(checkEventoProximo, 1500);
   setTimeout(checkCuotaPendiente, 4000);
   setTimeout(registerFCMToken, 5000);
@@ -1715,17 +1716,77 @@ const checkAnuncioNuevo = (anuncios) => {
   } catch(e){}
 };
 
+const REACCIONES = ['🙏','❤️','👍','🎉'];
+
 function renderAnuncios(anuncios) {
   const el = $('anuncios-list'); el.innerHTML = '';
   if(!anuncios.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No hay anuncios</div>';return;}
   anuncios.forEach(a => {
     const div = document.createElement('div'); div.className = 'card';
-    div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div style="font-weight:700;font-size:14px;color:var(--gold)">📢 '+a.titulo+'</div>'+(CU&&CU.admin?'<button class="btn btn-danger btn-sm" style="flex-shrink:0">✕</button>':'')+'</div><div style="font-size:13px;color:var(--text);white-space:pre-wrap;margin-bottom:8px">'+a.texto+'</div><div style="font-size:11px;color:var(--muted)">'+a.fecha+'</div>';
-    if(CU&&CU.admin){
-      div.querySelector('.btn-danger').addEventListener('click', async () => {
+    const isAdmin = CU && CU.admin;
+    div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div style="font-weight:700;font-size:14px;color:var(--gold)">📢 '+a.titulo+'</div>'+(isAdmin?'<button class="btn btn-danger btn-sm anuncio-del-btn" style="flex-shrink:0">✕</button>':'')+'</div><div style="font-size:13px;color:var(--text);white-space:pre-wrap;margin-bottom:8px">'+a.texto+'</div><div style="font-size:11px;color:var(--muted);margin-bottom:10px">'+a.fecha+'</div>';
+    
+    if(isAdmin){
+      const delBtn = div.querySelector('.anuncio-del-btn');
+      if(delBtn) delBtn.addEventListener('click', async () => {
         if(confirm('¿Eliminar anuncio?')) { await deleteDoc(doc(db,'anuncios',a.id)); toast('🗑️ Eliminado'); }
       });
     }
+
+    // Reactions row
+    const reacciones = a.reacciones || {};
+    const reactRow = document.createElement('div');
+    reactRow.style.cssText = 'display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap';
+    REACCIONES.forEach(emoji => {
+      const usuarios = Object.entries(reacciones).filter(([k,v])=>v===emoji).map(([k])=>k);
+      const count = usuarios.length;
+      const miReaccion = CU && reacciones[CU.key] === emoji;
+      const btn = document.createElement('button');
+      btn.style.cssText = 'border:1px solid '+(miReaccion?'var(--gold)':'var(--border)')+';background:'+(miReaccion?'#E8C96A22':'var(--bg)')+';border-radius:99px;padding:4px 10px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:4px';
+      btn.innerHTML = emoji + (count?' <span style="font-size:11px;color:var(--muted)">'+count+'</span>':'');
+      btn.addEventListener('click', async () => {
+        if(!CU) return;
+        const newReacciones = {...reacciones};
+        if(newReacciones[CU.key] === emoji) delete newReacciones[CU.key];
+        else newReacciones[CU.key] = emoji;
+        await updateDoc(doc(db,'anuncios',a.id), {reacciones: newReacciones});
+      });
+      reactRow.appendChild(btn);
+    });
+    div.appendChild(reactRow);
+
+    // Comments
+    const comentarios = a.comentarios || [];
+    const comsDiv = document.createElement('div');
+    comsDiv.style.cssText = 'border-top:1px solid var(--border);padding-top:8px';
+    comentarios.forEach((c,ci) => {
+      const cd = document.createElement('div'); cd.style.cssText='background:var(--bg);border-radius:8px;padding:6px 10px;margin-bottom:6px';
+      cd.innerHTML = '<div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:600;color:var(--accent)">'+c.autor+'</span><span style="font-size:10px;color:var(--muted)">'+c.fecha+'</span></div><div style="font-size:12px;margin-top:2px">'+c.texto+'</div>';
+      if(isAdmin){
+        const xBtn=document.createElement('button'); xBtn.style.cssText='border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:11px;float:right';xBtn.textContent='✕';
+        xBtn.addEventListener('click', async ()=>{
+          const newComs=[...comentarios]; newComs.splice(ci,1);
+          await updateDoc(doc(db,'anuncios',a.id),{comentarios:newComs});
+        });
+        cd.appendChild(xBtn);
+      }
+      comsDiv.appendChild(cd);
+    });
+    const comRow = document.createElement('div'); comRow.style.cssText='display:flex;gap:6px;margin-top:6px';
+    const comInp = document.createElement('input'); comInp.placeholder='Comentar...'; comInp.style.cssText='flex:1;margin:0;padding:6px 10px;font-size:12px';
+    const comBtn = document.createElement('button'); comBtn.style.cssText='border:none;background:var(--accent);color:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:600';
+    comBtn.textContent = 'Enviar';
+    comBtn.addEventListener('click', async () => {
+      const texto = comInp.value.trim(); if(!texto||!CU) return;
+      const fecha = new Date().toLocaleDateString('es-CR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      const newComs = [...comentarios, {texto, autor:CU.nombre, fecha}];
+      await updateDoc(doc(db,'anuncios',a.id),{comentarios:newComs});
+      comInp.value='';
+    });
+    comRow.appendChild(comInp); comRow.appendChild(comBtn);
+    comsDiv.appendChild(comRow);
+    div.appendChild(comsDiv);
+
     el.appendChild(div);
   });
 }
