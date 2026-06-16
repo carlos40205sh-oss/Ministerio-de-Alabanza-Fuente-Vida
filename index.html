@@ -305,6 +305,8 @@ input::placeholder{color:var(--muted);}
       <select id="mus-bday-m"><option value="">Mes</option><option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option><option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option><option value="07">Julio</option><option value="08">Agosto</option><option value="09">Septiembre</option><option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option></select>
       <select id="mus-bday-y"><option value="">Año</option></select>
     </div>
+    <label class="lbl">💰 Empieza a pagar cuota desde</label>
+    <input id="mus-cuota-desde" type="month"/>
     <label class="chk-lbl"><input type="checkbox" id="mus-admin"/> 🔑 Es administrador</label>
     <label class="chk-lbl"><input type="checkbox" id="mus-disp" checked/> Disponible</label>
     <button class="btn btn-primary btn-full" id="btn-save-mus">Guardar músico</button>
@@ -461,6 +463,8 @@ input::placeholder{color:var(--muted);}
       <select id="mus-edit-bday-m"><option value="">Mes</option><option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option><option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option><option value="07">Julio</option><option value="08">Agosto</option><option value="09">Septiembre</option><option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option></select>
       <select id="mus-edit-bday-y"><option value="">Año</option></select>
     </div>
+    <label class="lbl">💰 Empieza a pagar cuota desde</label>
+    <input id="mus-edit-cuota-desde" type="month"/>
     <label class="chk-lbl"><input type="checkbox" id="mus-edit-admin"/> 🔑 Admin</label>
     <label class="chk-lbl"><input type="checkbox" id="mus-edit-disp"/> Disponible</label>
     <button class="btn btn-primary btn-full" id="btn-save-mus-edit">💾 Guardar</button>
@@ -786,8 +790,8 @@ $('btn-save-mus').addEventListener('click', async () => {
   const roles=[...document.querySelectorAll('#mus-roles-check input:checked')].map(x=>x.value);
   if(!roles.length){alert('Seleccioná al menos un rol');return;}
   const bd=$('mus-bday-d').value, bm=$('mus-bday-m').value, by=$('mus-bday-y').value;
-  await addDoc(collection(db,'musicos'),{nombre:n,roles,rol:roles[0],tel:$('mus-tel').value.trim(),username:$('mus-username').value.trim(),pass:$('mus-pass').value.trim(),bday:(bd&&bm&&by)?by+'-'+bm+'-'+bd:'',admin:$('mus-admin').checked,disponible:$('mus-disp').checked,creadoEn:Date.now()});
-  ['mus-nombre','mus-tel','mus-username','mus-pass'].forEach(id=>$(id).value='');
+  await addDoc(collection(db,'musicos'),{nombre:n,roles,rol:roles[0],tel:$('mus-tel').value.trim(),username:$('mus-username').value.trim(),pass:$('mus-pass').value.trim(),bday:(bd&&bm&&by)?by+'-'+bm+'-'+bd:'',cuotaDesde:$('mus-cuota-desde').value||'',admin:$('mus-admin').checked,disponible:$('mus-disp').checked,creadoEn:Date.now()});
+  ['mus-nombre','mus-tel','mus-username','mus-pass','mus-cuota-desde'].forEach(id=>$(id).value='');
   document.querySelectorAll('#mus-roles-check input').forEach(x=>x.checked=false);
   ['mus-bday-d','mus-bday-m','mus-bday-y'].forEach(id=>$(id).value='');
   $('mus-admin').checked=false; $('mus-disp').checked=true; $('mus-form').style.display='none'; toast('✅ Músico guardado');
@@ -802,7 +806,7 @@ $('btn-save-mus-edit').addEventListener('click', async () => {
   const roles=[...document.querySelectorAll('#mus-edit-roles input:checked')].map(x=>x.value);
   if(!roles.length){alert('Seleccioná al menos un rol');return;}
   const bd=$('mus-edit-bday-d').value, bm=$('mus-edit-bday-m').value, by=$('mus-edit-bday-y').value;
-  await updateDoc(doc(db,'musicos',id),{nombre:$('mus-edit-nombre').value.trim(),roles,rol:roles[0],tel:$('mus-edit-tel').value.trim(),username:$('mus-edit-username').value.trim(),pass:$('mus-edit-pass').value.trim(),bday:(bd&&bm&&by)?by+'-'+bm+'-'+bd:'',admin:$('mus-edit-admin').checked,disponible:$('mus-edit-disp').checked});
+  await updateDoc(doc(db,'musicos',id),{nombre:$('mus-edit-nombre').value.trim(),roles,rol:roles[0],tel:$('mus-edit-tel').value.trim(),username:$('mus-edit-username').value.trim(),pass:$('mus-edit-pass').value.trim(),bday:(bd&&bm&&by)?by+'-'+bm+'-'+bd:'',cuotaDesde:$('mus-edit-cuota-desde').value||'',admin:$('mus-edit-admin').checked,disponible:$('mus-edit-disp').checked});
   $('mus-edit-modal').style.display='none'; toast('✅ Músico actualizado');
 });
 
@@ -811,6 +815,7 @@ const editMusico = id => {
   $('mus-edit-id').value=id; $('mus-edit-nombre').value=m.nombre||''; $('mus-edit-tel').value=m.tel||'';
   $('mus-edit-username').value=m.username||''; $('mus-edit-pass').value=m.pass||'';
   $('mus-edit-admin').checked=m.admin||false; $('mus-edit-disp').checked=m.disponible;
+  $('mus-edit-cuota-desde').value = m.cuotaDesde||'';
   document.querySelectorAll('#mus-edit-roles input').forEach(x=>x.checked=(m.roles||[m.rol]).includes(x.value));
   if(m.bday){const[y,mm,dd]=m.bday.split('-');$('mus-edit-bday-d').value=dd||'';$('mus-edit-bday-m').value=mm||'';$('mus-edit-bday-y').value=y||'';}
   else{['mus-edit-bday-d','mus-edit-bday-m','mus-edit-bday-y'].forEach(id=>$(id).value='');}
@@ -1538,14 +1543,20 @@ function renderCuotas() {
   let pagaron=0, deben=0;
   musList.forEach(m=>{
     const paid = cuotaData[m.id]?.[key]||false;
-    if(paid) pagaron++; else deben++;
+    const noAplica = m.cuotaDesde && key < m.cuotaDesde;
+    if(!noAplica){ if(paid) pagaron++; else deben++; }
     const div=document.createElement('div'); div.className='card row';
     div.innerHTML='<div class="avatar">'+roleIcon(m.rol)+'</div><div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="color:var(--muted);font-size:12px">'+(m.roles||[m.rol])[0]+'</div></div>';
     const btn=document.createElement('button');
     btn.className='btn btn-sm';
-    btn.style.cssText='background:'+(paid?'#7EC8A022':'#E06C7522')+';color:'+(paid?'var(--success)':'var(--danger)')+';border:1px solid '+(paid?'#7EC8A044':'#E06C7544')+';white-space:nowrap';
-    btn.textContent=paid?'✅ Pagó':'❌ Debe';
-    btn.addEventListener('click',()=>toggleCuota(m.id,paid));
+    if(noAplica){
+      btn.style.cssText='background:var(--surface);color:var(--muted);border:1px solid var(--border);white-space:nowrap;cursor:default';
+      btn.textContent='⏳ Aún no aplica';
+    } else {
+      btn.style.cssText='background:'+(paid?'#7EC8A022':'#E06C7522')+';color:'+(paid?'var(--success)':'var(--danger)')+';border:1px solid '+(paid?'#7EC8A044':'#E06C7544')+';white-space:nowrap';
+      btn.textContent=paid?'✅ Pagó':'❌ Debe';
+      btn.addEventListener('click',()=>toggleCuota(m.id,paid));
+    }
     div.appendChild(btn);
     el.appendChild(div);
   });
@@ -1572,11 +1583,12 @@ const renderResumenCuotas = () => {
     html += '<tr><td style="padding:8px 10px;text-align:left;position:sticky;left:0;background:var(--card);font-weight:600;'+rowBg+'">'+m.nombre+'</td>';
     for(let mo=0; mo<12; mo++){
       const isFutureOrCurrent = resumenYear > now.getFullYear() || (resumenYear===now.getFullYear() && mo >= now.getMonth());
+      const key = resumenYear+'-'+String(mo+1).padStart(2,'0');
+      const noAplica = m.cuotaDesde && key < m.cuotaDesde;
       let cell;
-      if(isFutureOrCurrent){
+      if(isFutureOrCurrent || noAplica){
         cell = '<span style="color:var(--muted)">–</span>';
       } else {
-        const key = resumenYear+'-'+String(mo+1).padStart(2,'0');
         const paid = cuotaData[m.id]?.[key]||false;
         cell = paid ? '<span style="color:var(--success);font-weight:700">✅</span>' : '<span style="color:var(--danger);font-weight:700">❌</span>';
       }
@@ -1604,7 +1616,7 @@ $('btn-toggle-resumen').addEventListener('click', () => {
   }
 });
 
-$('btn-resumen-prev-year').addEventListener('click', () => { resumenYear--; renderResumenCuotas(); });
+$('btn-resumen-prev-year').addEventListener('click', () => { if(resumenYear>2026){ resumenYear--; renderResumenCuotas(); } });
 $('btn-resumen-next-year').addEventListener('click', () => { resumenYear++; renderResumenCuotas(); });
 
 const checkEventoProximo = () => {
@@ -1659,10 +1671,15 @@ const checkCuotaPendiente = () => {
   if(!CU) return;
   const m = musicos.find(x=>x.username===CU.key);
   if(!m) return;
-  // Check all months from Jan 2026 to current month
+  // Check all months from Jan 2026 (or cuotaDesde if later) to current month
   const now = new Date();
   const pendientes = [];
   let y = 2026, mo = 0; // Start Jan 2026
+  // If musician has a custom start date, begin from there instead
+  if(m.cuotaDesde){
+    const [dy, dm] = m.cuotaDesde.split('-').map(Number);
+    if(dy > y || (dy===y && dm-1 > mo)) { y = dy; mo = dm-1; }
+  }
   while(y < now.getFullYear() || (y === now.getFullYear() && mo < now.getMonth())) {
     const key = y+'-'+String(mo+1).padStart(2,'0');
     const paid = cuotaData[m.id]?.[key]||false;
