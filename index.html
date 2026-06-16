@@ -1867,11 +1867,12 @@ const msRender = () => {
 
 // Initialize history state
 if(!history.state) history.replaceState({tab:'inicio', view:'list'}, '', location.pathname);
-// Open tab from URL hash (e.g. #anuncios from notification)
-if(location.hash) {
-  const hashTab = location.hash.replace('#','');
+// Open tab from URL query param (e.g. ?tab=anuncios from notification)
+const urlParams = new URLSearchParams(location.search);
+const tabParam = urlParams.get('tab');
+if(tabParam) {
   const validTabs = ['inicio','calendario','eventos','canciones','ayuno','anuncios','musicos','cantantes','cuotas'];
-  if(validTabs.includes(hashTab)) setTimeout(()=>goTab(hashTab), 1000);
+  if(validTabs.includes(tabParam)) setTimeout(()=>goTab(tabParam), 1500);
 }
 
 // ── FIRESTORE ──
