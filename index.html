@@ -663,7 +663,7 @@ window.addEventListener('popstate', e => {
   if(state.view==='detail' || state.view==='form') {
     // Go back to list view of that tab
     goTab(state.tab||'eventos', false);
-    hideEvForm();
+    hideEvForm(true);
     if(state.tab==='calendario') {
       $('cal-ev-detail').style.display='none';
       $('cal-ev-list').style.display='block';
@@ -674,6 +674,13 @@ window.addEventListener('popstate', e => {
     }
   } else {
     goTab(state.tab||'inicio', false);
+    hideEvForm(true);
+    $('cal-ev-detail').style.display='none';
+    $('cal-ev-list').style.display='block';
+    $('cal-grid').style.display='grid';
+    $('cal-hdr').style.display='grid';
+    $('cal-title-row').style.display='flex';
+    $('cal-legend').style.display='flex';
   }
 });
 document.querySelectorAll('.nav-btn').forEach(btn => {
@@ -931,7 +938,10 @@ const showEvForm = evId => {
   $('ev-list-view').style.display='none'; $('ev-form-view').style.display='block'; $('ev-detail-view').style.display='none';
   history.pushState({tab:'eventos', view:'form'}, '', location.pathname);
 };
-const hideEvForm = () => { $('ev-list-view').style.display='block'; $('ev-form-view').style.display='none'; $('ev-detail-view').style.display='none'; editingEvId=null; };
+const hideEvForm = (skipHistory) => {
+  $('ev-list-view').style.display='block'; $('ev-form-view').style.display='none'; $('ev-detail-view').style.display='none'; editingEvId=null;
+  if(!skipHistory && history.state && history.state.tab==='eventos' && history.state.view!=='list') history.back();
+};
 const MUS_ROLES = ['Guitarra','Bajo','Teclado/Piano','Batería','Saxofón','Otros'];
 const VOZ_ROLES = ['Voz','Líder'];
 const SON_ROLES = ['Sonidista'];
@@ -1413,7 +1423,9 @@ function renderCalList(date) {
       $('cal-title-row').style.display='none';
       $('cal-legend').style.display='none';
       const detEl=$('cal-ev-detail'); detEl.style.display='block'; detEl.innerHTML='';
-      const backFn=()=>{
+      history.pushState({tab:'calendario', view:'detail', date}, '', location.pathname);
+      const backFn=(skipHistory)=>{
+        if(!skipHistory) history.back();
         detEl.style.display='none'; detEl.innerHTML='';
         $('cal-ev-list').style.display='block';
         $('cal-grid').style.display='grid';
