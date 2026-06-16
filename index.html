@@ -341,7 +341,13 @@ input::placeholder{color:var(--muted);}
     <h4>Nuevo anuncio</h4>
     <input id="anuncio-titulo" placeholder="Título del anuncio"/>
     <textarea id="anuncio-texto" placeholder="Escribe el anuncio aquí..." style="width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:8px 12px;outline:none;margin-bottom:8px;min-height:80px;resize:vertical"></textarea>
-    <label class="chk-lbl"><input type="checkbox" id="anuncio-notif" checked/> 📲 Notificar a todos</label>
+    <div style="margin-bottom:8px">
+      <label class="chk-lbl" style="margin-bottom:6px"><input type="checkbox" id="anuncio-notif" checked onchange="toggleNotifSelector()"/> 📲 Enviar notificación</label>
+      <div id="notif-selector" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px;margin-top:4px">
+        <label class="chk-lbl" style="margin-bottom:6px"><input type="checkbox" id="notif-todos" checked onchange="toggleTodos()"/> Todos</label>
+        <div id="notif-musicos-list" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px"></div>
+      </div>
+    </div>
     <button class="btn btn-primary btn-full" id="btn-save-anuncio">📢 Publicar anuncio</button>
   </div>
   <div id="anuncios-list"></div>
@@ -1728,13 +1734,34 @@ $('btn-add-anuncio').addEventListener('click', () => {
   const f = $('anuncio-form'); f.style.display = f.style.display==='none'?'block':'none';
 });
 
+window.toggleNotifSelector = () => {
+  const checked = $('anuncio-notif').checked;
+  $('notif-selector').style.display = checked ? 'block' : 'none';
+};
+window.toggleTodos = () => {
+  const todos = $('notif-todos').checked;
+  document.querySelectorAll('.notif-mus-chk').forEach(c => { c.checked = todos; c.disabled = todos; });
+};
+const renderNotifSelector = () => {
+  const el = $('notif-musicos-list'); if(!el) return; el.innerHTML = '';
+  musicos.forEach(m => {
+    const lbl = document.createElement('label');
+    lbl.className = 'chk-lbl';
+    lbl.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;margin:0';
+    lbl.innerHTML = '<input type="checkbox" class="notif-mus-chk" value="'+m.id+'" checked disabled/> '+m.nombre;
+    el.appendChild(lbl);
+  });
+};
+
 $('btn-save-anuncio').addEventListener('click', async () => {
   const titulo = $('anuncio-titulo').value.trim();
   const texto = $('anuncio-texto').value.trim();
   if(!titulo||!texto){alert('Completá el título y el texto');return;}
   const fecha = new Date().toLocaleDateString('es-CR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
   const notif = $('anuncio-notif').checked;
-  await addDoc(collection(db,'anuncios'), {titulo, texto, fecha, notif, creadoEn:Date.now()});
+  const todos = $('notif-todos').checked;
+  const destinatarios = todos ? [] : [...document.querySelectorAll('.notif-mus-chk:checked')].map(c=>c.value);
+  await addDoc(collection(db,'anuncios'), {titulo, texto, fecha, notif, todos, destinatarios, creadoEn:Date.now()});
   $('anuncio-titulo').value=''; $('anuncio-texto').value='';
   $('anuncio-form').style.display='none';
   toast('📢 Anuncio publicado!');
@@ -1844,7 +1871,7 @@ if(!history.state) history.replaceState({tab:'inicio', view:'list'}, '', locatio
 // ── FIRESTORE ──
 onSnapshot(collection(db,'cantantes'),snap=>{cantantes=snap.docs.map(d=>({id:d.id,...d.data()}));renderCantantes();populatePresididorSelect($('ev-presididor'),'');});
 onSnapshot(collection(db,'canciones'),snap=>{canciones=snap.docs.map(d=>({id:d.id,...d.data()}));renderCanciones();renderDashboard();});
-onSnapshot(collection(db,'musicos'),snap=>{musicos=snap.docs.map(d=>({id:d.id,...d.data()}));allUsers=musicos;renderMusicos();renderDashboard();if(!CU)autoLogin();});
+onSnapshot(collection(db,'musicos'),snap=>{musicos=snap.docs.map(d=>({id:d.id,...d.data()}));allUsers=musicos;renderMusicos();renderDashboard();renderNotifSelector();if(!CU)autoLogin();});
 onSnapshot(collection(db,'eventos'),snap=>{
   const hoy=new Date().toISOString().slice(0,10);
   eventos=snap.docs.map(d=>({id:d.id,...d.data()})).filter(ev=>{if(ev.fecha&&ev.fecha<hoy){deleteDoc(doc(db,'eventos',ev.id));return false;}return true;});
