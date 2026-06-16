@@ -41,7 +41,7 @@ input::placeholder{color:var(--muted);}
 .nav-btn.active .label{color:var(--gold);}
 .dot{width:4px;height:4px;border-radius:50%;background:var(--gold);}
 .nav-admin{display:none !important;}
-.section{display:none;}
+.section{display:none;} #sec-anuncios{display:none;}
 .section.active{display:block;}
 .tag{cursor:pointer;padding:4px 10px;border-radius:8px;font-size:12px;border:1px solid var(--border);color:var(--muted);display:inline-block;margin:3px;}
 .tag.sel-gold{border-color:var(--gold);background:#E8C96A22;color:var(--gold);}
@@ -332,7 +332,7 @@ input::placeholder{color:var(--muted);}
 </div>
 
 <!-- ANUNCIOS -->
-<div id="sec-anuncios" class="section content" style="display:none">
+<div id="sec-anuncios" class="section content">
   <div class="row" style="justify-content:space-between;margin-bottom:14px">
     <h2 style="color:var(--gold);font-size:17px;margin:0">📢 Anuncios</h2>
     <button class="btn btn-primary btn-sm" id="btn-add-anuncio" style="display:none">+ Nuevo</button>
@@ -639,10 +639,12 @@ const goTab = (tab, pushState=true) => {
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>{b.classList.remove('active');b.querySelector('.dot')?.remove();});
   $('sec-'+tab).classList.add('active');
+  $('sec-'+tab).style.display='';
   const btn = document.querySelector(`.nav-btn[data-tab="${tab}"]`);
   if(btn){btn.classList.add('active');const d=document.createElement('div');d.className='dot';btn.appendChild(d);}
   if(tab==='calendario') renderCalendar();
   if(tab==='ayuno') renderAyuno();
+  if(tab==='anuncios' && CU&&CU.admin) $('anuncio-form').style.display='none';
   if(pushState) history.pushState({tab, view:'list'}, '', location.pathname);
 };
 
@@ -1708,8 +1710,6 @@ const checkAnuncioNuevo = (anuncios) => {
 
 function renderAnuncios(anuncios) {
   const el = $('anuncios-list'); el.innerHTML = '';
-  const addBtn = $('anuncio-form');
-  if(CU&&CU.admin) addBtn.style.display = 'block';
   if(!anuncios.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No hay anuncios</div>';return;}
   anuncios.forEach(a => {
     const div = document.createElement('div'); div.className = 'card';
