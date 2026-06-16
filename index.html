@@ -623,6 +623,7 @@ const applyLogin = user => {
   renderCalendar();
   renderAyuno();
   renderAnuncios(anunciosData);
+  setTimeout(()=>checkAnuncioNuevo(anunciosData), 5000);
   setTimeout(checkEventoProximo, 1500);
   setTimeout(checkCuotaPendiente, 4000);
   setTimeout(registerFCMToken, 5000);
