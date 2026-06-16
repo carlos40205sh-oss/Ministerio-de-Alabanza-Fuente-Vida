@@ -1867,6 +1867,12 @@ const msRender = () => {
 
 // Initialize history state
 if(!history.state) history.replaceState({tab:'inicio', view:'list'}, '', location.pathname);
+// Open tab from URL hash (e.g. #anuncios from notification)
+if(location.hash) {
+  const hashTab = location.hash.replace('#','');
+  const validTabs = ['inicio','calendario','eventos','canciones','ayuno','anuncios','musicos','cantantes','cuotas'];
+  if(validTabs.includes(hashTab)) setTimeout(()=>goTab(hashTab), 1000);
+}
 
 // ── FIRESTORE ──
 onSnapshot(collection(db,'cantantes'),snap=>{cantantes=snap.docs.map(d=>({id:d.id,...d.data()}));renderCantantes();populatePresididorSelect($('ev-presididor'),'');});
