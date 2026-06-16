@@ -41,6 +41,7 @@ input::placeholder{color:var(--muted);}
 .nav-btn.active .label{color:var(--gold);}
 .dot{width:4px;height:4px;border-radius:50%;background:var(--gold);}
 .nav-admin{display:none !important;}
+.nav-cuotas{display:none !important;}
 .section{display:none;}
 .section.active{display:block;}
 .tag{cursor:pointer;padding:4px 10px;border-radius:8px;font-size:12px;border:1px solid var(--border);color:var(--muted);display:inline-block;margin:3px;}
@@ -308,6 +309,7 @@ input::placeholder{color:var(--muted);}
     <label class="lbl">💰 Empieza a pagar cuota desde</label>
     <input id="mus-cuota-desde" type="month"/>
     <label class="chk-lbl"><input type="checkbox" id="mus-admin"/> 🔑 Es administrador</label>
+    <label class="chk-lbl"><input type="checkbox" id="mus-cuotas-access"/> 💰 Acceso a Cuotas</label>
     <label class="chk-lbl"><input type="checkbox" id="mus-disp" checked/> Disponible</label>
     <button class="btn btn-primary btn-full" id="btn-save-mus">Guardar músico</button>
   </div>
@@ -380,7 +382,7 @@ input::placeholder{color:var(--muted);}
   <button class="nav-btn" data-tab="anuncios"><span class="icon">📢</span><span class="label">Anuncios</span></button>
   <button class="nav-btn nav-admin" data-tab="musicos"><span class="icon">🎸</span><span class="label">Músicos</span></button>
   <button class="nav-btn nav-admin" data-tab="cantantes"><span class="icon">🎤</span><span class="label">Cantantes</span></button>
-  <button class="nav-btn nav-admin" data-tab="cuotas"><span class="icon">💰</span><span class="label">Cuotas</span></button>
+  <button class="nav-btn nav-cuotas" data-tab="cuotas"><span class="icon">💰</span><span class="label">Cuotas</span></button>
 </nav>
 
 <!-- CUOTAS -->
@@ -466,6 +468,7 @@ input::placeholder{color:var(--muted);}
     <label class="lbl">💰 Empieza a pagar cuota desde</label>
     <input id="mus-edit-cuota-desde" type="month"/>
     <label class="chk-lbl"><input type="checkbox" id="mus-edit-admin"/> 🔑 Admin</label>
+    <label class="chk-lbl"><input type="checkbox" id="mus-edit-cuotas-access"/> 💰 Acceso a Cuotas</label>
     <label class="chk-lbl"><input type="checkbox" id="mus-edit-disp"/> Disponible</label>
     <button class="btn btn-primary btn-full" id="btn-save-mus-edit">💾 Guardar</button>
   </div>
@@ -644,6 +647,15 @@ const applyLogin = user => {
     document.querySelectorAll('.nav-admin').forEach(b=>b.style.setProperty('display','flex','important'));
     $('btn-add-anuncio').style.display='inline-block';
   }
+  // Cuotas access: hardcoded admins (carlitos/jeaneth) always see it,
+  // musicians need cuotasAccess flag even if they're also admin
+  const miMusico = musicos.find(x=>x.username===CU.key);
+  const tieneCuotasAccess = (CU.key==='carlitos' || CU.key==='jeaneth') ? true : (miMusico ? !!miMusico.cuotasAccess : false);
+  if(tieneCuotasAccess){
+    document.querySelectorAll('.nav-cuotas').forEach(b=>b.style.setProperty('display','flex','important'));
+  } else {
+    document.querySelectorAll('.nav-cuotas').forEach(b=>b.style.display='none');
+  }
   renderCalendar();
   renderAyuno();
   renderAnuncios(anunciosData);
@@ -669,6 +681,12 @@ $('hdr-user').addEventListener('click',()=>{if(confirm('¿Cerrar sesión?')){try
 
 // ── NAV ──
 const goTab = (tab, pushState=true) => {
+  // Protect cuotas tab from unauthorized access (e.g. via URL manipulation)
+  if(tab==='cuotas'){
+    const miMusico = musicos.find(x=>x.username===CU?.key);
+    const tieneAcceso = CU && (CU.key==='carlitos' || CU.key==='jeaneth' || (miMusico && miMusico.cuotasAccess));
+    if(!tieneAcceso){ tab='inicio'; }
+  }
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>{b.classList.remove('active');b.querySelector('.dot')?.remove();});
   $('sec-'+tab).classList.add('active');
@@ -790,11 +808,11 @@ $('btn-save-mus').addEventListener('click', async () => {
   const roles=[...document.querySelectorAll('#mus-roles-check input:checked')].map(x=>x.value);
   if(!roles.length){alert('Seleccioná al menos un rol');return;}
   const bd=$('mus-bday-d').value, bm=$('mus-bday-m').value, by=$('mus-bday-y').value;
-  await addDoc(collection(db,'musicos'),{nombre:n,roles,rol:roles[0],tel:$('mus-tel').value.trim(),username:$('mus-username').value.trim(),pass:$('mus-pass').value.trim(),bday:(bd&&bm&&by)?by+'-'+bm+'-'+bd:'',cuotaDesde:$('mus-cuota-desde').value||'',admin:$('mus-admin').checked,disponible:$('mus-disp').checked,creadoEn:Date.now()});
+  await addDoc(collection(db,'musicos'),{nombre:n,roles,rol:roles[0],tel:$('mus-tel').value.trim(),username:$('mus-username').value.trim(),pass:$('mus-pass').value.trim(),bday:(bd&&bm&&by)?by+'-'+bm+'-'+bd:'',cuotaDesde:$('mus-cuota-desde').value||'',admin:$('mus-admin').checked,cuotasAccess:$('mus-cuotas-access').checked,disponible:$('mus-disp').checked,creadoEn:Date.now()});
   ['mus-nombre','mus-tel','mus-username','mus-pass','mus-cuota-desde'].forEach(id=>$(id).value='');
   document.querySelectorAll('#mus-roles-check input').forEach(x=>x.checked=false);
   ['mus-bday-d','mus-bday-m','mus-bday-y'].forEach(id=>$(id).value='');
-  $('mus-admin').checked=false; $('mus-disp').checked=true; $('mus-form').style.display='none'; toast('✅ Músico guardado');
+  $('mus-admin').checked=false; $('mus-cuotas-access').checked=false; $('mus-disp').checked=true; $('mus-form').style.display='none'; toast('✅ Músico guardado');
 });
 $('mus-search').addEventListener('input',renderMusicos);
 $('btn-mus-az').addEventListener('click',()=>{musMode='az';$('btn-mus-az').className='btn btn-accent btn-sm';$('btn-mus-rol').className='btn btn-ghost btn-sm';renderMusicos();});
@@ -806,7 +824,7 @@ $('btn-save-mus-edit').addEventListener('click', async () => {
   const roles=[...document.querySelectorAll('#mus-edit-roles input:checked')].map(x=>x.value);
   if(!roles.length){alert('Seleccioná al menos un rol');return;}
   const bd=$('mus-edit-bday-d').value, bm=$('mus-edit-bday-m').value, by=$('mus-edit-bday-y').value;
-  await updateDoc(doc(db,'musicos',id),{nombre:$('mus-edit-nombre').value.trim(),roles,rol:roles[0],tel:$('mus-edit-tel').value.trim(),username:$('mus-edit-username').value.trim(),pass:$('mus-edit-pass').value.trim(),bday:(bd&&bm&&by)?by+'-'+bm+'-'+bd:'',cuotaDesde:$('mus-edit-cuota-desde').value||'',admin:$('mus-edit-admin').checked,disponible:$('mus-edit-disp').checked});
+  await updateDoc(doc(db,'musicos',id),{nombre:$('mus-edit-nombre').value.trim(),roles,rol:roles[0],tel:$('mus-edit-tel').value.trim(),username:$('mus-edit-username').value.trim(),pass:$('mus-edit-pass').value.trim(),bday:(bd&&bm&&by)?by+'-'+bm+'-'+bd:'',cuotaDesde:$('mus-edit-cuota-desde').value||'',admin:$('mus-edit-admin').checked,cuotasAccess:$('mus-edit-cuotas-access').checked,disponible:$('mus-edit-disp').checked});
   $('mus-edit-modal').style.display='none'; toast('✅ Músico actualizado');
 });
 
@@ -816,6 +834,7 @@ const editMusico = id => {
   $('mus-edit-username').value=m.username||''; $('mus-edit-pass').value=m.pass||'';
   $('mus-edit-admin').checked=m.admin||false; $('mus-edit-disp').checked=m.disponible;
   $('mus-edit-cuota-desde').value = m.cuotaDesde||'';
+  $('mus-edit-cuotas-access').checked = m.cuotasAccess||false;
   document.querySelectorAll('#mus-edit-roles input').forEach(x=>x.checked=(m.roles||[m.rol]).includes(x.value));
   if(m.bday){const[y,mm,dd]=m.bday.split('-');$('mus-edit-bday-d').value=dd||'';$('mus-edit-bday-m').value=mm||'';$('mus-edit-bday-y').value=y||'';}
   else{['mus-edit-bday-d','mus-edit-bday-m','mus-edit-bday-y'].forEach(id=>$(id).value='');}
