@@ -1522,7 +1522,7 @@ function renderCuotas() {
 }
 
 const checkEventoProximo = () => {
-  if(!CU||CU.admin) return;
+  if(!CU) return;
   const m = musicos.find(x=>x.username===CU.key);
   if(!m) return;
   const now = new Date();
