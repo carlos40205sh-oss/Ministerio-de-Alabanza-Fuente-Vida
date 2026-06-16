@@ -1939,8 +1939,17 @@ const msRender = () => {
   }
 };
 
-// Initialize history state
-if(!history.state) history.replaceState({tab:'inicio', view:'list'}, '', location.pathname);
+// Initialize history state - ensure a solid base entry for PWA back button handling
+if(!history.state) {
+  history.replaceState({tab:'inicio', view:'list'}, '', location.pathname);
+}
+// Push an extra anchor entry so Android PWA back button has history to consume
+// before considering closing the app
+window.addEventListener('load', () => {
+  if(history.state && history.state.tab==='inicio' && history.length <= 1) {
+    history.pushState({tab:'inicio', view:'list', anchor:true}, '', location.pathname);
+  }
+});
 // Open tab from URL query param (e.g. ?tab=anuncios from notification)
 const urlParams = new URLSearchParams(location.search);
 const tabParam = urlParams.get('tab');
