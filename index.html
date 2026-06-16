@@ -71,6 +71,15 @@ input::placeholder{color:var(--muted);}
 .ms-progress-bar{height:3px;background:var(--border);margin:0 16px;}
 .ms-progress-fill{height:100%;background:var(--gold);border-radius:99px;transition:width .3s;}
 #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--success);color:#0F0E1A;padding:8px 20px;border-radius:99px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+.search-wrap{position:relative;margin-bottom:8px;}
+.search-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 30px 9px 12px;outline:none;}
+.search-input:focus{border-color:var(--accent);}
+.search-icon{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none;}
+.search-dropdown{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-top:4px;max-height:200px;overflow-y:auto;}
+.search-dd-item{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border);font-size:13px;}
+.search-dd-item:last-child{border-bottom:none;}
+.search-dd-item:hover{background:#7B6FD422;}
+.search-dd-empty{color:var(--muted);font-size:12px;text-align:center;padding:12px;}
 #login-screen{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;}
 .login-box{width:100%;max-width:360px;}
 .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:12px;}
@@ -197,27 +206,47 @@ input::placeholder{color:var(--muted);}
       </div>
       <div class="form-sec">
         <h4>🎸 Músicos</h4>
-        <div id="ev-mus-tags" style="margin-bottom:8px"></div>
+        <div class="search-wrap">
+          <input id="ev-mus-search" class="search-input" placeholder="Buscar músico..." autocomplete="off"/>
+          <span class="search-icon">🔍</span>
+          <div id="ev-mus-dropdown" class="search-dropdown" style="display:none"></div>
+        </div>
         <div id="ev-assigned-list"></div>
       </div>
       <div class="form-sec">
         <h4>🎙️ Voces</h4>
-        <div id="ev-voz-tags" style="margin-bottom:8px"></div>
+        <div class="search-wrap">
+          <input id="ev-voz-search" class="search-input" placeholder="Buscar voz..." autocomplete="off"/>
+          <span class="search-icon">🔍</span>
+          <div id="ev-voz-dropdown" class="search-dropdown" style="display:none"></div>
+        </div>
         <div id="ev-voz-list"></div>
       </div>
       <div class="form-sec">
         <h4>🔊 Sonido</h4>
-        <div id="ev-sonido-tags" style="margin-bottom:8px"></div>
+        <div class="search-wrap">
+          <input id="ev-sonido-search" class="search-input" placeholder="Buscar sonidista..." autocomplete="off"/>
+          <span class="search-icon">🔍</span>
+          <div id="ev-sonido-dropdown" class="search-dropdown" style="display:none"></div>
+        </div>
         <div id="ev-sonido-list"></div>
       </div>
       <div class="form-sec">
         <h4>📡 Multimedia</h4>
-        <div id="ev-multi-tags" style="margin-bottom:8px"></div>
+        <div class="search-wrap">
+          <input id="ev-multi-search" class="search-input" placeholder="Buscar..." autocomplete="off"/>
+          <span class="search-icon">🔍</span>
+          <div id="ev-multi-dropdown" class="search-dropdown" style="display:none"></div>
+        </div>
         <div id="ev-multi-list"></div>
       </div>
       <div class="form-sec">
         <h4>🛒 Pulpería</h4>
-        <div id="ev-pulperia-tags" style="margin-bottom:8px"></div>
+        <div class="search-wrap">
+          <input id="ev-pulperia-search" class="search-input" placeholder="Buscar músico..." autocomplete="off"/>
+          <span class="search-icon">🔍</span>
+          <div id="ev-pulperia-dropdown" class="search-dropdown" style="display:none"></div>
+        </div>
         <div id="ev-pulperia-list"></div>
       </div>
       <div class="form-sec">
@@ -234,7 +263,11 @@ input::placeholder{color:var(--muted);}
           </select>
           <button class="btn btn-accent btn-sm" id="btn-add-orden">+ Agregar</button>
         </div>
-        <div id="ev-can-tags" style="margin-bottom:8px"></div>
+        <div class="search-wrap" id="ev-can-search-wrap" style="display:none">
+          <input id="ev-can-search" class="search-input" placeholder="Buscar canción..." autocomplete="off"/>
+          <span class="search-icon">🔍</span>
+          <div id="ev-can-dropdown" class="search-dropdown" style="display:none"></div>
+        </div>
         <div id="ev-orden-list"></div>
 
       </div>
@@ -992,98 +1025,122 @@ const VOZ_ROLES = ['Voz','Líder'];
 const SON_ROLES = ['Sonidista'];
 const MUL_ROLES = ['Presentación','Transmisión'];
 
-const makeGroupTags = (elId, listElId, arr, filterFn, label) => {
-  const tagsEl=$(elId); if(!tagsEl) return; tagsEl.innerHTML='';
-  musicos.filter(m=>(m.roles||[m.rol]).some(filterFn)).forEach(m=>{
-    const sel = arr.findIndex?arr.findIndex(a=>a.musId===m.id)>=0:arr.includes(m.id);
-    const span=document.createElement('span'); span.className='tag '+(sel?'sel-accent':'');
-    span.textContent=roleIcon(m.rol)+' '+m.nombre;
-    span.addEventListener('click',()=>{
-      if(arr.findIndex){
-        const i=arr.findIndex(a=>a.musId===m.id);
-        if(i>=0) arr.splice(i,1); else arr.push({musId:m.id,rol:(m.roles||[m.rol]).find(filterFn)||m.rol});
-      } else {
-        const i=arr.indexOf(m.id); if(i>=0) arr.splice(i,1); else arr.push(m.id);
-      }
-      makeGroupTags(elId, listElId, arr, filterFn, label);
-      if(listElId) renderGroupList(listElId, arr);
-    });
-    tagsEl.appendChild(span);
-  });
-  if(listElId) renderGroupList(listElId, arr);
+// Generic search-based selector for assigning people to a group
+const setupGroupSearch = (searchId, dropdownId, listElId, arr, filterFn, simple) => {
+  const searchInput = $(searchId);
+  const dropdown = $(dropdownId);
+  if(!searchInput || !dropdown) return;
+
+  const showDropdown = () => {
+    const q = searchInput.value.toLowerCase();
+    const ids = simple ? arr : arr.map(a=>a.musId);
+    const candidates = musicos.filter(m=>(m.roles||[m.rol]).some(filterFn) && !ids.includes(m.id) && m.nombre.toLowerCase().includes(q));
+    dropdown.innerHTML = '';
+    if(!candidates.length){
+      dropdown.innerHTML = '<div class="search-dd-empty">'+(q?'Sin resultados':'No hay más opciones')+'</div>';
+    } else {
+      candidates.forEach(m=>{
+        const item = document.createElement('div');
+        item.className = 'search-dd-item';
+        item.innerHTML = '<span>'+roleIcon(m.rol)+'</span><span>'+m.nombre+'</span>';
+        item.addEventListener('click', ()=>{
+          if(simple){
+            arr.push(m.id);
+          } else {
+            arr.push({musId:m.id, rol:(m.roles||[m.rol]).find(filterFn)||m.rol});
+          }
+          searchInput.value = '';
+          dropdown.style.display = 'none';
+          renderGroupList(listElId, arr, simple);
+        });
+        dropdown.appendChild(item);
+      });
+    }
+    dropdown.style.display = 'block';
+  };
+
+  searchInput.oninput = showDropdown;
+  searchInput.onfocus = showDropdown;
+  searchInput.onblur = () => setTimeout(()=>dropdown.style.display='none', 200);
 };
 
-const renderGroupList = (listElId, arr) => {
+const renderGroupList = (listElId, arr, simple) => {
   const listEl=$(listElId); if(!listEl) return; listEl.innerHTML='';
-  const ids = arr.map?.(a=>a.musId||a) || arr;
-  ids.forEach((item,i)=>{
-    const musId = item.musId||item;
+  if(!arr.length){ listEl.innerHTML = '<div class="search-dd-empty">Nadie asignado aún</div>'; return; }
+  arr.forEach((item,i)=>{
+    const musId = simple ? item : item.musId;
     const m=musicos.find(x=>x.id===musId); if(!m) return;
     const div=document.createElement('div'); div.className='assigned-item';
     div.innerHTML='<span style="font-size:15px">'+roleIcon(m.rol)+'</span><span style="flex:1;font-size:13px;font-weight:600">'+m.nombre+'</span>';
-    if(item.rol){
+    if(!simple && item.rol){
       const sel=document.createElement('select'); sel.style.cssText='width:auto;margin:0;padding:4px 8px;font-size:11px';
       ROLES_EV.forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;if(item.rol===r)o.selected=true;sel.appendChild(o);});
       sel.addEventListener('change',()=>item.rol=sel.value);
       div.appendChild(sel);
     }
     const rmBtn=document.createElement('button'); rmBtn.className='btn btn-danger btn-sm'; rmBtn.textContent='✕';
-    rmBtn.addEventListener('click',()=>{arr.splice(i,1);renderGroupList(listElId,arr);makeGroupTags(listElId.replace('-list','-tags'),listElId,arr,()=>true,'');});
+    rmBtn.addEventListener('click',()=>{arr.splice(i,1);renderGroupList(listElId,arr,simple);});
     div.appendChild(rmBtn); listEl.appendChild(div);
   });
 };
 
 function renderEvMusTags() {
-  makeGroupTags('ev-mus-tags','ev-assigned-list',evAssigned,r=>MUS_ROLES.includes(r),'Músicos');
+  setupGroupSearch('ev-mus-search','ev-mus-dropdown','ev-assigned-list',evAssigned,r=>MUS_ROLES.includes(r),false);
+  renderGroupList('ev-assigned-list', evAssigned, false);
 };
+
 function renderEvVozTags() {
-  makeGroupTags('ev-voz-tags','ev-voz-list',evVoz,r=>VOZ_ROLES.includes(r),'Voces');
+  setupGroupSearch('ev-voz-search','ev-voz-dropdown','ev-voz-list',evVoz,r=>VOZ_ROLES.includes(r),false);
+  renderGroupList('ev-voz-list', evVoz, false);
 }
 function renderEvSonidoTags() {
-  makeGroupTags('ev-sonido-tags','ev-sonido-list',evSonido,r=>SON_ROLES.includes(r),'Sonido');
+  setupGroupSearch('ev-sonido-search','ev-sonido-dropdown','ev-sonido-list',evSonido,r=>SON_ROLES.includes(r),false);
+  renderGroupList('ev-sonido-list', evSonido, false);
 }
 function renderEvMultiTags() {
-  makeGroupTags('ev-multi-tags','ev-multi-list',evMulti,r=>MUL_ROLES.includes(r),'Multimedia');
+  setupGroupSearch('ev-multi-search','ev-multi-dropdown','ev-multi-list',evMulti,r=>MUL_ROLES.includes(r),false);
+  renderGroupList('ev-multi-list', evMulti, false);
 }
 function renderEvPulperiaTags() {
-  const tagsEl=$('ev-pulperia-tags'); if(!tagsEl) return; tagsEl.innerHTML='';
-  musicos.forEach(m=>{
-    const sel = evPulperia.includes(m.id);
-    const span=document.createElement('span'); span.className='tag '+(sel?'sel-accent':'');
-    span.textContent=roleIcon(m.rol)+' '+m.nombre;
-    span.addEventListener('click',()=>{
-      const i=evPulperia.indexOf(m.id);
-      if(i>=0) evPulperia.splice(i,1); else evPulperia.push(m.id);
-      renderEvPulperiaTags();
-    });
-    tagsEl.appendChild(span);
-  });
-  // Show selected list
-  const listEl=$('ev-pulperia-list'); if(!listEl) return; listEl.innerHTML='';
-  evPulperia.forEach(musId=>{
-    const m=musicos.find(x=>x.id===musId); if(!m) return;
-    const div=document.createElement('div'); div.className='assigned-item';
-    div.innerHTML='<span style="font-size:15px">'+roleIcon(m.rol)+'</span><span style="flex:1;font-size:13px;font-weight:600">'+m.nombre+'</span>';
-    const rmBtn=document.createElement('button'); rmBtn.className='btn btn-danger btn-sm'; rmBtn.textContent='✕';
-    rmBtn.addEventListener('click',()=>{evPulperia.splice(evPulperia.indexOf(musId),1);renderEvPulperiaTags();});
-    div.appendChild(rmBtn); listEl.appendChild(div);
-  });
+  setupGroupSearch('ev-pulperia-search','ev-pulperia-dropdown','ev-pulperia-list',evPulperia,()=>true,true);
+  renderGroupList('ev-pulperia-list', evPulperia, true);
 }
+
 function renderEvCanTags() {
-  const tagsEl=$('ev-can-tags'); tagsEl.innerHTML='';
-  // Only show cancion selector when tipo is cancion
   const tipo = $('ev-orden-tipo') ? $('ev-orden-tipo').value : 'cancion';
-  if(tipo !== 'cancion') return;
-  canciones.sort((a,b)=>a.titulo.localeCompare(b.titulo)).forEach(c=>{
-    const span=document.createElement('span'); span.className='tag';
-    span.style.cssText='font-size:11px;padding:3px 8px';
-    span.textContent=c.titulo;
-    span.addEventListener('click',()=>{
-      evOrden.push({tipo:'cancion', cancionId:c.id, titulo:c.titulo, tono:c.tono||''});
-      renderEvOrden();
-    });
-    tagsEl.appendChild(span);
-  });
+  const wrap = $('ev-can-search-wrap');
+  if(tipo !== 'cancion'){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  const searchInput = $('ev-can-search');
+  const dropdown = $('ev-can-dropdown');
+
+  const showDropdown = () => {
+    const q = searchInput.value.toLowerCase();
+    const sorted = [...canciones].sort((a,b)=>a.titulo.localeCompare(b.titulo));
+    const candidates = sorted.filter(c=>c.titulo.toLowerCase().includes(q));
+    dropdown.innerHTML = '';
+    if(!candidates.length){
+      dropdown.innerHTML = '<div class="search-dd-empty">'+(q?'Sin resultados':'No hay canciones')+'</div>';
+    } else {
+      candidates.forEach(c=>{
+        const item = document.createElement('div');
+        item.className = 'search-dd-item';
+        item.innerHTML = '<span>🎵</span><span>'+c.titulo+(c.artista?' <span style="color:var(--muted);font-size:11px">· '+c.artista+'</span>':'')+'</span>';
+        item.addEventListener('click', ()=>{
+          evOrden.push({tipo:'cancion', cancionId:c.id, titulo:c.titulo, tono:c.tono||''});
+          searchInput.value = '';
+          dropdown.style.display = 'none';
+          renderEvOrden();
+        });
+        dropdown.appendChild(item);
+      });
+    }
+    dropdown.style.display = 'block';
+  };
+
+  searchInput.oninput = showDropdown;
+  searchInput.onfocus = showDropdown;
+  searchInput.onblur = () => setTimeout(()=>dropdown.style.display='none', 200);
 };
 function renderEstruturaPanel(idx) {
   editingEstructuraIdx = idx;
