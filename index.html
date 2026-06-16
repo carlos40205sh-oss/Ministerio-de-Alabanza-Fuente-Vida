@@ -41,7 +41,7 @@ input::placeholder{color:var(--muted);}
 .nav-btn.active .label{color:var(--gold);}
 .dot{width:4px;height:4px;border-radius:50%;background:var(--gold);}
 .nav-admin{display:none !important;}
-.section{display:none;} #sec-anuncios{display:none;}
+.section{display:none;}
 .section.active{display:block;}
 .tag{cursor:pointer;padding:4px 10px;border-radius:8px;font-size:12px;border:1px solid var(--border);color:var(--muted);display:inline-block;margin:3px;}
 .tag.sel-gold{border-color:var(--gold);background:#E8C96A22;color:var(--gold);}
@@ -369,7 +369,7 @@ input::placeholder{color:var(--muted);}
   <button class="nav-btn" data-tab="eventos"><span class="icon">🗓</span><span class="label">Eventos</span></button>
   <button class="nav-btn" data-tab="canciones"><span class="icon">🎵</span><span class="label">Canciones</span></button>
   <button class="nav-btn" data-tab="ayuno"><span class="icon">🙏</span><span class="label">Ayuno</span></button>
-  <button class="nav-btn nav-admin" data-tab="anuncios"><span class="icon">📢</span><span class="label">Anuncios</span></button>
+  <button class="nav-btn" data-tab="anuncios"><span class="icon">📢</span><span class="label">Anuncios</span></button>
   <button class="nav-btn nav-admin" data-tab="musicos"><span class="icon">🎸</span><span class="label">Músicos</span></button>
   <button class="nav-btn nav-admin" data-tab="cantantes"><span class="icon">🎤</span><span class="label">Cantantes</span></button>
   <button class="nav-btn nav-admin" data-tab="cuotas"><span class="icon">💰</span><span class="label">Cuotas</span></button>
@@ -610,7 +610,6 @@ const applyLogin = user => {
   if(CU.admin) {
     ['btn-new-ev','btn-add-can','btn-add-mus','btn-add-cant'].forEach(id=>$(id).style.display='inline-block');
     document.querySelectorAll('.nav-admin').forEach(b=>b.style.setProperty('display','flex','important'));
-    document.getElementById('sec-anuncios').style.display='block';
     $('btn-add-anuncio').style.display='inline-block';
   }
   renderCalendar();
