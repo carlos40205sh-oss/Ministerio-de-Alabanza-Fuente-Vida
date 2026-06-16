@@ -11,11 +11,4 @@ firebase.initializeApp({
 });
 
 const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage(payload => {
-  const { title, body } = payload.notification;
-  self.registration.showNotification(title, {
-    body: body,
-    icon: '/Ministerio-de-Alabanza-Fuente-Vida/icon.svg'
-  });
-});
+// Firebase handles background notifications automatically
