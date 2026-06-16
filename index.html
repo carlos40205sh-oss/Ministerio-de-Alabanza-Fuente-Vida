@@ -555,14 +555,16 @@ const registerFCMToken = async () => {
     const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
     console.log('FCM token:', token ? token.slice(0,20)+'...' : 'none');
     if(token && CU) {
+      // Save token for musician account
       const m = musicos.find(x => x.username === CU.key);
       if(m) {
         await updateDoc(doc(db, 'musicos', m.id), { fcmToken: token });
-        console.log('Token saved for:', m.nombre);
-      } else if(CU.admin) {
-        // Save admin token in a separate collection
+        console.log('Token saved for musician:', m.nombre);
+      }
+      // Always save token for admin accounts too
+      if(CU.admin) {
         await setDoc(doc(db, 'admins', CU.key), { fcmToken: token, nombre: CU.nombre });
-        console.log('Admin token saved for:', CU.nombre);
+        console.log('Token saved for admin:', CU.nombre);
       }
     }
   } catch(e) { console.log('FCM error:', e); }
