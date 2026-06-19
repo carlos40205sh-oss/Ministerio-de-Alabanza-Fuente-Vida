@@ -111,18 +111,26 @@ input::placeholder{color:var(--muted);}
 </head>
 <body>
 
-<div id="login-screen">
-  <div class="login-box">
+<div id="login-screen" style="position:relative;overflow:hidden">
+  <div style="position:absolute;top:-80px;left:-60px;width:240px;height:240px;background:radial-gradient(circle,#7B6FD444 0%,transparent 70%)"></div>
+  <div style="position:absolute;bottom:-100px;right:-60px;width:280px;height:280px;background:radial-gradient(circle,#E8C96A33 0%,transparent 70%)"></div>
+  <div class="login-box" style="position:relative;z-index:2">
     <div style="text-align:center;margin-bottom:28px">
-      <div style="font-size:44px">✨</div>
-      <h1 style="color:var(--gold);font-size:20px;margin:8px 0 4px">Ministerio de Alabanza</h1>
-      <p style="color:var(--muted);font-size:13px">Ingresá con tu cuenta</p>
+      <div style="width:84px;height:84px;border-radius:24px;background:linear-gradient(135deg,#7B6FD4 0%,#4A3F9F 100%);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 12px 30px -8px #7B6FD466"><span style="font-size:38px">✨</span></div>
+      <h1 style="color:var(--text);font-size:22px;font-weight:800;letter-spacing:-.3px;margin:0">Ministerio de Alabanza</h1>
+      <p style="color:var(--muted);font-size:13px;margin-top:6px">Iniciá sesión para continuar</p>
     </div>
-    <input id="login-user" placeholder="Usuario" autocomplete="off"/>
-    <input id="login-pass" type="password" placeholder="Contraseña"/>
-    <div id="login-err" style="color:var(--danger);font-size:12px;margin-bottom:8px;display:none">Usuario o contraseña incorrectos</div>
-    <label class="chk-lbl" style="justify-content:center;margin-bottom:8px"><input type="checkbox" id="remember-me"/> Recordarme</label>
-    <button class="btn btn-primary btn-full" id="btn-entrar">Entrar</button>
+    <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;display:block;font-weight:600">Usuario</span>
+    <input id="login-user" placeholder="Ej: carlitos" autocomplete="off" style="border-width:1.5px;padding:13px 16px;margin-bottom:14px"/>
+    <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;display:block;font-weight:600">Contraseña</span>
+    <input id="login-pass" type="password" placeholder="••••••••" style="border-width:1.5px;padding:13px 16px"/>
+    <div id="login-err" style="color:var(--danger);font-size:12px;margin-top:8px;margin-bottom:8px;display:none">Usuario o contraseña incorrectos</div>
+    <div style="display:flex;align-items:center;gap:8px;margin:18px 0 22px">
+      <input type="checkbox" id="remember-me" style="accent-color:var(--accent);width:16px;height:16px"/>
+      <label for="remember-me" style="font-size:13px;color:var(--muted)">Recordarme en este dispositivo</label>
+    </div>
+    <button class="btn-full" id="btn-entrar" style="width:100%;background:linear-gradient(135deg,#E8C96A 0%,#D4AE4A 100%);color:#1A1408;border:none;border-radius:12px;padding:15px;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 10px 24px -8px #E8C96A55">Entrar</button>
+    <div style="text-align:center;margin-top:28px;font-size:11px;color:var(--muted)">🎵 Fuente de Vida</div>
   </div>
 </div>
 
