@@ -153,6 +153,7 @@ input::placeholder{color:var(--muted);}
     <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--gold)" id="st-c">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Canciones</div></div>
     <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--accent)" id="st-m">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Músicos</div></div>
     <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--success)" id="st-e">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Eventos</div></div>
+    <div id="mi-rol-stat-card" style="display:none;flex:1;background:var(--card);border:1px solid var(--accent);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer"><div style="font-size:22px;font-weight:800;color:var(--accent)" id="st-mi-rol">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Mi Rol</div></div>
   </div>
   <div style="padding:20px 16px 0">
     <div id="bday-hoy" style="display:none;background:linear-gradient(135deg,#E8C96A 0%,#F0A500 100%);border-radius:16px;padding:14px;margin-bottom:16px"></div>
@@ -161,8 +162,7 @@ input::placeholder{color:var(--muted);}
       <div style="font-size:14px;font-weight:800;color:var(--text)">📅 Próximos eventos</div>
     </div>
     <div id="proximos-list"></div>
-    <div id="mis-eventos-card" style="display:none;margin-top:20px"></div>
-  </div>
+    </div>
   <div style="padding:20px 16px 0">
     <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:10px">🎂 Cumpleaños del mes</div>
     <div id="bday-mes" style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px"></div>
@@ -610,6 +610,18 @@ input::placeholder{color:var(--muted);}
   </div>
 </div>
 
+<!-- MI ROL MODAL (bottom sheet) -->
+<div id="mi-rol-modal" class="modal" style="z-index:701;align-items:flex-end;padding:0">
+  <div style="background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border-radius:24px 24px 0 0;padding:22px 18px 28px;width:100%;max-width:480px;box-shadow:0 -20px 60px -20px #000000aa;max-height:85vh;overflow-y:auto">
+    <div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 18px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-size:18px;font-weight:800">🎵 Mi rol este mes</div>
+      <button id="btn-close-mi-rol" style="width:30px;height:30px;border-radius:50%;background:var(--card2);border:none;color:var(--muted);font-size:14px;cursor:pointer">✕</button>
+    </div>
+    <div id="mi-rol-content"></div>
+  </div>
+</div>
+
 <!-- MODO SERVICIO -->
 <div id="modo-servicio">
   <div class="ms-header">
@@ -775,8 +787,9 @@ const goTab = (tab, pushState=true) => {
 // Handle back button
 window.addEventListener('popstate', e => {
   const state = e.state || {tab:'inicio', view:'list'};
-  // Always close the Mis Cuotas modal on any back navigation, unless we're navigating INTO it
+  // Always close the Mis Cuotas / Mi Rol modals on any back navigation, unless we're navigating INTO that modal
   if(state.modal !== 'mis-cuotas') closeMisCuotas(true);
+  if(state.modal !== 'mi-rol') closeMiRol(true);
   if(state.view==='detail' || state.view==='form') {
     // Go back to list view of that tab
     goTab(state.tab||'eventos', false);
@@ -2026,59 +2039,79 @@ const checkCuotaPendiente = () => {
 };
 
 // ── MIS CUOTAS (vista personal para músicos) ──
-// ── MI ROL ESTE MES (vista personal para músicos en Inicio) ──
+// ── MI ROL ESTE MES (4ta tarjeta de stats + modal para músicos en Inicio) ──
+let misEventosDelMes = [];
+
+const getMiRolDeEvento = (m, ev) => {
+  if(ev.tipo==='Ayuno') return '🙏 Ayuno';
+  const findRol = (arr) => {
+    const found = (arr||[]).find(a => (typeof a==='string' ? a : a.musId) === m.id);
+    return found ? (typeof found==='string' ? null : found.rol) : null;
+  };
+  const rol = findRol(ev.asignados) || findRol(ev.vozAsignados) || findRol(ev.sonidoAsignados) || findRol(ev.multiAsignados);
+  if(rol) return roleIcon(rol)+' '+rol;
+  if((ev.pulperia||[]).includes(m.id)) return '🛒 Pulpería';
+  return '';
+};
+
 const renderMisEventosCard = () => {
-  const cardEl = $('mis-eventos-card');
-  if(!cardEl) return;
-  if(!CU){ cardEl.style.display='none'; return; }
+  const statCard = $('mi-rol-stat-card');
+  if(!statCard) return;
+  if(!CU){ statCard.style.display='none'; return; }
   const m = musicos.find(x=>x.username===CU.key);
-  if(!m){ cardEl.style.display='none'; return; }
+  if(!m){ statCard.style.display='none'; return; }
 
   const hoy = new Date().toISOString().slice(0,10);
-  const misEventos = eventos.filter(ev=>{
+  misEventosDelMes = eventos.filter(ev=>{
     if((ev.fecha||'') < hoy) return false;
     if(ev.tipo==='Ayuno') return true; // assigned to everyone
     const enGrupo = (arr) => (arr||[]).some(a => (typeof a==='string' ? a : a.musId) === m.id);
     return enGrupo(ev.asignados) || enGrupo(ev.vozAsignados) || enGrupo(ev.sonidoAsignados) || enGrupo(ev.multiAsignados) || (ev.pulperia||[]).includes(m.id);
   }).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
 
-  if(!misEventos.length){ cardEl.style.display='none'; return; }
+  if(!misEventosDelMes.length){ statCard.style.display='none'; return; }
 
-  const getMiRol = (ev) => {
-    if(ev.tipo==='Ayuno') return '🙏 Ayuno';
-    const findRol = (arr) => {
-      const found = (arr||[]).find(a => (typeof a==='string' ? a : a.musId) === m.id);
-      return found ? (typeof found==='string' ? null : found.rol) : null;
-    };
-    const rol = findRol(ev.asignados) || findRol(ev.vozAsignados) || findRol(ev.sonidoAsignados) || findRol(ev.multiAsignados);
-    if(rol) return roleIcon(rol)+' '+rol;
-    if((ev.pulperia||[]).includes(m.id)) return '🛒 Pulpería';
-    return '';
-  };
+  statCard.style.display='block';
+  $('st-mi-rol').textContent = misEventosDelMes.length;
+};
 
-  cardEl.style.display='block';
+window.showMiRol = () => {
+  const m = musicos.find(x=>x.username===CU.key);
+  if(!m || !misEventosDelMes.length) return;
+
   let rowsHtml = '';
-  misEventos.forEach((ev,i)=>{
+  misEventosDelMes.forEach((ev,i)=>{
     const [yy,mm,dd] = (ev.fecha||'').split('-');
     const mesAbrev = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mm)-1]||'';
-    const isLast = i === misEventos.length-1;
+    const isLast = i === misEventosDelMes.length-1;
     rowsHtml += '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;'+(isLast?'':'border-bottom:1px solid var(--border);')+'cursor:pointer" data-evid="'+ev.id+'">'
       +'<div style="font-size:12px;font-weight:800;color:var(--gold);width:42px;flex-shrink:0">'+(dd||'?')+' '+mesAbrev+'</div>'
       +'<div style="font-size:13px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ev.titulo+'</div>'
-      +'<div style="font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0;white-space:nowrap">'+getMiRol(ev)+'</div>'
+      +'<div style="font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0;white-space:nowrap">'+getMiRolDeEvento(m, ev)+'</div>'
     +'</div>';
   });
 
-  cardEl.innerHTML = '<div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:10px">🎵 Mi rol este mes</div>'
-    + '<div style="background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:16px;padding:4px 14px">' + rowsHtml + '</div>';
+  $('mi-rol-content').innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:4px 14px">'+rowsHtml+'</div>';
+  $('mi-rol-modal').style.display='flex';
+  history.pushState({tab:history.state?.tab||'inicio', view:'modal', modal:'mi-rol'}, '', location.pathname);
 
-  cardEl.querySelectorAll('[data-evid]').forEach(line=>{
+  $('mi-rol-content').querySelectorAll('[data-evid]').forEach(line=>{
     line.addEventListener('click', ()=>{
-      goTab('eventos', false);
-      showEvDetail(line.dataset.evid, 'inicio');
+      closeMiRol();
+      setTimeout(()=>{
+        goTab('eventos', false);
+        showEvDetail(line.dataset.evid, 'inicio');
+      }, 50);
     });
   });
 };
+
+function closeMiRol(skipHistory) {
+  $('mi-rol-modal').style.display='none';
+  if(!skipHistory) history.back();
+}
+$('mi-rol-stat-card').addEventListener('click', showMiRol);
+$('btn-close-mi-rol').addEventListener('click', () => closeMiRol());
 
 const renderMisCuotasCard = () => {
   const cardEl = $('mis-cuotas-card');
