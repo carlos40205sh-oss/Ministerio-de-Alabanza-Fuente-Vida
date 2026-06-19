@@ -693,6 +693,9 @@ const applyLogin = user => {
   $('login-screen').style.display='none';
   $('hdr-user').textContent = CU.nombre+' · Salir';
   $('welcome-msg').textContent = 'Bienvenido, '+CU.nombre;
+  // Track last access for musicians
+  const miMusicoLogin = musicos.find(x=>x.username===CU.key);
+  if(miMusicoLogin) updateDoc(doc(db,'musicos',miMusicoLogin.id), {ultimoAcceso: Date.now()}).catch(()=>{});
   if(CU.admin) {
     ['btn-new-ev','btn-add-can','btn-add-mus','btn-add-cant'].forEach(id=>$(id).style.display='inline-block');
     document.querySelectorAll('.nav-admin').forEach(b=>b.style.setProperty('display','flex','important'));
@@ -899,11 +902,24 @@ function renderMusicos() {
   if(!musicos.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No hay músicos</div>';return;}
   const q=($('mus-search')||{value:''}).value.toLowerCase();
   const filtered=musicos.filter(m=>m.nombre.toLowerCase().includes(q)||(m.roles||[m.rol]).some(r=>r.toLowerCase().includes(q))).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const fmtUltimoAcceso = ts => {
+    if(!ts) return '<span style="color:var(--danger)">⚠️ Nunca ha entrado</span>';
+    const diffMs = Date.now() - ts;
+    const diffH = diffMs / 3600000;
+    const diffD = Math.floor(diffH / 24);
+    if(diffH < 1) return '<span style="color:var(--success)">🟢 Activo ahora</span>';
+    if(diffH < 24) return '<span style="color:var(--success)">Hace '+Math.floor(diffH)+'h</span>';
+    if(diffD === 1) return '<span style="color:var(--muted)">Ayer</span>';
+    if(diffD < 7) return '<span style="color:var(--muted)">Hace '+diffD+' días</span>';
+    if(diffD < 30) return '<span style="color:var(--warn)">Hace '+Math.floor(diffD/7)+' sem</span>';
+    return '<span style="color:var(--danger)">Hace '+Math.floor(diffD/30)+' meses</span>';
+  };
   const makeCard = m => {
     const card=document.createElement('div'); card.className='card';
     const rolesBadges=(m.roles||[m.rol]).map(r=>'<span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+roleIcon(r)+' '+r+'</span>').join(' ');
     const dispBadge='<span class="badge" style="background:'+(m.disponible?'#7EC8A022':'#E06C7522')+';color:'+(m.disponible?'var(--success)':'var(--danger)')+';border:1px solid '+(m.disponible?'#7EC8A044':'#E06C7544')+'">'+(m.disponible?'Disponible':'No disponible')+'</span>';
-    card.innerHTML='<div class="row" style="align-items:flex-start"><div class="avatar">'+roleIcon(m.rol)+'</div><div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="margin-top:4px">'+rolesBadges+' '+dispBadge+'</div>'+(m.admin?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44;margin-top:4px">🔑 Admin</span>':'')+(m.username?'<div style="color:var(--muted);font-size:11px;margin-top:3px">👤 '+m.username+'</div>':'')+(m.bday?'<div style="color:var(--muted);font-size:11px;margin-top:2px">🎂 '+fmtBday(m.bday)+'</div>':'')+'</div></div>';
+    const accesoHtml = (CU&&CU.admin) ? '<div style="font-size:11px;margin-top:4px">📲 '+fmtUltimoAcceso(m.ultimoAcceso)+'</div>' : '';
+    card.innerHTML='<div class="row" style="align-items:flex-start"><div class="avatar">'+roleIcon(m.rol)+'</div><div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="margin-top:4px">'+rolesBadges+' '+dispBadge+'</div>'+(m.admin?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44;margin-top:4px">🔑 Admin</span>':'')+(m.username?'<div style="color:var(--muted);font-size:11px;margin-top:3px">👤 '+m.username+'</div>':'')+(m.bday?'<div style="color:var(--muted);font-size:11px;margin-top:2px">🎂 '+fmtBday(m.bday)+'</div>':'')+accesoHtml+'</div></div>';
     if(CU&&CU.admin){
       const btns=document.createElement('div'); btns.style.cssText='display:flex;flex-direction:column;gap:4px;flex-shrink:0';
       const eBtn=document.createElement('button'); eBtn.className='btn btn-accent btn-sm'; eBtn.textContent='✏️ Editar';
