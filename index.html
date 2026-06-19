@@ -1513,4 +1513,644 @@ function renderCalList(date) {
   // Show calendar views
   $('cal-ev-list').style.display='block';
   $('cal-grid').style.display='grid';
-  $('cal-hdr').style.display=
+  $('cal-hdr').style.display='grid';
+  $('cal-title-row').style.display='flex';
+  $('cal-legend').style.display='flex';
+  $('cal-ev-detail').style.display='none';
+  $('cal-ev-detail').innerHTML='';
+
+  const el=$('cal-ev-list'); el.innerHTML='';
+  if(!devs.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">'+fmt(date)+' — Sin eventos</div>';return;}
+  el.innerHTML='<div style="color:var(--muted);font-size:12px;margin-bottom:6px;padding-top:4px">'+fmt(date)+'</div>';
+  devs.forEach(ev=>{
+    const div=document.createElement('div'); div.className='card row'; div.style.cssText='cursor:pointer;padding:10px 12px';
+    div.innerHTML='<div style="flex:1"><div style="font-weight:700;font-size:13px">'+ev.titulo+'</div>'+(ev.horaIni?'<div style="color:var(--muted);font-size:11px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'')+'<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;margin-top:4px">'+ev.tipo+'</span></div><span style="color:var(--muted)">›</span>';
+    div.addEventListener('click',()=>{
+      // Hide calendar, show detail
+      $('cal-ev-list').style.display='none';
+      $('cal-grid').style.display='none';
+      $('cal-hdr').style.display='none';
+      $('cal-title-row').style.display='none';
+      $('cal-legend').style.display='none';
+      const detEl=$('cal-ev-detail'); detEl.style.display='block'; detEl.innerHTML='';
+      history.pushState({tab:'calendario', view:'detail', date}, '', location.pathname);
+      const backFn=(skipHistory)=>{
+        if(!skipHistory) history.back();
+        detEl.style.display='none'; detEl.innerHTML='';
+        $('cal-ev-list').style.display='block';
+        $('cal-grid').style.display='grid';
+        $('cal-hdr').style.display='grid';
+        $('cal-title-row').style.display='flex';
+        $('cal-legend').style.display='flex';
+      };
+      detEl.appendChild(buildEvDetail(ev,backFn));
+    });
+    el.appendChild(div);
+  });
+}
+
+// ── DASHBOARD ──
+function renderDashboard() {
+  $('st-c').textContent=canciones.length; $('st-m').textContent=musicos.length; $('st-e').textContent=eventos.length;
+  const hoy=new Date().toISOString().slice(0,10);
+  const prox=[...eventos].filter(e=>e.fecha>=hoy).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(0,4);
+  const proxEl=$('proximos-list'); proxEl.innerHTML='';
+  if(!prox.length){proxEl.innerHTML='<div style="color:var(--muted);font-size:13px">No hay eventos próximos</div>';}
+  else prox.forEach(ev=>{
+    const div=document.createElement('div'); div.className='card row'; div.style.cssText='cursor:pointer;padding:10px 12px;margin-bottom:8px';
+    div.addEventListener('click',()=>{goTab('eventos');showEvDetail(ev.id);});
+    div.innerHTML='<span style="font-size:18px">'+(ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':'🎵')+'</span><div style="flex:1"><div style="font-weight:600;font-size:13px">'+ev.titulo+'</div><div style="color:var(--muted);font-size:11px">'+fmt(ev.fecha)+(ev.horaIni?' · '+ev.horaIni:'')+' · '+ev.tipo+'</div></div><span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>';
+    proxEl.appendChild(div);
+  })
+  // Cumpleaños
+  const hoyDate=new Date(), hoyM=hoyDate.getMonth()+1, hoyD=hoyDate.getDate();
+  const bdayHoy=musicos.filter(m=>{if(!m.bday)return false;const[y,mm,dd]=m.bday.split('-');return parseInt(mm)===hoyM&&parseInt(dd)===hoyD;});
+  const bdayMes=musicos.filter(m=>{if(!m.bday)return false;const[y,mm]=m.bday.split('-');return parseInt(mm)===hoyM;}).sort((a,b)=>parseInt(a.bday.split('-')[2])-parseInt(b.bday.split('-')[2]));
+  const bhEl=$('bday-hoy');
+  if(bdayHoy.length){bhEl.style.display='block';bhEl.innerHTML='<div style="font-size:20px;margin-bottom:6px">🎉🎂🎉</div><div style="font-weight:700;color:var(--gold);font-size:14px;margin-bottom:6px">¡Cumpleaños hoy!</div>'+bdayHoy.map(m=>'<div style="font-size:13px;color:var(--text)">🎂 '+m.nombre+'</div>').join('');}
+  else bhEl.style.display='none';
+  const bmEl=$('bday-mes');
+  if(bmEl){if(!bdayMes.length){bmEl.innerHTML='<div style="color:var(--muted);font-size:13px">No hay cumpleaños este mes</div>';}
+  else{bmEl.innerHTML=bdayMes.map(m=>{const[y,mm,dd]=m.bday.split('-');const esHoy=parseInt(mm)===hoyM&&parseInt(dd)===hoyD;return'<div class="card row" style="padding:10px 12px;margin-bottom:8px"><div class="avatar">'+roleIcon(m.rol)+'</div><div style="flex:1"><div style="font-weight:600;font-size:13px">'+m.nombre+'</div><div style="color:var(--muted);font-size:11px">'+m.rol+'</div></div><span class="badge" style="background:'+(esHoy?'#E8C96A33':'#7B6FD422')+';color:'+(esHoy?'var(--gold)':'var(--accent)')+';border:1px solid '+(esHoy?'var(--gold)':'var(--accent)')+'44">'+(esHoy?'🎂 Hoy':'📅 '+dd+'/'+mm)+'</span></div>';}).join('');}}
+  // Stats
+  const sEl=$('stats-section'); if(!sEl) return;
+  const aprender = canciones.filter(c=>c.aprender);
+  const topCan = historialCanciones.sort((a,b)=>b.count-a.count).slice(0,5).map(h=>{
+    const c=canciones.find(x=>x.id===h.id);
+    const titulo = c?c.titulo:h.titulo;
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span>🎵</span><span style="flex:1;font-size:13px">'+titulo+'</span><span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">'+h.count+' veces</span></div>';
+  }).join('');
+  sEl.innerHTML=
+    (aprender.length?'<div class="card" style="margin-bottom:10px"><div style="font-weight:700;font-size:12px;color:var(--success);margin-bottom:8px">📚 CANCIONES POR APRENDER</div>'+aprender.map(c=>'<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)"><span>🎵</span><div style="flex:1"><div style="font-size:13px;font-weight:600">'+c.titulo+'</div><div style="font-size:11px;color:var(--muted)">'+(c.artista||'')+'</div></div>'+(c.tono?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">'+c.tono+'</span>':'')+'</div>').join('')+'</div>':'')
+    +'<div class="card" style="margin-bottom:10px"><div style="font-weight:700;font-size:12px;color:var(--muted);margin-bottom:8px">🎵 CANCIONES MÁS CANTADAS</div>'+(topCan||'<div style="color:var(--muted);font-size:12px">Sin datos aún</div>')+'</div>';
+}
+
+// ── CUOTAS ──
+let cuotaMes = new Date().getMonth(), cuotaYear = new Date().getFullYear();
+let cuotaData = {}; // {musId: {YYYY-MM: true/false}}
+let cuotaMonto = 0;
+const MESES_C = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+const cuotaKey = () => cuotaYear+'-'+String(cuotaMes+1).padStart(2,'0');
+
+$('btn-save-monto').addEventListener('click', async () => {
+  const m = parseInt($('cuota-monto').value);
+  if(!m||m<=0){alert('Ingresá un monto válido');return;}
+  await updateDoc(doc(db,'config','cuotas'), {monto:m}).catch(async ()=>{
+    await addDoc(collection(db,'config'), {monto:m});
+  });
+  // Use setDoc instead
+    await setDoc(doc(db,'config','cuotas'), {monto:m});
+  cuotaMonto = m; toast('✅ Monto guardado: ₡'+m.toLocaleString());
+});
+
+$('btn-cuota-prev').addEventListener('click',()=>{cuotaMes--;if(cuotaMes<0){cuotaMes=11;cuotaYear--;}renderCuotas();});
+$('btn-cuota-next').addEventListener('click',()=>{cuotaMes++;if(cuotaMes>11){cuotaMes=0;cuotaYear++;}renderCuotas();});
+$('btn-cuota-ok').addEventListener('click',()=>$('cuota-modal').style.display='none');
+$('btn-evento-ok').addEventListener('click',()=>$('evento-modal').style.display='none');
+
+const toggleCuota = async (musId, paid) => {
+  const key = cuotaKey();
+    if(!cuotaData[musId]) cuotaData[musId]={};
+  cuotaData[musId][key] = !paid;
+  await setDoc(doc(db,'cuotas',musId), cuotaData[musId]);
+  renderCuotas();
+  toast(!paid ? '✅ Pago registrado' : '↩️ Pago removido');
+};
+
+function renderCuotas() {
+  const key = cuotaKey();
+  $('cuota-mes-titulo').textContent = MESES_C[cuotaMes]+' '+cuotaYear;
+  if($('cuota-monto').value==='') $('cuota-monto').value = cuotaMonto||'';
+  const el=$('cuotas-list'); el.innerHTML='';
+  const musList = musicos.filter(m=>m.username).sort((a,b)=>a.nombre.localeCompare(b.nombre)); // only musicians with accounts, sorted A-Z
+  let pagaron=0, deben=0;
+  musList.forEach(m=>{
+    const paid = cuotaData[m.id]?.[key]||false;
+    const noAplica = m.cuotaDesde && key < m.cuotaDesde;
+    if(!noAplica){ if(paid) pagaron++; else deben++; }
+    const div=document.createElement('div'); div.className='card row';
+    div.innerHTML='<div class="avatar">'+roleIcon(m.rol)+'</div><div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="color:var(--muted);font-size:12px">'+(m.roles||[m.rol])[0]+'</div></div>';
+    const btn=document.createElement('button');
+    btn.className='btn btn-sm';
+    if(noAplica){
+      btn.style.cssText='background:var(--surface);color:var(--muted);border:1px solid var(--border);white-space:nowrap;cursor:default';
+      btn.textContent='⏳ Aún no aplica';
+    } else {
+      btn.style.cssText='background:'+(paid?'#7EC8A022':'#E06C7522')+';color:'+(paid?'var(--success)':'var(--danger)')+';border:1px solid '+(paid?'#7EC8A044':'#E06C7544')+';white-space:nowrap';
+      btn.textContent=paid?'✅ Pagó':'❌ Debe';
+      btn.addEventListener('click',()=>toggleCuota(m.id,paid));
+    }
+    div.appendChild(btn);
+    el.appendChild(div);
+  });
+  $('cuota-pagaron').textContent=pagaron;
+  $('cuota-deben').textContent=deben;
+  $('cuota-total').textContent='₡'+(pagaron*(cuotaMonto||0)).toLocaleString();
+}
+
+// ── RESUMEN ANUAL DE CUOTAS ──
+let resumenYear = new Date().getFullYear();
+
+const renderResumenCuotas = () => {
+  $('resumen-year-lbl').textContent = resumenYear;
+  const now = new Date();
+  const musList = musicos.filter(m=>m.username).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const MESES_ABREV = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+  let html = '<thead><tr><th style="padding:8px 10px;text-align:left;position:sticky;left:0;background:var(--surface);color:var(--gold);font-weight:700;z-index:3">Músico</th>';
+  MESES_ABREV.forEach(m => html += '<th style="padding:8px 10px;text-align:center;background:var(--surface);color:var(--gold);font-weight:700">'+m+'</th>');
+  html += '</tr></thead><tbody>';
+
+  musList.forEach((m,i) => {
+    const rowBg = i%2===1 ? 'background:rgba(255,255,255,0.02)' : '';
+    html += '<tr><td style="padding:8px 10px;text-align:left;position:sticky;left:0;background:var(--card);font-weight:600;'+rowBg+'">'+m.nombre+'</td>';
+    for(let mo=0; mo<12; mo++){
+      const isFutureOrCurrent = resumenYear > now.getFullYear() || (resumenYear===now.getFullYear() && mo >= now.getMonth());
+      const key = resumenYear+'-'+String(mo+1).padStart(2,'0');
+      const noAplica = m.cuotaDesde && key < m.cuotaDesde;
+      let cell;
+      if(isFutureOrCurrent || noAplica){
+        cell = '<span style="color:var(--muted)">–</span>';
+      } else {
+        const paid = cuotaData[m.id]?.[key]||false;
+        cell = paid ? '<span style="color:var(--success);font-weight:700">✅</span>' : '<span style="color:var(--danger);font-weight:700">❌</span>';
+      }
+      html += '<td style="padding:8px 10px;text-align:center;border-bottom:1px solid var(--border);'+rowBg+'">'+cell+'</td>';
+    }
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  $('resumen-cuotas-table').innerHTML = html;
+};
+
+$('btn-toggle-resumen').addEventListener('click', () => {
+  const normalView = $('cuotas-vista-normal');
+  const resumenView = $('cuotas-vista-resumen');
+  const showingResumen = resumenView.style.display !== 'none';
+  if(showingResumen){
+    resumenView.style.display = 'none';
+    normalView.style.display = 'block';
+    $('btn-toggle-resumen').textContent = '📊 Resumen anual';
+  } else {
+    normalView.style.display = 'none';
+    resumenView.style.display = 'block';
+    $('btn-toggle-resumen').textContent = '📅 Vista mensual';
+    renderResumenCuotas();
+  }
+});
+
+$('btn-resumen-prev-year').addEventListener('click', () => { if(resumenYear>2026){ resumenYear--; renderResumenCuotas(); } });
+$('btn-resumen-next-year').addEventListener('click', () => { resumenYear++; renderResumenCuotas(); });
+
+const checkEventoProximo = () => {
+  if(!CU) return;
+  const m = musicos.find(x=>x.username===CU.key);
+  if(!m) return;
+  const now = new Date();
+  const en7d = new Date(now.getTime() + 7*24*60*60*1000);
+  const pad = n => String(n).padStart(2,'0');
+  const localDate = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  const hoyStr = localDate(now);
+  const en7Str = localDate(en7d);
+  // Find events this week where musician is assigned
+  const proximos = eventos.filter(ev => {
+    if(ev.fecha < hoyStr || ev.fecha > en7Str) return false;
+    return (ev.asignados||[]).some(a => a.musId === m.id);
+  }).sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  if(!proximos.length) return;
+  const pad2 = n => String(n).padStart(2,'0');
+  const fmtFecha = f => { const [y,mo,d]=f.split('-'); return d+'/'+mo; };
+  const esHoy = f => f === hoyStr;
+  const esMañana = f => { const m2=new Date(now.getTime()+24*60*60*1000); return f===localDate(m2); };
+  $('evento-modal-icon').textContent = '📅';
+  $('evento-modal-titulo').textContent = 'Tus eventos esta semana';
+  let html = 'Hola <strong>'+CU.nombre+'</strong>, estos son tus eventos:<br><br>';
+  proximos.forEach(ev => {
+    const miRol = (ev.asignados||[]).find(a=>a.musId===m.id)?.rol||'';
+    const cuando = esHoy(ev.fecha)?'<span style="color:var(--danger);font-weight:700"> · HOY</span>':esMañana(ev.fecha)?'<span style="color:var(--warn);font-weight:700"> · Mañana</span>':'';
+    const icono = ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':'🎵';
+    html += '<div style="background:var(--surface);border-radius:10px;padding:10px;margin-bottom:8px;text-align:left">';
+    html += '<div style="font-weight:700;font-size:13px;color:var(--gold)">'+icono+' '+ev.titulo+cuando+'</div>';
+    html += '<div style="color:var(--muted);font-size:12px;margin-top:3px">📅 '+fmtFecha(ev.fecha)+(ev.horaIni?' · ⏰ '+ev.horaIni:'')+'</div>';
+    html += '<div style="margin-top:4px"><span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>'+(miRol?' <span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+miRol+'</span>':'')+'</div>';
+    html += '</div>';
+  });
+  // Add ayuno days this week
+  const weekKey = getWeekKey();
+  const myDays = CU ? (ayunoData[weekKey]?.[CU.key] || []) : [];
+  if(myDays.length > 0) {
+    const days = getWeekDays();
+    const diasNombres = myDays.sort().map(i => days[i]?.nombre).filter(Boolean);
+    html += '<div style="background:var(--surface);border-radius:10px;padding:10px;margin-bottom:8px;text-align:left;border:1px solid #7B6FD444">';
+    html += '<div style="font-weight:700;font-size:13px;color:var(--accent)">🙏 Mis días de ayuno esta semana</div>';
+    html += '<div style="color:var(--muted);font-size:12px;margin-top:4px">'+diasNombres.join(', ')+'</div>';
+    html += '</div>';
+  }
+  $('evento-modal-msg').innerHTML = html;
+  $('evento-modal').style.display='flex';
+};
+
+const checkCuotaPendiente = () => {
+  if(!CU) return;
+  const m = musicos.find(x=>x.username===CU.key);
+  if(!m) return;
+  // Check all months from Jan 2026 (or cuotaDesde if later) to current month
+  const now = new Date();
+  const pendientes = [];
+  let y = 2026, mo = 0; // Start Jan 2026
+  // If musician has a custom start date, begin from there instead
+  if(m.cuotaDesde){
+    const [dy, dm] = m.cuotaDesde.split('-').map(Number);
+    if(dy > y || (dy===y && dm-1 > mo)) { y = dy; mo = dm-1; }
+  }
+  while(y < now.getFullYear() || (y === now.getFullYear() && mo < now.getMonth())) {
+    const key = y+'-'+String(mo+1).padStart(2,'0');
+    const paid = cuotaData[m.id]?.[key]||false;
+    if(!paid) pendientes.push(MESES_C[mo]+' '+y);
+    mo++;
+    if(mo>11){mo=0;y++;}
+  }
+  if(pendientes.length > 0 && cuotaMonto>0){
+    const total = pendientes.length * cuotaMonto;
+    $('cuota-modal-msg').innerHTML='Hola <strong>'+CU.nombre+'</strong>, tenés <strong>'+pendientes.length+' mes'+(pendientes.length>1?'es':'')+' pendiente'+(pendientes.length>1?'s':'')+'</strong> de pago:<br><br><span style="color:var(--danger)">'+pendientes.join(', ')+'</span><br><br>Monto por mes: <strong>₡'+cuotaMonto.toLocaleString()+'</strong><br>Total pendiente: <strong style="color:var(--danger)">₡'+total.toLocaleString()+'</strong><br><br><span style="color:var(--muted);font-size:12px">Coordiná el pago con tu administrador</span>';
+    $('cuota-modal').style.display='flex';
+  }
+};
+
+// Firestore listener for cuotas
+// Load config async
+(async () => {
+  try {
+    const cfgDoc = await getDoc(doc(db,'config','cuotas'));
+    if(cfgDoc.exists()) { cuotaMonto=cfgDoc.data().monto||0; $('cuota-monto').value=cuotaMonto; }
+  } catch(e){}
+})();
+// Load cuota payments
+onSnapshot(collection(db,'cuotas'), snap=>{
+  cuotaData={};
+  snap.docs.forEach(d=>{ cuotaData[d.id]=d.data(); });
+  renderCuotas();
+  // Check after login
+  if(CU) checkCuotaPendiente();
+});
+
+// ── AYUNO ──
+let ayunoData = {}; // {userId: [0,2,4]} indices of days
+
+const getWeekKey = () => {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day===0?6:day-1));
+  const pad = n => String(n).padStart(2,'0');
+  return monday.getFullYear()+'-'+pad(monday.getMonth()+1)+'-'+pad(monday.getDate());
+};
+
+const getWeekDays = () => {
+  const weekKey = getWeekKey();
+  const [y,m,d] = weekKey.split('-').map(Number);
+  const monday = new Date(y,m-1,d);
+  const dias = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const pad = n => String(n).padStart(2,'0');
+  return dias.map((nombre,i) => {
+    const fecha = new Date(monday);
+    fecha.setDate(monday.getDate()+i);
+    return { nombre, fecha: fecha.getFullYear()+'-'+pad(fecha.getMonth()+1)+'-'+pad(fecha.getDate()) };
+  });
+};
+
+function renderAyuno() {
+  const weekKey = getWeekKey();
+  const days = getWeekDays();
+  const [y,m,d] = weekKey.split('-');
+  $('ayuno-semana').textContent = 'Semana del '+d+'/'+m+'/'+y;
+
+  // My days selector
+  const myKey = CU ? CU.key : null;
+  const myDays = myKey ? (ayunoData[weekKey]?.[myKey] || []) : [];
+  const misDiasEl = $('ayuno-mis-dias');
+  misDiasEl.innerHTML = '';
+  days.forEach((dia, i) => {
+    const btn = document.createElement('button');
+    const sel = myDays.includes(i);
+    btn.className = 'btn btn-sm';
+    btn.style.cssText = 'background:'+(sel?'#7B6FD4':'var(--surface)')+';color:'+(sel?'#fff':'var(--muted)')+';border:1px solid '+(sel?'var(--accent)':'var(--border)');
+    btn.textContent = dia.nombre.slice(0,3);
+    btn.addEventListener('click', async () => {
+      if(!CU) return;
+      const weekData = ayunoData[weekKey] || {};
+      const userDays = [...(weekData[myKey]||[])];
+      const idx = userDays.indexOf(i);
+      if(idx>=0) userDays.splice(idx,1); else userDays.push(i);
+      weekData[myKey] = userDays;
+      ayunoData[weekKey] = weekData;
+      await setDoc(doc(db,'ayunos',weekKey), weekData);
+      renderAyuno();
+    });
+    misDiasEl.appendChild(btn);
+  });
+
+  // Summary list
+  const listaEl = $('ayuno-lista'); listaEl.innerHTML = '';
+  days.forEach((dia, i) => {
+    const participants = [];
+    const weekData = ayunoData[weekKey] || {};
+    Object.entries(weekData).forEach(([userId, userDays]) => {
+      if(userDays.includes(i)) {
+        const mus = musicos.find(x=>x.username===userId);
+        if(mus) participants.push(mus.nombre);
+        else if(userId === 'carlitos') participants.push('Carlitos Soto');
+        else if(userId === 'jeaneth') participants.push('Jeaneth Hernández');
+      }
+    });
+    if(!participants.length) return;
+    const div = document.createElement('div');
+    div.className = 'card';
+    div.style.marginBottom = '8px';
+    div.innerHTML = '<div style="font-weight:700;font-size:13px;color:var(--gold);margin-bottom:8px">🙏 '+dia.nombre+' <span style="color:var(--muted);font-size:11px;font-weight:400">('+participants.length+')</span></div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px">'+participants.map(n=>'<span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+n+'</span>').join('')+'</div>';
+    listaEl.appendChild(div);
+  });
+  if(!listaEl.children.length) listaEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px">Nadie ha marcado días de ayuno esta semana</div>';
+};
+
+// Firestore listener for ayunos
+onSnapshot(collection(db,'ayunos'), snap => {
+  ayunoData = {};
+  snap.docs.forEach(d => { ayunoData[d.id] = d.data(); });
+  if(CU) renderAyuno();
+});
+
+// ── ANUNCIOS ──
+$('btn-anuncio-ok').addEventListener('click', () => {
+  $('anuncio-modal').style.display = 'none';
+  // Mark as seen
+  try { const seen = JSON.parse(localStorage.getItem('anuncios_vistos')||'[]'); if(!seen.includes(window._lastAnuncioId)){seen.push(window._lastAnuncioId);localStorage.setItem('anuncios_vistos',JSON.stringify(seen));} } catch(e){}
+});
+
+const checkAnuncioNuevo = (anuncios) => {
+  if(!CU||!anuncios.length) return;
+  try {
+    const seen = JSON.parse(localStorage.getItem('anuncios_vistos')||'[]');
+    const ultimo = anuncios[0]; // Most recent
+    if(!seen.includes(ultimo.id)){
+      window._lastAnuncioId = ultimo.id;
+      $('anuncio-modal-titulo').textContent = ultimo.titulo;
+      $('anuncio-modal-texto').textContent = ultimo.texto;
+      $('anuncio-modal-fecha').textContent = ultimo.fecha || '';
+      $('anuncio-modal').style.display = 'flex';
+    }
+  } catch(e){}
+};
+
+const REACCIONES = ['🙏','❤️','👍','🎉'];
+
+function renderAnuncios(anuncios) {
+  const el = $('anuncios-list'); el.innerHTML = '';
+  if(!anuncios.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No hay anuncios</div>';return;}
+  anuncios.forEach(a => {
+    const div = document.createElement('div'); div.className = 'card';
+    const isAdmin = CU && CU.admin;
+    div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div style="font-weight:700;font-size:14px;color:var(--gold)">📢 '+a.titulo+'</div>'+(isAdmin?'<button class="btn btn-danger btn-sm anuncio-del-btn" style="flex-shrink:0">✕</button>':'')+'</div><div style="font-size:13px;color:var(--text);white-space:pre-wrap;margin-bottom:8px">'+a.texto+'</div><div style="font-size:11px;color:var(--muted);margin-bottom:10px">'+a.fecha+'</div>';
+    
+    if(isAdmin){
+      const delBtn = div.querySelector('.anuncio-del-btn');
+      if(delBtn) delBtn.addEventListener('click', async () => {
+        if(confirm('¿Eliminar anuncio?')) { await deleteDoc(doc(db,'anuncios',a.id)); toast('🗑️ Eliminado'); }
+      });
+    }
+
+    // Reactions row
+    const reacciones = a.reacciones || {};
+    const reactRow = document.createElement('div');
+    reactRow.style.cssText = 'display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap';
+    REACCIONES.forEach(emoji => {
+      const usuarios = Object.entries(reacciones).filter(([k,v])=>v===emoji).map(([k])=>k);
+      const count = usuarios.length;
+      const miReaccion = CU && reacciones[CU.key] === emoji;
+      const btn = document.createElement('button');
+      btn.style.cssText = 'border:1px solid '+(miReaccion?'var(--gold)':'var(--border)')+';background:'+(miReaccion?'#E8C96A22':'var(--bg)')+';border-radius:99px;padding:4px 10px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:4px';
+      btn.innerHTML = emoji + (count?' <span style="font-size:11px;color:var(--muted)">'+count+'</span>':'');
+      btn.addEventListener('click', async () => {
+        if(!CU) return;
+        const newReacciones = {...reacciones};
+        if(newReacciones[CU.key] === emoji) delete newReacciones[CU.key];
+        else newReacciones[CU.key] = emoji;
+        await updateDoc(doc(db,'anuncios',a.id), {reacciones: newReacciones});
+      });
+      reactRow.appendChild(btn);
+    });
+    div.appendChild(reactRow);
+
+    // Comments
+    const comentarios = a.comentarios || [];
+    const comsDiv = document.createElement('div');
+    comsDiv.style.cssText = 'border-top:1px solid var(--border);padding-top:8px';
+    comentarios.forEach((c,ci) => {
+      const cd = document.createElement('div'); cd.style.cssText='background:var(--bg);border-radius:8px;padding:6px 10px;margin-bottom:6px';
+      cd.innerHTML = '<div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:600;color:var(--accent)">'+c.autor+'</span><span style="font-size:10px;color:var(--muted)">'+c.fecha+'</span></div><div style="font-size:12px;margin-top:2px">'+c.texto+'</div>';
+      if(isAdmin){
+        const xBtn=document.createElement('button'); xBtn.style.cssText='border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:11px;float:right';xBtn.textContent='✕';
+        xBtn.addEventListener('click', async ()=>{
+          const newComs=[...comentarios]; newComs.splice(ci,1);
+          await updateDoc(doc(db,'anuncios',a.id),{comentarios:newComs});
+        });
+        cd.appendChild(xBtn);
+      }
+      comsDiv.appendChild(cd);
+    });
+    const comRow = document.createElement('div'); comRow.style.cssText='display:flex;gap:6px;margin-top:6px';
+    const comInp = document.createElement('input'); comInp.placeholder='Comentar...'; comInp.style.cssText='flex:1;margin:0;padding:6px 10px;font-size:12px';
+    const comBtn = document.createElement('button'); comBtn.style.cssText='border:none;background:var(--accent);color:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:12px;font-weight:600';
+    comBtn.textContent = 'Enviar';
+    comBtn.addEventListener('click', async () => {
+      const texto = comInp.value.trim(); if(!texto||!CU) return;
+      const fecha = new Date().toLocaleDateString('es-CR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      const newComs = [...comentarios, {texto, autor:CU.nombre, fecha}];
+      await updateDoc(doc(db,'anuncios',a.id),{comentarios:newComs});
+      comInp.value='';
+    });
+    comRow.appendChild(comInp); comRow.appendChild(comBtn);
+    comsDiv.appendChild(comRow);
+    div.appendChild(comsDiv);
+
+    el.appendChild(div);
+  });
+}
+
+$('btn-add-anuncio').addEventListener('click', () => {
+  const f = $('anuncio-form'); f.style.display = f.style.display==='none'?'block':'none';
+});
+
+window.toggleNotifSelector = () => {
+  const checked = $('anuncio-notif').checked;
+  $('notif-selector').style.display = checked ? 'block' : 'none';
+};
+window.toggleTodos = () => {
+  const todos = $('notif-todos').checked;
+  document.querySelectorAll('.notif-mus-chk').forEach(c => { c.checked = todos; c.disabled = todos; });
+};
+const renderNotifSelector = () => {
+  const el = $('notif-musicos-list'); if(!el) return; el.innerHTML = '';
+  musicos.forEach(m => {
+    const lbl = document.createElement('label');
+    lbl.className = 'chk-lbl';
+    lbl.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:11px;margin:0';
+    lbl.innerHTML = '<input type="checkbox" class="notif-mus-chk" value="'+m.id+'" checked disabled/> '+m.nombre;
+    el.appendChild(lbl);
+  });
+};
+
+$('btn-save-anuncio').addEventListener('click', async () => {
+  const titulo = $('anuncio-titulo').value.trim();
+  const texto = $('anuncio-texto').value.trim();
+  if(!titulo||!texto){alert('Completá el título y el texto');return;}
+  const fecha = new Date().toLocaleDateString('es-CR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const notif = $('anuncio-notif').checked;
+  const todos = $('notif-todos').checked;
+  const destinatarios = todos ? [] : [...document.querySelectorAll('.notif-mus-chk:checked')].map(c=>c.value);
+  await addDoc(collection(db,'anuncios'), {titulo, texto, fecha, notif, todos, destinatarios, creadoEn:Date.now()});
+  $('anuncio-titulo').value=''; $('anuncio-texto').value='';
+  $('anuncio-form').style.display='none';
+  toast('📢 Anuncio publicado!');
+});
+
+let anunciosData = [];
+onSnapshot(collection(db,'anuncios'), snap => {
+  anunciosData = snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.creadoEn-a.creadoEn);
+  renderAnuncios(anunciosData);
+  if(CU) setTimeout(()=>checkAnuncioNuevo(anunciosData), 6000);
+});
+
+// ── MODO SERVICIO ──
+let msEvento = null, msIdx = 0;
+const msIcons = {'cancion':'🎵','oracion':'🙏','lectura':'📖','ofrendas':'💝','anuncio':'📢','otro':'✨'};
+
+window.iniciarModoServicio = (ev) => {
+  msEvento = ev;
+  msIdx = 0;
+  $('modo-servicio').style.display = 'flex';
+  $('modo-servicio').style.flexDirection = 'column';
+  document.body.style.overflow = 'hidden';
+  $('ms-ev-titulo').textContent = ev.titulo;
+  msRender();
+};
+
+window.salirModoServicio = () => {
+  $('modo-servicio').style.display = 'none';
+  document.body.style.overflow = '';
+};
+
+window.msSiguiente = () => {
+  const orden = msEvento.orden || [];
+  if(msIdx < orden.length - 1) { msIdx++; msRender(); }
+  else { if(confirm('¿Finalizar el servicio?')) salirModoServicio(); }
+};
+
+window.msAnterior = () => {
+  if(msIdx > 0) { msIdx--; msRender(); }
+};
+
+const msRender = () => {
+  const orden = msEvento.orden || [];
+  if(!orden.length) return;
+  const item = orden[msIdx];
+  const total = orden.length;
+  
+  // Progress
+  $('ms-progreso').textContent = (msIdx+1)+' / '+total;
+  $('ms-progress-fill').style.width = ((msIdx+1)/total*100)+'%';
+  
+  // Next button text
+  $('ms-btn-next').textContent = msIdx === total-1 ? '🏁 Finalizar' : 'Siguiente →';
+  
+  // Build current item content
+  const el = $('ms-actual-content'); el.innerHTML = '';
+  
+  if(item.tipo === 'cancion') {
+    const cancion = canciones.find(c=>c.id===item.cancionId);
+    el.innerHTML = '<div class="ms-icono-big">🎵</div>'
+      +'<div class="ms-cancion-big">'+item.titulo+'</div>'
+      +(cancion&&cancion.artista?'<div class="ms-artista-big">'+cancion.artista+'</div>':'')
+      +(item.tono?'<div class="ms-tono-big">🎼 '+item.tono+'</div>':'');
+    
+    // Estructura
+    const partes = item.estructura || [];
+    if(partes.length) {
+      const estDiv = document.createElement('div'); estDiv.className='ms-estructura-big';
+      partes.forEach((p,i) => {
+        const pd = document.createElement('div'); pd.className='ms-parte-big';
+        pd.innerHTML='<div class="ms-parte-big-nombre">'+p.nombre+'</div><div class="ms-parte-big-veces">×'+p.veces+'</div>';
+        estDiv.appendChild(pd);
+        if(i<partes.length-1){const arr=document.createElement('span');arr.style.cssText='color:var(--muted);font-size:16px;align-self:center';arr.textContent='→';estDiv.appendChild(arr);}
+      });
+      el.appendChild(estDiv);
+    }
+    
+    // Links
+    if(cancion&&(cancion.linkLetra||cancion.linkAcordes||cancion.linkYoutube)){
+      const linksDiv = document.createElement('div'); linksDiv.style.cssText='display:flex;gap:10px;justify-content:center;margin-bottom:20px';
+      if(cancion.linkLetra) linksDiv.innerHTML+='<a href="'+cancion.linkLetra+'" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid #7B6FD444;color:var(--accent);background:#7B6FD411">📄 Letra</a>';
+      if(cancion.linkAcordes) linksDiv.innerHTML+='<a href="'+cancion.linkAcordes+'" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid #E8C96A44;color:var(--gold);background:#E8C96A11">🎼 Acordes</a>';
+      if(cancion.linkYoutube) linksDiv.innerHTML+='<a href="'+cancion.linkYoutube+'" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid #FF000044;color:#FF4444;background:#FF000011">🎬 YouTube</a>';
+      el.appendChild(linksDiv);
+    }
+  } else {
+    // Non-song item
+    const icon = msIcons[item.tipo]||'✨';
+    el.innerHTML = '<div style="font-size:72px;margin-bottom:20px">'+icon+'</div>'
+      +'<div style="font-size:24px;font-weight:800;color:var(--gold)">'+item.titulo+'</div>';
+  }
+  
+  // Next item preview
+  if(msIdx < total - 1) {
+    const next = orden[msIdx+1];
+    $('ms-siguiente-preview').style.display='flex';
+    $('ms-sig-icono').textContent = msIcons[next.tipo]||'✨';
+    $('ms-sig-titulo').textContent = next.titulo;
+  } else {
+    $('ms-siguiente-preview').style.display='none';
+  }
+};
+
+// Initialize history state - ensure a solid base entry for PWA back button handling
+if(!history.state) {
+  history.replaceState({tab:'inicio', view:'list'}, '', location.pathname);
+}
+// Push an extra anchor entry so Android PWA back button has history to consume
+// before considering closing the app
+window.addEventListener('load', () => {
+  if(history.state && history.state.tab==='inicio' && history.length <= 1) {
+    history.pushState({tab:'inicio', view:'list', anchor:true}, '', location.pathname);
+  }
+});
+// Open tab from URL query param (e.g. ?tab=anuncios from notification)
+const urlParams = new URLSearchParams(location.search);
+const tabParam = urlParams.get('tab');
+if(tabParam) {
+  const validTabs = ['inicio','calendario','eventos','canciones','ayuno','anuncios','musicos','cantantes','cuotas'];
+  if(validTabs.includes(tabParam)) setTimeout(()=>goTab(tabParam), 1500);
+}
+
+// ── FIRESTORE ──
+onSnapshot(collection(db,'historialCanciones'), snap=>{
+  historialCanciones = snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderDashboard();
+});
+onSnapshot(collection(db,'cantantes'),snap=>{cantantes=snap.docs.map(d=>({id:d.id,...d.data()}));renderCantantes();populatePresididorSelect($('ev-presididor'),'');});
+onSnapshot(collection(db,'canciones'),snap=>{canciones=snap.docs.map(d=>({id:d.id,...d.data()}));renderCanciones();renderDashboard();});
+onSnapshot(collection(db,'musicos'),snap=>{musicos=snap.docs.map(d=>({id:d.id,...d.data()}));allUsers=musicos;renderMusicos();renderDashboard();renderNotifSelector();if(!CU)autoLogin();});
+onSnapshot(collection(db,'eventos'),snap=>{
+  const hoy=new Date().toISOString().slice(0,10);
+  const ayer = new Date(); ayer.setDate(ayer.getDate()-1); const ayerStr = ayer.toISOString().slice(0,10);
+  eventos=snap.docs.map(d=>({id:d.id,...d.data()})).filter(ev=>{if(ev.fecha&&ev.fecha<ayerStr){deleteDoc(doc(db,'eventos',ev.id));return false;}return true;});
+  renderEventos();renderDashboard();renderCalendar();
+});
+
+</script>
+<script>
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
