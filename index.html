@@ -156,12 +156,12 @@ input::placeholder{color:var(--muted);}
   </div>
   <div style="padding:20px 16px 0">
     <div id="bday-hoy" style="display:none;background:linear-gradient(135deg,#E8C96A 0%,#F0A500 100%);border-radius:16px;padding:14px;margin-bottom:16px"></div>
-    <div id="mis-eventos-card" style="display:none"></div>
     <div id="mis-cuotas-card" style="display:none"></div>
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
       <div style="font-size:14px;font-weight:800;color:var(--text)">📅 Próximos eventos</div>
     </div>
     <div id="proximos-list"></div>
+    <div id="mis-eventos-card" style="display:none;margin-top:20px"></div>
   </div>
   <div style="padding:20px 16px 0">
     <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:10px">🎂 Cumpleaños del mes</div>
@@ -2026,7 +2026,7 @@ const checkCuotaPendiente = () => {
 };
 
 // ── MIS CUOTAS (vista personal para músicos) ──
-// ── MIS EVENTOS (vista personal para músicos en Inicio) ──
+// ── MI ROL ESTE MES (vista personal para músicos en Inicio) ──
 const renderMisEventosCard = () => {
   const cardEl = $('mis-eventos-card');
   if(!cardEl) return;
@@ -2038,9 +2038,9 @@ const renderMisEventosCard = () => {
   const misEventos = eventos.filter(ev=>{
     if((ev.fecha||'') < hoy) return false;
     if(ev.tipo==='Ayuno') return true; // assigned to everyone
-    const enGrupo = (arr, defaultRol) => (arr||[]).some(a => (typeof a==='string' ? a : a.musId) === m.id);
+    const enGrupo = (arr) => (arr||[]).some(a => (typeof a==='string' ? a : a.musId) === m.id);
     return enGrupo(ev.asignados) || enGrupo(ev.vozAsignados) || enGrupo(ev.sonidoAsignados) || enGrupo(ev.multiAsignados) || (ev.pulperia||[]).includes(m.id);
-  }).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||'')).slice(0,4);
+  }).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
 
   if(!misEventos.length){ cardEl.style.display='none'; return; }
 
@@ -2057,30 +2057,26 @@ const renderMisEventosCard = () => {
   };
 
   cardEl.style.display='block';
-  const [y,mo,d] = (misEventos[0].fecha||'').split('-');
-  let linesHtml = '';
+  let cardsHtml = '';
   misEventos.forEach(ev=>{
     const [yy,mm,dd] = (ev.fecha||'').split('-');
     const mesAbrev = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mm)-1]||'';
-    linesHtml += '<div style="display:flex;align-items:center;gap:10px;background:#ffffff14;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer" data-evid="'+ev.id+'">'
-      +'<div style="width:38px;height:38px;border-radius:10px;background:#1A1530;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">'
-        +'<div style="font-size:14px;font-weight:800;color:#C9BFFF;line-height:1">'+(dd||'?')+'</div>'
-        +'<div style="font-size:7px;color:#9A8FE0;text-transform:uppercase">'+mesAbrev+'</div>'
+    cardsHtml += '<div class="card" style="cursor:pointer" data-evid="'+ev.id+'">'
+      +'<div style="display:flex;align-items:center;gap:12px">'
+        +'<div style="width:42px;height:46px;border-radius:10px;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">'
+          +'<div style="font-size:17px;font-weight:800;color:var(--gold);line-height:1">'+(dd||'?')+'</div>'
+          +'<div style="font-size:8px;color:var(--muted);text-transform:uppercase;margin-top:2px">'+mesAbrev+'</div>'
+        +'</div>'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ev.titulo+'</div>'
+          +(ev.horaIni?'<div style="font-size:11px;color:var(--muted);margin-top:2px">⏰ '+ev.horaIni+'</div>':'')
+        +'</div>'
       +'</div>'
-      +'<div style="flex:1;min-width:0">'
-        +'<div style="font-size:12.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ev.titulo+'</div>'
-        +'<div style="font-size:10.5px;color:#ffffffcc;margin-top:1px">'+getMiRol(ev)+(ev.horaIni?' · ⏰ '+ev.horaIni:'')+'</div>'
-      +'</div></div>';
+      +'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;font-weight:700;color:var(--accent)">'+getMiRol(ev)+'</div>'
+    +'</div>';
   });
 
-  cardEl.innerHTML = '<div style="background:linear-gradient(135deg,#7B6FD4 0%,#4A3F9F 100%);border-radius:18px;padding:16px;margin-bottom:24px;box-shadow:0 10px 26px -10px #7B6FD455">'
-    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
-      +'<div style="font-size:22px">'+roleIcon(m.rol)+'</div>'
-      +'<div style="font-size:14px;font-weight:800;color:#fff;flex:1">Mis próximos eventos</div>'
-      +'<span style="background:#1A1530;color:#C9BFFF;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px">'+misEventos.length+'</span>'
-    +'</div>'
-    +linesHtml
-    +'</div>';
+  cardEl.innerHTML = '<div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:10px">🎵 Mi rol este mes</div>' + cardsHtml;
 
   cardEl.querySelectorAll('[data-evid]').forEach(line=>{
     line.addEventListener('click', ()=>{
