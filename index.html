@@ -1658,13 +1658,13 @@ const renderResumenCuotas = () => {
   const musList = musicos.filter(m=>m.username).sort((a,b)=>a.nombre.localeCompare(b.nombre));
   const MESES_ABREV = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-  let html = '<thead><tr><th style="padding:8px 10px;text-align:left;position:sticky;left:0;background:var(--surface);color:var(--gold);font-weight:700;z-index:3">Músico</th>';
-  MESES_ABREV.forEach(m => html += '<th style="padding:8px 10px;text-align:center;background:var(--surface);color:var(--gold);font-weight:700">'+m+'</th>');
+  let html = '<thead><tr><th style="padding:8px 10px;text-align:left;position:sticky;left:0;background:var(--surface);color:var(--gold);font-weight:700;z-index:4;border-right:1px solid var(--border)">Músico</th>';
+  MESES_ABREV.forEach(m => html += '<th style="padding:8px 10px;text-align:center;background:var(--surface);color:var(--gold);font-weight:700;z-index:1">'+m+'</th>');
   html += '</tr></thead><tbody>';
 
   musList.forEach((m,i) => {
     const rowBg = i%2===1 ? 'background:rgba(255,255,255,0.02)' : '';
-    html += '<tr><td style="padding:8px 10px;text-align:left;position:sticky;left:0;background:var(--card);font-weight:600;'+rowBg+'">'+m.nombre+'</td>';
+    html += '<tr><td style="padding:8px 10px;text-align:left;position:sticky;left:0;background:var(--card);font-weight:600;z-index:2;border-right:1px solid var(--border);'+rowBg+'">'+m.nombre+'</td>';
     for(let mo=0; mo<12; mo++){
       const isFutureOrCurrent = resumenYear > now.getFullYear() || (resumenYear===now.getFullYear() && mo >= now.getMonth());
       const key = resumenYear+'-'+String(mo+1).padStart(2,'0');
