@@ -770,6 +770,8 @@ const goTab = (tab, pushState=true) => {
 // Handle back button
 window.addEventListener('popstate', e => {
   const state = e.state || {tab:'inicio', view:'list'};
+  // Always close the Mis Cuotas modal on any back navigation, unless we're navigating INTO it
+  if(state.modal !== 'mis-cuotas') closeMisCuotas(true);
   if(state.view==='detail' || state.view==='form') {
     // Go back to list view of that tab
     goTab(state.tab||'eventos', false);
@@ -782,6 +784,8 @@ window.addEventListener('popstate', e => {
       $('cal-title-row').style.display='flex';
       $('cal-legend').style.display='flex';
     }
+  } else if(state.view==='modal' && state.modal==='mis-cuotas') {
+    // No-op: showMisCuotas already rendered the modal content before pushState
   } else {
     goTab(state.tab||'inicio', false);
     hideEvForm(true);
@@ -1950,8 +1954,13 @@ window.showMisCuotas = () => {
 
   $('mis-cuotas-content').innerHTML = summaryHtml + monthsHtml + alertHtml;
   $('mis-cuotas-modal').style.display='flex';
+  history.pushState({tab:history.state?.tab||'inicio', view:'modal', modal:'mis-cuotas'}, '', location.pathname);
 };
-$('btn-close-mis-cuotas').addEventListener('click', () => $('mis-cuotas-modal').style.display='none');
+function closeMisCuotas(skipHistory) {
+  $('mis-cuotas-modal').style.display='none';
+  if(!skipHistory) history.back();
+}
+$('btn-close-mis-cuotas').addEventListener('click', () => closeMisCuotas());
 
 // Firestore listener for cuotas
 // Load config async
