@@ -12,29 +12,31 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#0F0E1A;--surface:#1A1830;--card:#221F3B;--border:#2E2B4A;
+  --bg:#0B0B12;--surface:#15141F;--card:#1C1A29;--border:#2A2838;
   --gold:#E8C96A;--gold-dim:#A8922E;--accent:#7B6FD4;
-  --text:#F0EDE8;--muted:#9590B0;--danger:#E06C75;--success:#7EC8A0;--warn:#F0A500;
+  --text:#F5F3F0;--muted:#8C88A0;--danger:#E06C75;--success:#7EC8A0;--warn:#F0A500;
 }
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding-bottom:80px;min-height:100vh;}
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;}
+header{background:#15141Fee;backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;}
 header h1{font-size:15px;font-weight:800;color:var(--gold);}
 .content{padding:16px;}
-.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;}
+.card{background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;}
+.sec-title{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.3px;margin:0;display:flex;align-items:center;gap:8px;}
+.sec-hero{padding:18px 16px 16px;background:linear-gradient(180deg,#211C3E 0%,var(--bg) 100%);margin:-16px -16px 18px;}
 .badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;}
 input,select{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:8px 12px;width:100%;outline:none;margin-bottom:8px;}
 input::placeholder{color:var(--muted);}
 .btn{border:none;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:600;font-size:14px;padding:9px 18px;transition:opacity .15s;}
 .btn:active{opacity:.8;}
-.btn-primary{background:var(--gold);color:#0F0E1A;}
+.btn-primary{background:linear-gradient(135deg,#E8C96A 0%,#D4AE4A 100%);color:#1A1408;box-shadow:0 6px 16px -6px #E8C96A55;}
 .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
 .btn-danger{background:#E06C7522;color:var(--danger);border:1px solid #E06C7544;}
-.btn-accent{background:var(--accent);color:#fff;}
+.btn-accent{background:linear-gradient(135deg,#7B6FD4 0%,#5A4FB0 100%);color:#fff;}
 .btn-sm{font-size:12px;padding:5px 12px;}
 .btn-full{width:100%;}
 .row{display:flex;gap:8px;align-items:center;}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:var(--surface);border-top:1px solid var(--border);display:flex;z-index:200;}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#15141Fee;backdrop-filter:blur(10px);border-top:1px solid var(--border);display:flex;z-index:200;}
 .nav-btn{flex:1;background:none;border:none;cursor:pointer;padding:8px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit;}
 .nav-btn .icon{font-size:16px;}
 .nav-btn .label{font-size:9px;font-weight:600;color:var(--muted);}
@@ -47,7 +49,7 @@ input::placeholder{color:var(--muted);}
 .tag{cursor:pointer;padding:4px 10px;border-radius:8px;font-size:12px;border:1px solid var(--border);color:var(--muted);display:inline-block;margin:3px;}
 .tag.sel-gold{border-color:var(--gold);background:#E8C96A22;color:var(--gold);}
 .tag.sel-accent{border-color:var(--accent);background:#7B6FD422;color:var(--accent);}
-.avatar{width:36px;height:36px;border-radius:50%;background:#7B6FD433;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9590E0);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
 /* MODO SERVICIO */
 #modo-servicio{display:none;position:fixed;inset:0;background:var(--bg);z-index:800;flex-direction:column;overflow-y:auto;}
 .ms-header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:10;}
@@ -82,31 +84,31 @@ input::placeholder{color:var(--muted);}
 .search-dd-empty{color:var(--muted);font-size:12px;text-align:center;padding:12px;}
 #login-screen{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;}
 .login-box{width:100%;max-width:360px;}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:12px;}
-.cal-hdr-row{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;}
-.cal-dn{text-align:center;font-size:10px;color:var(--muted);font-weight:600;padding:3px 0;}
-.cal-day{min-height:38px;border-radius:8px;padding:3px;cursor:pointer;}
-.cal-day.has-ev{background:var(--card);border:1px solid var(--border);}
-.cal-day.today{border:1px solid var(--gold)!important;}
-.cal-day.selected{border:1px solid var(--accent)!important;background:var(--card);}
-.cal-day-num{font-size:11px;font-weight:600;color:var(--muted);text-align:center;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:12px;}
+.cal-hdr-row{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;}
+.cal-dn{text-align:center;font-size:10px;color:var(--muted);font-weight:700;padding:3px 0;text-transform:uppercase;letter-spacing:.4px;}
+.cal-day{min-height:40px;border-radius:10px;padding:4px;cursor:pointer;transition:transform .1s;}
+.cal-day.has-ev{background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);}
+.cal-day.today{border:1.5px solid var(--gold)!important;box-shadow:0 0 0 1px #E8C96A33;}
+.cal-day.selected{border:1.5px solid var(--accent)!important;background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);}
+.cal-day-num{font-size:11px;font-weight:700;color:var(--muted);text-align:center;}
 .cal-day.has-ev .cal-day-num,.cal-day.selected .cal-day-num{color:var(--text);}
 .cal-dot{width:5px;height:5px;border-radius:50%;margin:2px auto 0;}
-.ev-sec{background:var(--surface);border-radius:12px;padding:12px;margin-bottom:10px;}
+.ev-sec{background:linear-gradient(135deg,var(--surface) 0%,#19182600 100%);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:10px;}
 .ev-sec h4{color:var(--accent);font-size:12px;margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
 .rol-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);}
 .rol-row:last-child{border-bottom:none;}
-.form-sec{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;}
+.form-sec{background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;}
 .form-sec h4{color:var(--gold);font-size:13px;margin-bottom:10px;font-weight:700;}
 .lbl{color:var(--muted);font-size:12px;display:block;margin-bottom:4px;}
 .assigned-item{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:8px;padding:7px 10px;margin-bottom:6px;}
 .link-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;border:1px solid var(--border);color:var(--accent);background:#7B6FD411;}
 .modal{display:none;position:fixed;inset:0;background:#000000BB;z-index:600;align-items:center;justify-content:center;padding:16px;}
-.modal-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;}
+.modal-box{background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:20px;padding:20px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px -16px #00000088;}
 .roles-check{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
 .roles-check label{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px 10px;}
 .chk-lbl{color:var(--muted);font-size:13px;display:flex;gap:8px;align-items:center;margin-bottom:8px;cursor:pointer;}
-.grp-header{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+.grp-header{background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:14px;padding:12px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;margin-bottom:4px;}
 </style>
 </head>
 <body>
@@ -172,7 +174,7 @@ input::placeholder{color:var(--muted);}
 <!-- CALENDARIO -->
 <div id="sec-calendario" class="section content">
   <div class="row" style="justify-content:space-between;margin-bottom:14px" id="cal-title-row">
-    <h2 style="color:var(--gold);font-size:17px;margin:0">📅 Calendario</h2>
+    <h2 class="sec-title" style="font-size:18px">📅 Calendario</h2>
     <div class="row" style="gap:4px">
       <button class="btn btn-ghost btn-sm" id="cal-prev-btn">‹</button>
       <span id="cal-title" style="font-size:13px;font-weight:700;color:var(--text);min-width:110px;text-align:center"></span>
@@ -190,7 +192,7 @@ input::placeholder{color:var(--muted);}
 <div id="sec-eventos" class="section content">
   <div id="ev-list-view">
     <div class="row" style="justify-content:space-between;margin-bottom:14px">
-      <h2 style="color:var(--gold);font-size:17px;margin:0">🗓 Eventos</h2>
+      <h2 class="sec-title" style="font-size:18px">🗓 Eventos</h2>
       <button class="btn btn-primary btn-sm" id="btn-new-ev" style="display:none">+ Nuevo</button>
     </div>
     <div id="eventos-list"></div>
@@ -296,7 +298,7 @@ input::placeholder{color:var(--muted);}
 <!-- CANCIONES -->
 <div id="sec-canciones" class="section content">
   <div class="row" style="justify-content:space-between;margin-bottom:14px">
-    <h2 style="color:var(--gold);font-size:17px;margin:0">🎵 Canciones</h2>
+    <h2 class="sec-title" style="font-size:18px">🎵 Canciones</h2>
     <button class="btn btn-primary btn-sm" id="btn-add-can" style="display:none">+ Agregar</button>
   </div>
   <div id="can-form" style="display:none" class="form-sec">
@@ -326,7 +328,7 @@ input::placeholder{color:var(--muted);}
 <!-- MUSICOS -->
 <div id="sec-musicos" class="section content">
   <div class="row" style="justify-content:space-between;margin-bottom:14px">
-    <h2 style="color:var(--gold);font-size:17px;margin:0">🎸 Músicos</h2>
+    <h2 class="sec-title" style="font-size:18px">🎸 Músicos</h2>
     <button class="btn btn-primary btn-sm" id="btn-add-mus" style="display:none">+ Agregar</button>
   </div>
   <div id="mus-form" style="display:none" class="form-sec">
@@ -374,7 +376,7 @@ input::placeholder{color:var(--muted);}
 <div id="sec-ayuno" class="section content">
   <div style="text-align:center;margin-bottom:20px">
     <div style="font-size:40px">🙏</div>
-    <h2 style="color:var(--gold);font-size:17px;margin:6px 0 4px">Ayuno Semanal</h2>
+    <h2 style="color:var(--text);font-size:18px;font-weight:800;letter-spacing:-.3px;margin:6px 0 4px">Ayuno Semanal</h2>
     <p style="color:var(--muted);font-size:12px" id="ayuno-semana"></p>
   </div>
   <div class="form-sec" style="margin-bottom:16px">
@@ -387,7 +389,7 @@ input::placeholder{color:var(--muted);}
 <!-- ANUNCIOS -->
 <div id="sec-anuncios" class="section content">
   <div class="row" style="justify-content:space-between;margin-bottom:14px">
-    <h2 style="color:var(--gold);font-size:17px;margin:0">📢 Anuncios</h2>
+    <h2 class="sec-title" style="font-size:18px">📢 Anuncios</h2>
     <button class="btn btn-primary btn-sm" id="btn-add-anuncio" style="display:none">+ Nuevo</button>
   </div>
   <div id="anuncio-form" style="display:none" class="form-sec">
@@ -409,7 +411,7 @@ input::placeholder{color:var(--muted);}
 <!-- CANTANTES -->
 <div id="sec-cantantes" class="section content">
   <div class="row" style="justify-content:space-between;margin-bottom:14px">
-    <h2 style="color:var(--gold);font-size:17px;margin:0">🎤 Cantantes</h2>
+    <h2 class="sec-title" style="font-size:18px">🎤 Cantantes</h2>
     <button class="btn btn-primary btn-sm" id="btn-add-cant" style="display:none">+ Agregar</button>
   </div>
   <p style="color:var(--muted);font-size:12px;margin-bottom:14px">Cantantes del coro o invitados — sin acceso a la app</p>
@@ -437,7 +439,7 @@ input::placeholder{color:var(--muted);}
 <!-- CUOTAS -->
 <div id="sec-cuotas" class="section content">
   <div class="row" style="justify-content:space-between;margin-bottom:14px">
-    <h2 style="color:var(--gold);font-size:17px;margin:0">💰 Cuotas</h2>
+    <h2 class="sec-title" style="font-size:18px">💰 Cuotas</h2>
     <button class="btn btn-accent btn-sm" id="btn-toggle-resumen">📊 Resumen anual</button>
   </div>
   <div id="cuotas-vista-normal">
@@ -1484,11 +1486,23 @@ function renderEventos() {
   const sorted=[...eventos].sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
   if(!sorted.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px">No hay eventos</div>';return;}
   sorted.forEach(ev=>{
-    const div=document.createElement('div'); div.className='card row'; div.style.cursor='pointer';
-    div.addEventListener('click',()=>showEvDetail(ev.id));
-    const horaStr=ev.horaIni?'<div style="color:var(--muted);font-size:11px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'';
-    const badges='<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>'+(ev.tipo!=='Ayuno'?' <span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">'+(ev.setlist||[]).length+'🎵</span> <span class="badge" style="background:#9590B022;color:var(--muted);border:1px solid #9590B044">'+(ev.asignados||[]).length+'🎸</span>':'');
-    div.innerHTML='<div style="width:42px;height:42px;border-radius:10px;background:'+tipoBg(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0"><span style="font-size:8px;color:var(--muted)">'+(ev.fecha||'').slice(5,7)+'/'+(ev.fecha||'').slice(2,4)+'</span><span style="font-size:17px;font-weight:800;color:'+tipoColor(ev.tipo)+';line-height:1">'+(ev.fecha||'?').slice(8)+'</span></div><div style="flex:1"><div style="font-weight:700;font-size:14px">'+ev.titulo+'</div>'+horaStr+'<div style="margin-top:3px">'+badges+'</div></div><span style="color:var(--muted)">›</span>';
+    const div=document.createElement('div');
+    div.style.cssText='background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden;cursor:pointer';
+    div.addEventListener('click',()=>showEvDetail(ev.id, 'eventos'));
+    const horaStr=ev.horaIni?'<div style="color:var(--muted);font-size:11px;margin-top:3px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'';
+    const badges='<span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+'">'+ev.tipo+'</span>'+(ev.tipo!=='Ayuno'?' <span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:#E8C96A18;color:var(--gold)">'+(ev.orden||[]).filter(i=>i.tipo==='cancion').length+'🎵</span> <span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:#8C88A022;color:var(--muted)">'+(ev.asignados||[]).length+'🎸</span>':'');
+    const [y,mo,d] = (ev.fecha||'').split('-');
+    const mesAbrev = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mo)-1]||'';
+    div.innerHTML='<div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:'+tipoColor(ev.tipo)+'"></div>'
+      +'<div style="width:46px;height:52px;border-radius:12px;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">'
+        +'<div style="font-size:19px;font-weight:800;color:var(--gold);line-height:1">'+(d||'?')+'</div>'
+        +'<div style="font-size:9px;color:var(--muted);text-transform:uppercase;margin-top:2px">'+mesAbrev+'</div>'
+      +'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ev.titulo+'</div>'
+        +horaStr
+        +'<div style="margin-top:6px">'+badges+'</div>'
+      +'</div><span style="color:var(--muted);font-size:18px">›</span>';
     el.appendChild(div);
   });
 }
@@ -1538,10 +1552,11 @@ function renderCalList(date) {
 
   const el=$('cal-ev-list'); el.innerHTML='';
   if(!devs.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">'+fmt(date)+' — Sin eventos</div>';return;}
-  el.innerHTML='<div style="color:var(--muted);font-size:12px;margin-bottom:6px;padding-top:4px">'+fmt(date)+'</div>';
+  el.innerHTML='<div style="color:var(--muted);font-size:12px;margin-bottom:8px;padding-top:4px">'+fmt(date)+'</div>';
   devs.forEach(ev=>{
-    const div=document.createElement('div'); div.className='card row'; div.style.cssText='cursor:pointer;padding:10px 12px';
-    div.innerHTML='<div style="flex:1"><div style="font-weight:700;font-size:13px">'+ev.titulo+'</div>'+(ev.horaIni?'<div style="color:var(--muted);font-size:11px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'')+'<span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44;margin-top:4px">'+ev.tipo+'</span></div><span style="color:var(--muted)">›</span>';
+    const div=document.createElement('div');
+    div.style.cssText='background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px;position:relative;overflow:hidden';
+    div.innerHTML='<div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:'+tipoColor(ev.tipo)+'"></div><div style="flex:1"><div style="font-weight:700;font-size:13px">'+ev.titulo+'</div>'+(ev.horaIni?'<div style="color:var(--muted);font-size:11px;margin-top:2px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'')+'<span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;margin-top:6px;background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+'">'+ev.tipo+'</span></div><span style="color:var(--muted);font-size:18px">›</span>';
     div.addEventListener('click',()=>{
       // Hide calendar, show detail
       $('cal-ev-list').style.display='none';
@@ -1716,14 +1731,14 @@ const renderResumenCuotas = () => {
   const musList = musicos.filter(m=>m.username).sort((a,b)=>a.nombre.localeCompare(b.nombre));
   const MESES_ABREV = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-  let html = '<thead><tr><th style="padding:8px 10px;text-align:left;position:sticky;left:0;background:#1A1830;color:#E8C96A;font-weight:700;z-index:4;border-right:2px solid #2E2B4A;min-width:120px">Músico</th>';
-  MESES_ABREV.forEach(m => html += '<th style="padding:8px 10px;text-align:center;background:#1A1830;color:#E8C96A;font-weight:700;min-width:48px">'+m+'</th>');
+  let html = '<thead><tr><th style="padding:8px 10px;text-align:left;position:sticky;left:0;background:#15141F;color:#E8C96A;font-weight:700;z-index:4;border-right:2px solid #2A2838;min-width:120px">Músico</th>';
+  MESES_ABREV.forEach(m => html += '<th style="padding:8px 10px;text-align:center;background:#15141F;color:#E8C96A;font-weight:700;min-width:48px">'+m+'</th>');
   html += '</tr></thead><tbody>';
 
   musList.forEach((m,i) => {
     const rowBg = i%2===1 ? 'background:rgba(255,255,255,0.02)' : '';
-    const tdBg = i%2===1 ? '#251F3E' : '#221F3B';
-    html += '<tr><td style="padding:8px 10px;text-align:left;position:sticky;left:0;background:'+tdBg+';font-weight:600;z-index:2;border-right:2px solid #2E2B4A;min-width:120px">'+m.nombre+'</td>';
+    const tdBg = i%2===1 ? '#211F30' : '#1C1A29';
+    html += '<tr><td style="padding:8px 10px;text-align:left;position:sticky;left:0;background:'+tdBg+';font-weight:600;z-index:2;border-right:2px solid #2A2838;min-width:120px">'+m.nombre+'</td>';
     for(let mo=0; mo<12; mo++){
       const isFutureOrCurrent = resumenYear > now.getFullYear() || (resumenYear===now.getFullYear() && mo >= now.getMonth());
       const key = resumenYear+'-'+String(mo+1).padStart(2,'0');
