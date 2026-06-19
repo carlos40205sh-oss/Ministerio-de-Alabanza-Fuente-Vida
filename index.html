@@ -2057,26 +2057,20 @@ const renderMisEventosCard = () => {
   };
 
   cardEl.style.display='block';
-  let cardsHtml = '';
-  misEventos.forEach(ev=>{
+  let rowsHtml = '';
+  misEventos.forEach((ev,i)=>{
     const [yy,mm,dd] = (ev.fecha||'').split('-');
     const mesAbrev = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mm)-1]||'';
-    cardsHtml += '<div class="card" style="cursor:pointer" data-evid="'+ev.id+'">'
-      +'<div style="display:flex;align-items:center;gap:12px">'
-        +'<div style="width:42px;height:46px;border-radius:10px;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">'
-          +'<div style="font-size:17px;font-weight:800;color:var(--gold);line-height:1">'+(dd||'?')+'</div>'
-          +'<div style="font-size:8px;color:var(--muted);text-transform:uppercase;margin-top:2px">'+mesAbrev+'</div>'
-        +'</div>'
-        +'<div style="flex:1;min-width:0">'
-          +'<div style="font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ev.titulo+'</div>'
-          +(ev.horaIni?'<div style="font-size:11px;color:var(--muted);margin-top:2px">⏰ '+ev.horaIni+'</div>':'')
-        +'</div>'
-      +'</div>'
-      +'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;font-weight:700;color:var(--accent)">'+getMiRol(ev)+'</div>'
+    const isLast = i === misEventos.length-1;
+    rowsHtml += '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;'+(isLast?'':'border-bottom:1px solid var(--border);')+'cursor:pointer" data-evid="'+ev.id+'">'
+      +'<div style="font-size:12px;font-weight:800;color:var(--gold);width:42px;flex-shrink:0">'+(dd||'?')+' '+mesAbrev+'</div>'
+      +'<div style="font-size:13px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ev.titulo+'</div>'
+      +'<div style="font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0;white-space:nowrap">'+getMiRol(ev)+'</div>'
     +'</div>';
   });
 
-  cardEl.innerHTML = '<div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:10px">🎵 Mi rol este mes</div>' + cardsHtml;
+  cardEl.innerHTML = '<div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:10px">🎵 Mi rol este mes</div>'
+    + '<div style="background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:16px;padding:4px 14px">' + rowsHtml + '</div>';
 
   cardEl.querySelectorAll('[data-evid]').forEach(line=>{
     line.addEventListener('click', ()=>{
