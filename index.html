@@ -1095,6 +1095,20 @@ const SON_ROLES = ['Sonidista'];
 const MUL_ROLES = ['Presentación','Transmisión'];
 
 // Generic search-based selector for assigning people to a group
+// Check if a musician is already assigned to any other role group in the current event
+const checkYaAsignadoEnOtroGrupo = (musId) => {
+  const grupos = [
+    {arr: evAssigned, label: '🎸 Músicos'},
+    {arr: evVoz, label: '🎙️ Voces'},
+    {arr: evSonido, label: '🔊 Sonido'},
+    {arr: evMulti, label: '📡 Multimedia'},
+  ];
+  for(const g of grupos){
+    if(g.arr.some(a=>a.musId===musId)) return g.label;
+  }
+  return null;
+};
+
 const setupGroupSearch = (searchId, dropdownId, listElId, arr, filterFn, simple) => {
   const searchInput = $(searchId);
   const dropdown = $(dropdownId);
@@ -1111,11 +1125,14 @@ const setupGroupSearch = (searchId, dropdownId, listElId, arr, filterFn, simple)
       candidates.forEach(m=>{
         const item = document.createElement('div');
         item.className = 'search-dd-item';
-        item.innerHTML = '<span>'+roleIcon(m.rol)+'</span><span>'+m.nombre+'</span>';
+        const yaAsignado = !simple ? checkYaAsignadoEnOtroGrupo(m.id) : null;
+        item.innerHTML = '<span>'+roleIcon(m.rol)+'</span><span>'+m.nombre+'</span>'+(yaAsignado?'<span style="margin-left:auto;font-size:10px;color:var(--warn)">⚠️ ya en '+yaAsignado+'</span>':'');
         item.addEventListener('click', ()=>{
           if(simple){
             arr.push(m.id);
           } else {
+            const yaEn = checkYaAsignadoEnOtroGrupo(m.id);
+            if(yaEn) toast('⚠️ '+m.nombre+' ya está asignado en '+yaEn);
             arr.push({musId:m.id, rol:(m.roles||[m.rol]).find(filterFn)||m.rol});
           }
           searchInput.value = '';
