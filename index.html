@@ -156,6 +156,7 @@ input::placeholder{color:var(--muted);}
   </div>
   <div style="padding:20px 16px 0">
     <div id="bday-hoy" style="display:none;background:linear-gradient(135deg,#E8C96A 0%,#F0A500 100%);border-radius:16px;padding:14px;margin-bottom:16px"></div>
+    <div id="mis-cuotas-card" style="display:none"></div>
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
       <div style="font-size:14px;font-weight:800;color:var(--text)">📅 Próximos eventos</div>
     </div>
@@ -589,6 +590,18 @@ input::placeholder{color:var(--muted);}
     <h3 style="color:var(--gold);margin-bottom:8px">Cuota pendiente</h3>
     <p id="cuota-modal-msg" style="color:var(--muted);font-size:13px;margin-bottom:16px;line-height:1.5"></p>
     <button class="btn btn-primary btn-full" id="btn-cuota-ok">Entendido</button>
+  </div>
+</div>
+
+<!-- MIS CUOTAS MODAL (bottom sheet) -->
+<div id="mis-cuotas-modal" class="modal" style="z-index:701;align-items:flex-end;padding:0">
+  <div style="background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border-radius:24px 24px 0 0;padding:22px 18px 28px;width:100%;max-width:480px;box-shadow:0 -20px 60px -20px #000000aa;max-height:85vh;overflow-y:auto">
+    <div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 18px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+      <div style="font-size:18px;font-weight:800" id="mis-cuotas-titulo">💰 Mis Cuotas</div>
+      <button id="btn-close-mis-cuotas" style="width:30px;height:30px;border-radius:50%;background:var(--card2);border:none;color:var(--muted);font-size:14px;cursor:pointer">✕</button>
+    </div>
+    <div id="mis-cuotas-content"></div>
   </div>
 </div>
 
@@ -1866,7 +1879,79 @@ const checkCuotaPendiente = () => {
     $('cuota-modal-msg').innerHTML='Hola <strong>'+CU.nombre+'</strong>, tenés <strong>'+pendientes.length+' mes'+(pendientes.length>1?'es':'')+' pendiente'+(pendientes.length>1?'s':'')+'</strong> de pago:<br><br><span style="color:var(--danger)">'+pendientes.join(', ')+'</span><br><br>Monto por mes: <strong>₡'+cuotaMonto.toLocaleString()+'</strong><br>Total pendiente: <strong style="color:var(--danger)">₡'+total.toLocaleString()+'</strong><br><br><span style="color:var(--muted);font-size:12px">Coordiná el pago con tu administrador</span>';
     $('cuota-modal').style.display='flex';
   }
+  renderMisCuotasCard();
 };
+
+// ── MIS CUOTAS (vista personal para músicos) ──
+const renderMisCuotasCard = () => {
+  const cardEl = $('mis-cuotas-card');
+  if(!CU){ cardEl.style.display='none'; return; }
+  const m = musicos.find(x=>x.username===CU.key);
+  if(!m){ cardEl.style.display='none'; return; }
+
+  const now = new Date();
+  let y = 2026, mo = 0;
+  if(m.cuotaDesde){
+    const [dy, dm] = m.cuotaDesde.split('-').map(Number);
+    if(dy > y || (dy===y && dm-1 > mo)) { y = dy; mo = dm-1; }
+  }
+  let pendientesCount = 0;
+  let yy=y, mm=mo;
+  while(yy < now.getFullYear() || (yy === now.getFullYear() && mm < now.getMonth())) {
+    const key = yy+'-'+String(mm+1).padStart(2,'0');
+    const paid = cuotaData[m.id]?.[key]||false;
+    if(!paid) pendientesCount++;
+    mm++; if(mm>11){mm=0;yy++;}
+  }
+
+  cardEl.style.display='block';
+  cardEl.innerHTML = '<div style="background:linear-gradient(135deg,#7B6FD4 0%,#4A3F9F 100%);border-radius:18px;padding:16px;display:flex;align-items:center;gap:14px;cursor:pointer;margin-bottom:18px;box-shadow:0 10px 26px -10px #7B6FD466">'
+    +'<div style="width:46px;height:46px;border-radius:14px;background:#ffffff22;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">💰</div>'
+    +'<div style="flex:1"><div style="font-size:14px;font-weight:800;color:#fff">Mis Cuotas</div><div style="font-size:11.5px;color:#ffffffcc;margin-top:2px">Toca para ver tu historial</div></div>'
+    +(pendientesCount>0?'<span style="background:#fff;color:#4A3F9F;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px">'+pendientesCount+' pendiente'+(pendientesCount>1?'s':'')+'</span>':'<span style="color:#fff;font-size:18px">›</span>')
+    +'</div>';
+  cardEl.onclick = showMisCuotas;
+};
+
+window.showMisCuotas = () => {
+  const m = musicos.find(x=>x.username===CU.key);
+  if(!m) return;
+  const year = new Date().getFullYear();
+  const now = new Date();
+  $('mis-cuotas-titulo').textContent = '💰 Mis Cuotas '+year;
+  const MESES_FULL = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  let pagados=0, debe=0;
+  let monthsHtml = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">';
+  for(let mo=0; mo<12; mo++){
+    const key = year+'-'+String(mo+1).padStart(2,'0');
+    const isFutureOrCurrent = mo >= now.getMonth();
+    const noAplica = m.cuotaDesde && key < m.cuotaDesde;
+    let cls='na', icon='–';
+    if(!isFutureOrCurrent && !noAplica){
+      const paid = cuotaData[m.id]?.[key]||false;
+      if(paid){ cls='paid'; icon='✅'; pagados++; }
+      else { cls='debt'; icon='❌'; debe++; }
+    }
+    const borderColor = cls==='paid'?'var(--success)':cls==='debt'?'var(--danger)':'var(--border)';
+    const bgColor = cls==='paid'?'#7EC8A011':cls==='debt'?'#E06C7511':'transparent';
+    monthsHtml += '<div style="background:var(--card2,var(--surface));border:1.5px solid '+borderColor+';background:'+bgColor+';border-radius:12px;padding:10px 8px;text-align:center;'+(cls==='na'?'opacity:.4':'')+'"><div style="font-size:11px;font-weight:700">'+MESES_FULL[mo].slice(0,3)+'</div><div style="font-size:16px;margin-top:4px">'+icon+'</div></div>';
+  }
+  monthsHtml += '</div>';
+
+  const totalDebe = debe * (cuotaMonto||0);
+  const summaryHtml = '<div style="display:flex;gap:10px;margin-bottom:18px">'
+    +'<div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--success)">'+pagados+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">Pagados</div></div>'
+    +'<div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--danger)">'+debe+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">Pendientes</div></div>'
+    +'<div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;text-align:center"><div style="font-size:18px;font-weight:800;color:var(--gold)">₡'+totalDebe.toLocaleString()+'</div><div style="font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px">Debes</div></div>'
+    +'</div>';
+
+  const alertHtml = debe>0 ? '<div style="background:#E06C7515;border:1px solid #E06C7544;border-radius:14px;padding:12px 14px;margin-top:16px;font-size:12px;color:#F5BFC4;text-align:center">⚠️ Tenés '+debe+' mes'+(debe>1?'es':'')+' pendiente'+(debe>1?'s':'')+'. Coordiná el pago con la tesorería.</div>' : '<div style="background:#7EC8A015;border:1px solid #7EC8A044;border-radius:14px;padding:12px 14px;margin-top:16px;font-size:12px;color:#B8E8CC;text-align:center">🎉 ¡Estás al día con tus cuotas!</div>';
+
+  $('mis-cuotas-content').innerHTML = summaryHtml + monthsHtml + alertHtml;
+  $('mis-cuotas-modal').style.display='flex';
+};
+$('btn-close-mis-cuotas').addEventListener('click', () => $('mis-cuotas-modal').style.display='none');
 
 // Firestore listener for cuotas
 // Load config async
