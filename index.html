@@ -156,6 +156,7 @@ input::placeholder{color:var(--muted);}
   </div>
   <div style="padding:20px 16px 0">
     <div id="bday-hoy" style="display:none;background:linear-gradient(135deg,#E8C96A 0%,#F0A500 100%);border-radius:16px;padding:14px;margin-bottom:16px"></div>
+    <div id="mis-eventos-card" style="display:none"></div>
     <div id="mis-cuotas-card" style="display:none"></div>
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
       <div style="font-size:14px;font-weight:800;color:var(--text)">📅 Próximos eventos</div>
@@ -194,10 +195,14 @@ input::placeholder{color:var(--muted);}
   <div id="ev-list-view">
     <div class="row" style="justify-content:space-between;margin-bottom:14px">
       <h2 class="sec-title" style="font-size:18px">🗓 Eventos</h2>
-      <button class="btn btn-primary btn-sm" id="btn-new-ev" style="display:none">+ Nuevo</button>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" id="btn-resumen-roles">📊 Roles</button>
+        <button class="btn btn-primary btn-sm" id="btn-new-ev" style="display:none">+ Nuevo</button>
+      </div>
     </div>
     <div id="eventos-list"></div>
   </div>
+  <div id="ev-resumen-view" style="display:none"></div>
   <div id="ev-form-view" style="display:none">
     <div class="row" style="margin-bottom:14px">
       <button class="btn btn-ghost btn-sm" id="btn-ev-back">← Volver</button>
@@ -1086,9 +1091,115 @@ const showEvForm = evId => {
   history.pushState({tab:'eventos', view:'form'}, '', location.pathname);
 };
 const hideEvForm = (skipHistory) => {
-  $('ev-list-view').style.display='block'; $('ev-form-view').style.display='none'; $('ev-detail-view').style.display='none'; editingEvId=null;
+  $('ev-list-view').style.display='block'; $('ev-form-view').style.display='none'; $('ev-detail-view').style.display='none'; $('ev-resumen-view').style.display='none'; editingEvId=null;
   if(!skipHistory && history.state && history.state.tab==='eventos' && history.state.view!=='list') history.back();
 };
+
+// ── RESUMEN DE ROLES DEL MES ──
+let resumenRolesMonth = new Date().getMonth(), resumenRolesYear = new Date().getFullYear();
+
+const showResumenRoles = () => {
+  $('ev-list-view').style.display='none'; $('ev-form-view').style.display='none'; $('ev-detail-view').style.display='none';
+  $('ev-resumen-view').style.display='block';
+  renderResumenRoles();
+  history.pushState({tab:'eventos', view:'form'}, '', location.pathname);
+};
+
+const MESES_ROLES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const GRUPO_LABELS = {musicos:'🎸 Música', voces:'🎙️ Voces', sonido:'🔊 Sonido', multimedia:'📡 Multimedia'};
+
+const renderResumenRoles = () => {
+  const el = $('ev-resumen-view'); el.innerHTML='';
+
+  const hdr = document.createElement('div'); hdr.className='row'; hdr.style.cssText='justify-content:space-between;margin-bottom:6px';
+  const backBtn = document.createElement('button'); backBtn.className='btn btn-ghost btn-sm'; backBtn.textContent='← Volver';
+  backBtn.addEventListener('click', ()=>hideEvForm());
+  const navRow = document.createElement('div'); navRow.style.cssText='display:flex;gap:4px;align-items:center';
+  const prevBtn=document.createElement('button'); prevBtn.className='btn btn-ghost btn-sm'; prevBtn.textContent='‹';
+  prevBtn.addEventListener('click',()=>{resumenRolesMonth--;if(resumenRolesMonth<0){resumenRolesMonth=11;resumenRolesYear--;}renderResumenRoles();});
+  const monthLbl=document.createElement('span'); monthLbl.style.cssText='font-size:13px;font-weight:700;min-width:110px;text-align:center'; monthLbl.textContent=MESES_ROLES[resumenRolesMonth]+' '+resumenRolesYear;
+  const nextBtn=document.createElement('button'); nextBtn.className='btn btn-ghost btn-sm'; nextBtn.textContent='›';
+  nextBtn.addEventListener('click',()=>{resumenRolesMonth++;if(resumenRolesMonth>11){resumenRolesMonth=0;resumenRolesYear++;}renderResumenRoles();});
+  navRow.appendChild(prevBtn); navRow.appendChild(monthLbl); navRow.appendChild(nextBtn);
+  hdr.appendChild(backBtn); hdr.appendChild(navRow);
+  el.appendChild(hdr);
+
+  const title = document.createElement('h2'); title.className='sec-title'; title.style.cssText='font-size:18px;margin-bottom:4px'; title.textContent='📊 Resumen de Roles';
+  el.appendChild(title);
+  const sub = document.createElement('p'); sub.style.cssText='color:var(--muted);font-size:12px;margin-bottom:14px'; sub.textContent='Quién sirvió en cada evento del mes';
+  el.appendChild(sub);
+
+  // Filter events for this month
+  const monthStr = resumenRolesYear+'-'+String(resumenRolesMonth+1).padStart(2,'0');
+  const evsDelMes = eventos.filter(ev=>(ev.fecha||'').startsWith(monthStr) && ev.tipo!=='Ayuno').sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+
+  if(!evsDelMes.length){
+    el.innerHTML += '<div style="color:var(--muted);text-align:center;padding:32px">No hay eventos este mes (recordá que los eventos pasados se eliminan automáticamente)</div>';
+    return;
+  }
+
+  // Detect repetition per person+role across the month's events
+  const conteoRolPersona = {}; // key: musId|rol -> count
+  evsDelMes.forEach(ev=>{
+    const allAsign = [...(ev.asignados||[]), ...(ev.vozAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Voz'}:a), ...(ev.sonidoAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Sonidista'}:a), ...(ev.multiAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Multimedia'}:a)];
+    allAsign.forEach(a=>{
+      const key = a.musId+'|'+a.rol;
+      conteoRolPersona[key] = (conteoRolPersona[key]||0)+1;
+    });
+  });
+  // Find anyone who appears in the SAME role in ALL events of the month (and there's more than 1 event)
+  const repetidos = [];
+  if(evsDelMes.length > 1){
+    Object.entries(conteoRolPersona).forEach(([key, count])=>{
+      if(count === evsDelMes.length){
+        const [musId, rol] = key.split('|');
+        const m = musicos.find(x=>x.id===musId);
+        if(m) repetidos.push({nombre:m.nombre, rol});
+      }
+    });
+  }
+  if(repetidos.length){
+    const alertEl = document.createElement('div');
+    alertEl.style.cssText='background:#F0A50015;border:1px solid #F0A50044;border-radius:14px;padding:12px 14px;margin-bottom:16px;display:flex;gap:10px;align-items:center';
+    alertEl.innerHTML = '<div style="font-size:20px">⚠️</div><div style="font-size:12px;color:#F0D9A0">'+repetidos.map(r=>'<b style="color:var(--warn)">'+r.nombre+'</b> está en '+r.rol+' en los '+evsDelMes.length+' eventos de este mes').join('<br>')+'. Considerá rotar.</div>';
+    el.appendChild(alertEl);
+  }
+
+  // Render one card per event
+  evsDelMes.forEach(ev=>{
+    const [y,mo,d] = (ev.fecha||'').split('-');
+    const card = document.createElement('div');
+    card.style.cssText='background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px';
+    card.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
+      +'<div><div style="font-size:11px;color:var(--gold);font-weight:700">'+(d||'?')+' '+MESES_ROLES[resumenRolesMonth].slice(0,3).toUpperCase()+'</div><div style="font-size:14px;font-weight:700;margin-top:2px">'+ev.titulo+'</div></div>'
+      +'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+'">'+ev.tipo+'</span>'
+      +'</div>';
+
+    const grupos = {
+      musicos: (ev.asignados||[]),
+      voces: (ev.vozAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Voz'}:a),
+      sonido: (ev.sonidoAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Sonidista'}:a),
+      multimedia: (ev.multiAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Multimedia'}:a),
+    };
+    Object.entries(grupos).forEach(([key, items])=>{
+      if(!items.length) return;
+      const row = document.createElement('div');
+      row.style.cssText='display:flex;gap:8px;align-items:flex-start;margin-top:8px';
+      const chips = items.map(a=>{
+        const m = musicos.find(x=>x.id===a.musId); if(!m) return '';
+        const repKey = a.musId+'|'+a.rol;
+        const isRepeat = repetidos.some(r=>r.nombre===m.nombre && r.rol===a.rol);
+        return '<span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;'+(isRepeat?'background:#F0A50022;border:1px solid #F0A50066;color:var(--warn)':'background:var(--card2,var(--surface));border:1px solid var(--border)')+'">'+m.nombre+'</span>';
+      }).join('');
+      row.innerHTML = '<div style="width:60px;flex-shrink:0;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding-top:2px">'+GRUPO_LABELS[key]+'</div><div style="display:flex;flex-wrap:wrap;gap:5px;flex:1">'+chips+'</div>';
+      card.appendChild(row);
+    });
+
+    el.appendChild(card);
+  });
+};
+$('btn-resumen-roles').addEventListener('click', showResumenRoles);
+
 const MUS_ROLES = ['Guitarra','Bajo','Teclado/Piano','Batería','Saxofón','Otros'];
 const VOZ_ROLES = ['Voz','Líder'];
 const SON_ROLES = ['Sonidista'];
@@ -1644,6 +1755,7 @@ function renderCalList(date) {
 // ── DASHBOARD ──
 function renderDashboard() {
   $('st-c').textContent=canciones.length; $('st-m').textContent=musicos.length; $('st-e').textContent=eventos.length;
+  if(typeof renderMisEventosCard === 'function') renderMisEventosCard();
   const hoy=new Date().toISOString().slice(0,10);
   const prox=[...eventos].filter(e=>e.fecha>=hoy).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(0,4);
   const proxEl=$('proximos-list'); proxEl.innerHTML='';
@@ -1914,6 +2026,70 @@ const checkCuotaPendiente = () => {
 };
 
 // ── MIS CUOTAS (vista personal para músicos) ──
+// ── MIS EVENTOS (vista personal para músicos en Inicio) ──
+const renderMisEventosCard = () => {
+  const cardEl = $('mis-eventos-card');
+  if(!cardEl) return;
+  if(!CU){ cardEl.style.display='none'; return; }
+  const m = musicos.find(x=>x.username===CU.key);
+  if(!m){ cardEl.style.display='none'; return; }
+
+  const hoy = new Date().toISOString().slice(0,10);
+  const misEventos = eventos.filter(ev=>{
+    if((ev.fecha||'') < hoy) return false;
+    if(ev.tipo==='Ayuno') return true; // assigned to everyone
+    const enGrupo = (arr, defaultRol) => (arr||[]).some(a => (typeof a==='string' ? a : a.musId) === m.id);
+    return enGrupo(ev.asignados) || enGrupo(ev.vozAsignados) || enGrupo(ev.sonidoAsignados) || enGrupo(ev.multiAsignados) || (ev.pulperia||[]).includes(m.id);
+  }).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||'')).slice(0,4);
+
+  if(!misEventos.length){ cardEl.style.display='none'; return; }
+
+  const getMiRol = (ev) => {
+    if(ev.tipo==='Ayuno') return '🙏 Ayuno';
+    const findRol = (arr) => {
+      const found = (arr||[]).find(a => (typeof a==='string' ? a : a.musId) === m.id);
+      return found ? (typeof found==='string' ? null : found.rol) : null;
+    };
+    const rol = findRol(ev.asignados) || findRol(ev.vozAsignados) || findRol(ev.sonidoAsignados) || findRol(ev.multiAsignados);
+    if(rol) return roleIcon(rol)+' '+rol;
+    if((ev.pulperia||[]).includes(m.id)) return '🛒 Pulpería';
+    return '';
+  };
+
+  cardEl.style.display='block';
+  const [y,mo,d] = (misEventos[0].fecha||'').split('-');
+  let linesHtml = '';
+  misEventos.forEach(ev=>{
+    const [yy,mm,dd] = (ev.fecha||'').split('-');
+    const mesAbrev = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mm)-1]||'';
+    linesHtml += '<div style="display:flex;align-items:center;gap:10px;background:#ffffff14;border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer" data-evid="'+ev.id+'">'
+      +'<div style="width:38px;height:38px;border-radius:10px;background:#1A1530;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">'
+        +'<div style="font-size:14px;font-weight:800;color:#C9BFFF;line-height:1">'+(dd||'?')+'</div>'
+        +'<div style="font-size:7px;color:#9A8FE0;text-transform:uppercase">'+mesAbrev+'</div>'
+      +'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:12.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ev.titulo+'</div>'
+        +'<div style="font-size:10.5px;color:#ffffffcc;margin-top:1px">'+getMiRol(ev)+(ev.horaIni?' · ⏰ '+ev.horaIni:'')+'</div>'
+      +'</div></div>';
+  });
+
+  cardEl.innerHTML = '<div style="background:linear-gradient(135deg,#7B6FD4 0%,#4A3F9F 100%);border-radius:18px;padding:16px;margin-bottom:24px;box-shadow:0 10px 26px -10px #7B6FD455">'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+      +'<div style="font-size:22px">'+roleIcon(m.rol)+'</div>'
+      +'<div style="font-size:14px;font-weight:800;color:#fff;flex:1">Mis próximos eventos</div>'
+      +'<span style="background:#1A1530;color:#C9BFFF;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px">'+misEventos.length+'</span>'
+    +'</div>'
+    +linesHtml
+    +'</div>';
+
+  cardEl.querySelectorAll('[data-evid]').forEach(line=>{
+    line.addEventListener('click', ()=>{
+      goTab('eventos', false);
+      showEvDetail(line.dataset.evid, 'inicio');
+    });
+  });
+};
+
 const renderMisCuotasCard = () => {
   const cardEl = $('mis-cuotas-card');
   if(!CU){ cardEl.style.display='none'; return; }
