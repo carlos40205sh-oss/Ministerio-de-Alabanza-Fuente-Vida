@@ -1151,66 +1151,97 @@ const renderResumenRoles = () => {
     return;
   }
 
-  // Detect repetition per person+role across the month's events
-  const conteoRolPersona = {}; // key: musId|rol -> count
-  evsDelMes.forEach(ev=>{
-    const allAsign = [...(ev.asignados||[]), ...(ev.vozAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Voz'}:a), ...(ev.sonidoAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Sonidista'}:a), ...(ev.multiAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Multimedia'}:a)];
-    allAsign.forEach(a=>{
-      const key = a.musId+'|'+a.rol;
-      conteoRolPersona[key] = (conteoRolPersona[key]||0)+1;
+  // Build per-event role map for each musician: {musId: {evIndex: rolLabel}}
+  const personRoles = {}; // musId -> {nombre, roles: [rolLabel|null per event]}
+  const getGrupoRol = (ev, musId) => {
+    const find = (arr, defaultRol) => {
+      const found = (arr||[]).find(a => (typeof a==='string' ? a : a.musId) === musId);
+      if(!found) return null;
+      return typeof found==='string' ? defaultRol : found.rol;
+    };
+    return find(ev.asignados) || find(ev.vozAsignados,'Voz') || find(ev.sonidoAsignados,'Sonidista') || find(ev.multiAsignados,'Multimedia') || ((ev.pulperia||[]).includes(musId) ? 'Pulpería' : null);
+  };
+
+  evsDelMes.forEach((ev,evIdx)=>{
+    const allIds = new Set([
+      ...(ev.asignados||[]).map(a=>a.musId),
+      ...(ev.vozAsignados||[]).map(a=>typeof a==='string'?a:a.musId),
+      ...(ev.sonidoAsignados||[]).map(a=>typeof a==='string'?a:a.musId),
+      ...(ev.multiAsignados||[]).map(a=>typeof a==='string'?a:a.musId),
+      ...(ev.pulperia||[]),
+    ]);
+    allIds.forEach(musId=>{
+      const m = musicos.find(x=>x.id===musId); if(!m) return;
+      if(!personRoles[musId]) personRoles[musId] = {nombre:m.nombre, roles:Array(evsDelMes.length).fill(null)};
+      personRoles[musId].roles[evIdx] = getGrupoRol(ev, musId);
     });
   });
-  // Find anyone who appears in the SAME role in ALL events of the month (and there's more than 1 event)
-  const repetidos = [];
+
+  // Detect who has the SAME role in every event they appear in, across ALL events of the month
+  const repetidosIds = new Set();
   if(evsDelMes.length > 1){
-    Object.entries(conteoRolPersona).forEach(([key, count])=>{
-      if(count === evsDelMes.length){
-        const [musId, rol] = key.split('|');
-        const m = musicos.find(x=>x.id===musId);
-        if(m) repetidos.push({nombre:m.nombre, rol});
+    Object.entries(personRoles).forEach(([musId, data])=>{
+      const rolesAsignados = data.roles.filter(Boolean);
+      if(rolesAsignados.length === evsDelMes.length && new Set(rolesAsignados).size === 1){
+        repetidosIds.add(musId);
       }
     });
   }
-  if(repetidos.length){
+  const repetidosNombres = [...repetidosIds].map(id=>personRoles[id].nombre);
+  if(repetidosNombres.length){
     const alertEl = document.createElement('div');
     alertEl.style.cssText='background:#F0A50015;border:1px solid #F0A50044;border-radius:14px;padding:12px 14px;margin-bottom:16px;display:flex;gap:10px;align-items:center';
-    alertEl.innerHTML = '<div style="font-size:20px">⚠️</div><div style="font-size:12px;color:#F0D9A0">'+repetidos.map(r=>'<b style="color:var(--warn)">'+r.nombre+'</b> está en '+r.rol+' en los '+evsDelMes.length+' eventos de este mes').join('<br>')+'. Considerá rotar.</div>';
+    alertEl.innerHTML = '<div style="font-size:20px">⚠️</div><div style="font-size:12px;color:#F0D9A0"><b style="color:var(--warn)">'+repetidosNombres.join(', ')+'</b> '+(repetidosNombres.length>1?'están':'está')+' en el mismo rol en todos los eventos de este mes. Considerá rotar.</div>';
     el.appendChild(alertEl);
   }
 
-  // Render one card per event
+  // Build the table
+  const sortedIds = Object.keys(personRoles).sort((a,b)=>personRoles[a].nombre.localeCompare(personRoles[b].nombre));
+
+  if(!sortedIds.length){
+    el.innerHTML += '<div style="color:var(--muted);text-align:center;padding:32px">Ningún músico fue asignado este mes</div>';
+    return;
+  }
+
+  const tableWrap = document.createElement('div');
+  tableWrap.style.cssText = 'overflow-x:auto;border-radius:14px;border:1px solid var(--border)';
+  let html = '<table style="border-collapse:collapse;width:100%;min-width:560px;font-size:11px">';
+  html += '<thead><tr><th style="padding:9px 8px;text-align:left;position:sticky;left:0;background:#15141F;color:var(--gold);font-weight:700;font-size:10px;z-index:4;border-right:2px solid #2A2838;min-width:90px">Músico</th>';
   evsDelMes.forEach(ev=>{
-    const [y,mo,d] = (ev.fecha||'').split('-');
-    const card = document.createElement('div');
-    card.style.cssText='background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px';
-    card.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
-      +'<div><div style="font-size:11px;color:var(--gold);font-weight:700">'+(d||'?')+' '+MESES_ROLES[resumenRolesMonth].slice(0,3).toUpperCase()+'</div><div style="font-size:14px;font-weight:700;margin-top:2px">'+ev.titulo+'</div></div>'
-      +'<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+'">'+ev.tipo+'</span>'
-      +'</div>';
-
-    const grupos = {
-      musicos: (ev.asignados||[]),
-      voces: (ev.vozAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Voz'}:a),
-      sonido: (ev.sonidoAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Sonidista'}:a),
-      multimedia: (ev.multiAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Multimedia'}:a),
-    };
-    Object.entries(grupos).forEach(([key, items])=>{
-      if(!items.length) return;
-      const row = document.createElement('div');
-      row.style.cssText='display:flex;gap:8px;align-items:flex-start;margin-top:8px';
-      const chips = items.map(a=>{
-        const m = musicos.find(x=>x.id===a.musId); if(!m) return '';
-        const repKey = a.musId+'|'+a.rol;
-        const isRepeat = repetidos.some(r=>r.nombre===m.nombre && r.rol===a.rol);
-        return '<span style="font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px;'+(isRepeat?'background:#F0A50022;border:1px solid #F0A50066;color:var(--warn)':'background:var(--card2,var(--surface));border:1px solid var(--border)')+'">'+m.nombre+'</span>';
-      }).join('');
-      row.innerHTML = '<div style="width:60px;flex-shrink:0;font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.3px;padding-top:2px">'+GRUPO_LABELS[key]+'</div><div style="display:flex;flex-wrap:wrap;gap:5px;flex:1">'+chips+'</div>';
-      card.appendChild(row);
-    });
-
-    el.appendChild(card);
+    const [yy,mm,dd] = (ev.fecha||'').split('-');
+    const mesAbrev = MESES_ROLES[parseInt(mm)-1]?.slice(0,3)||'';
+    html += '<th style="padding:9px 8px;text-align:center;background:#15141F;color:var(--gold);font-weight:700;font-size:10px;min-width:70px;white-space:nowrap">'+(dd||'?')+' '+mesAbrev+'<br><span style="font-weight:400;color:var(--muted);font-size:9px">'+ev.titulo.slice(0,12)+(ev.titulo.length>12?'…':'')+'</span></th>';
   });
+  html += '</tr></thead><tbody>';
+
+  sortedIds.forEach((musId,i)=>{
+    const data = personRoles[musId];
+    const isRepeat = repetidosIds.has(musId);
+    const tdBg = i%2===1 ? '#211F30' : '#1C1A29';
+    html += '<tr><td style="padding:9px 8px;text-align:left;position:sticky;left:0;background:'+tdBg+';font-weight:600;z-index:2;border-right:2px solid #2A2838;min-width:90px;border-bottom:1px solid #2A2838">'+data.nombre+'</td>';
+    data.roles.forEach(rol=>{
+      let cell;
+      if(rol){
+        const color = isRepeat ? 'var(--warn)' : 'var(--accent)';
+        const bg = isRepeat ? '#F0A50022' : '#7B6FD422';
+        cell = '<span style="font-size:10px;font-weight:700;padding:3px 7px;border-radius:7px;background:'+bg+';color:'+color+'">'+rol+'</span>';
+      } else {
+        cell = '<span style="color:var(--muted)">–</span>';
+      }
+      html += '<td style="padding:9px 8px;text-align:center;border-bottom:1px solid #2A2838;background:'+tdBg+'">'+cell+'</td>';
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  tableWrap.innerHTML = html;
+  el.appendChild(tableWrap);
+
+  const legend = document.createElement('div');
+  legend.style.cssText = 'display:flex;gap:12px;margin-top:10px;font-size:10px;color:var(--muted);flex-wrap:wrap';
+  legend.innerHTML = '<span><span style="color:var(--accent)">●</span> Rol asignado</span><span><span style="color:var(--warn)">●</span> Se repite todos los eventos</span><span><span style="color:var(--muted)">–</span> No participó</span>';
+  el.appendChild(legend);
 };
+
 $('btn-resumen-roles').addEventListener('click', showResumenRoles);
 
 const MUS_ROLES = ['Guitarra','Bajo','Teclado/Piano','Batería','Saxofón','Otros'];
