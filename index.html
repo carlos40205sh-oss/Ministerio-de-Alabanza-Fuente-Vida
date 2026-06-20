@@ -611,15 +611,12 @@ input::placeholder{color:var(--muted);}
 </div>
 
 <!-- MI ROL MODAL (bottom sheet) -->
-<div id="mi-rol-modal" class="modal" style="z-index:701;align-items:flex-end;padding:0">
-  <div style="background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border-radius:24px 24px 0 0;padding:22px 18px 28px;width:100%;max-width:480px;box-shadow:0 -20px 60px -20px #000000aa;max-height:85vh;overflow-y:auto">
-    <div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 18px"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
-      <div style="font-size:18px;font-weight:800">🎵 Mi rol este mes</div>
-      <button id="btn-close-mi-rol" style="width:30px;height:30px;border-radius:50%;background:var(--card2);border:none;color:var(--muted);font-size:14px;cursor:pointer">✕</button>
-    </div>
-    <div id="mi-rol-content"></div>
+<div id="mi-rol-modal" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:701;flex-direction:column;overflow-y:auto">
+  <div style="background:#15141Fee;backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:14px 16px;position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:10px">
+    <button id="btn-close-mi-rol" style="border:none;background:var(--card);color:var(--muted);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer">← Volver</button>
+    <div style="font-size:16px;font-weight:800">🎵 Mi rol este mes</div>
   </div>
+  <div id="mi-rol-content" style="padding:16px"></div>
 </div>
 
 <!-- MODO SERVICIO -->
