@@ -1151,15 +1151,24 @@ const renderResumenRoles = () => {
     return;
   }
 
-  // Build per-event role map for each musician: {musId: {evIndex: rolLabel}}
-  const personRoles = {}; // musId -> {nombre, roles: [rolLabel|null per event]}
-  const getGrupoRol = (ev, musId) => {
+  // Build per-event role map for each musician, tagged with their group
+  const personRoles = {}; // musId -> {nombre, grupo, roles: [rolLabel|null per event]}
+  const getGrupoYRol = (ev, musId) => {
     const find = (arr, defaultRol) => {
       const found = (arr||[]).find(a => (typeof a==='string' ? a : a.musId) === musId);
       if(!found) return null;
       return typeof found==='string' ? defaultRol : found.rol;
     };
-    return find(ev.asignados) || find(ev.vozAsignados,'Voz') || find(ev.sonidoAsignados,'Sonidista') || find(ev.multiAsignados,'Multimedia') || ((ev.pulperia||[]).includes(musId) ? 'Pulpería' : null);
+    let rol = find(ev.asignados);
+    if(rol) return {grupo:'musicos', rol};
+    rol = find(ev.vozAsignados,'Voz');
+    if(rol) return {grupo:'voces', rol};
+    rol = find(ev.sonidoAsignados,'Sonidista');
+    if(rol) return {grupo:'sonido', rol};
+    rol = find(ev.multiAsignados,'Multimedia');
+    if(rol) return {grupo:'multimedia', rol};
+    if((ev.pulperia||[]).includes(musId)) return {grupo:'pulperia', rol:'Pulpería'};
+    return null;
   };
 
   evsDelMes.forEach((ev,evIdx)=>{
@@ -1172,8 +1181,9 @@ const renderResumenRoles = () => {
     ]);
     allIds.forEach(musId=>{
       const m = musicos.find(x=>x.id===musId); if(!m) return;
-      if(!personRoles[musId]) personRoles[musId] = {nombre:m.nombre, roles:Array(evsDelMes.length).fill(null)};
-      personRoles[musId].roles[evIdx] = getGrupoRol(ev, musId);
+      const gr = getGrupoYRol(ev, musId); if(!gr) return;
+      if(!personRoles[musId]) personRoles[musId] = {nombre:m.nombre, grupo:gr.grupo, roles:Array(evsDelMes.length).fill(null)};
+      personRoles[musId].roles[evIdx] = gr.rol;
     });
   });
 
@@ -1195,49 +1205,69 @@ const renderResumenRoles = () => {
     el.appendChild(alertEl);
   }
 
-  // Build the table
-  const sortedIds = Object.keys(personRoles).sort((a,b)=>personRoles[a].nombre.localeCompare(personRoles[b].nombre));
-
-  if(!sortedIds.length){
+  if(!Object.keys(personRoles).length){
     el.innerHTML += '<div style="color:var(--muted);text-align:center;padding:32px">Ningún músico fue asignado este mes</div>';
     return;
   }
 
-  const tableWrap = document.createElement('div');
-  tableWrap.style.cssText = 'overflow-x:auto;border-radius:14px;border:1px solid var(--border)';
-  let html = '<table style="border-collapse:collapse;width:100%;min-width:560px;font-size:11px">';
-  html += '<thead><tr><th style="padding:9px 8px;text-align:left;position:sticky;left:0;background:#15141F;color:var(--gold);font-weight:700;font-size:10px;z-index:4;border-right:2px solid #2A2838;min-width:90px">Músico</th>';
-  evsDelMes.forEach(ev=>{
-    const [yy,mm,dd] = (ev.fecha||'').split('-');
-    const mesAbrev = MESES_ROLES[parseInt(mm)-1]?.slice(0,3)||'';
-    html += '<th style="padding:9px 8px;text-align:center;background:#15141F;color:var(--gold);font-weight:700;font-size:10px;min-width:70px;white-space:nowrap">'+(dd||'?')+' '+mesAbrev+'<br><span style="font-weight:400;color:var(--muted);font-size:9px">'+ev.titulo.slice(0,12)+(ev.titulo.length>12?'…':'')+'</span></th>';
-  });
-  html += '</tr></thead><tbody>';
+  // Build one table per group
+  const GRUPOS_ORDEN = [
+    {key:'musicos', label:'🎸 Música'},
+    {key:'voces', label:'🎙️ Voces'},
+    {key:'sonido', label:'🔊 Sonido'},
+    {key:'multimedia', label:'📡 Multimedia'},
+    {key:'pulperia', label:'🛒 Pulpería'},
+  ];
 
-  sortedIds.forEach((musId,i)=>{
-    const data = personRoles[musId];
-    const isRepeat = repetidosIds.has(musId);
-    const tdBg = i%2===1 ? '#211F30' : '#1C1A29';
-    html += '<tr><td style="padding:9px 8px;text-align:left;position:sticky;left:0;background:'+tdBg+';font-weight:600;z-index:2;border-right:2px solid #2A2838;min-width:90px;border-bottom:1px solid #2A2838">'+data.nombre+'</td>';
-    data.roles.forEach(rol=>{
-      let cell;
-      if(rol){
-        const color = isRepeat ? 'var(--warn)' : 'var(--accent)';
-        const bg = isRepeat ? '#F0A50022' : '#7B6FD422';
-        cell = '<span style="font-size:10px;font-weight:700;padding:3px 7px;border-radius:7px;background:'+bg+';color:'+color+'">'+rol+'</span>';
-      } else {
-        cell = '<span style="color:var(--muted)">–</span>';
-      }
-      html += '<td style="padding:9px 8px;text-align:center;border-bottom:1px solid #2A2838;background:'+tdBg+'">'+cell+'</td>';
+  const buildTableHeader = () => {
+    let h = '<thead><tr><th style="padding:9px 8px;text-align:left;position:sticky;left:0;background:#15141F;color:var(--gold);font-weight:700;font-size:10px;z-index:4;border-right:2px solid #2A2838;min-width:90px">Músico</th>';
+    evsDelMes.forEach(ev=>{
+      const [yy,mm,dd] = (ev.fecha||'').split('-');
+      const mesAbrev = MESES_ROLES[parseInt(mm)-1]?.slice(0,3)||'';
+      h += '<th style="padding:9px 8px;text-align:center;background:#15141F;color:var(--gold);font-weight:700;font-size:10px;min-width:70px;white-space:nowrap">'+(dd||'?')+' '+mesAbrev+'<br><span style="font-weight:400;color:var(--muted);font-size:9px">'+ev.titulo.slice(0,12)+(ev.titulo.length>12?'…':'')+'</span></th>';
     });
-    html += '</tr>';
+    h += '</tr></thead>';
+    return h;
+  };
+
+  GRUPOS_ORDEN.forEach(grupo=>{
+    const idsDelGrupo = Object.keys(personRoles).filter(id=>personRoles[id].grupo===grupo.key).sort((a,b)=>personRoles[a].nombre.localeCompare(personRoles[b].nombre));
+    if(!idsDelGrupo.length) return;
+
+    const grupoTitle = document.createElement('div');
+    grupoTitle.style.cssText = 'font-size:13px;font-weight:800;color:var(--text);margin:18px 0 8px';
+    grupoTitle.textContent = grupo.label;
+    el.appendChild(grupoTitle);
+
+    const tableWrap = document.createElement('div');
+    tableWrap.style.cssText = 'overflow-x:auto;border-radius:14px;border:1px solid var(--border)';
+    let html = '<table style="border-collapse:collapse;width:100%;min-width:560px;font-size:11px">' + buildTableHeader() + '<tbody>';
+
+    idsDelGrupo.forEach((musId,i)=>{
+      const data = personRoles[musId];
+      const isRepeat = repetidosIds.has(musId);
+      const tdBg = i%2===1 ? '#211F30' : '#1C1A29';
+      html += '<tr><td style="padding:9px 8px;text-align:left;position:sticky;left:0;background:'+tdBg+';font-weight:600;z-index:2;border-right:2px solid #2A2838;min-width:90px;border-bottom:1px solid #2A2838">'+data.nombre+'</td>';
+      data.roles.forEach(rol=>{
+        let cell;
+        if(rol){
+          const color = isRepeat ? 'var(--warn)' : 'var(--accent)';
+          const bg = isRepeat ? '#F0A50022' : '#7B6FD422';
+          cell = '<span style="font-size:10px;font-weight:700;padding:3px 7px;border-radius:7px;background:'+bg+';color:'+color+'">'+rol+'</span>';
+        } else {
+          cell = '<span style="color:var(--muted)">–</span>';
+        }
+        html += '<td style="padding:9px 8px;text-align:center;border-bottom:1px solid #2A2838;background:'+tdBg+'">'+cell+'</td>';
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    tableWrap.innerHTML = html;
+    el.appendChild(tableWrap);
   });
-  html += '</tbody></table>';
-  tableWrap.innerHTML = html;
-  el.appendChild(tableWrap);
 
   const legend = document.createElement('div');
-  legend.style.cssText = 'display:flex;gap:12px;margin-top:10px;font-size:10px;color:var(--muted);flex-wrap:wrap';
+  legend.style.cssText = 'display:flex;gap:12px;margin-top:14px;font-size:10px;color:var(--muted);flex-wrap:wrap';
   legend.innerHTML = '<span><span style="color:var(--accent)">●</span> Rol asignado</span><span><span style="color:var(--warn)">●</span> Se repite todos los eventos</span><span><span style="color:var(--muted)">–</span> No participó</span>';
   el.appendChild(legend);
 };
