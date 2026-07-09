@@ -18,13 +18,12 @@
 }
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding-bottom:80px;min-height:100vh;}
 @media(min-width:768px){
-  body{max-width:860px;padding-bottom:0;padding-top:20px;}
-  header{max-width:860px;left:50%;transform:translateX(-50%);border-radius:0 0 12px 12px;border:1px solid var(--border);border-top:none;}
+  body{max-width:100%;padding-bottom:0;padding-top:20px;}
+  header{max-width:100%;border-radius:0;}
   .nav{display:none !important;}
   .desktop-nav{display:flex !important;}
-  .content{padding:24px;}
-  .section.active{display:flex;gap:24px;}
-  .sec-main{flex:1;min-width:0;}
+  .content{padding:32px 48px;}
+  .section.active{padding:32px 48px;}
 }
 header{background:#15141Fee;backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;}
 header h1{font-size:15px;font-weight:800;color:var(--gold);}
@@ -151,7 +150,7 @@ input::placeholder{color:var(--muted);}
 </header>
 
 <!-- Desktop nav -->
-<nav class="desktop-nav" style="display:none;max-width:860px;margin:0 auto;padding:10px 16px;gap:4px;border-bottom:1px solid var(--border);background:#15141Fee;backdrop-filter:blur(10px);position:sticky;top:52px;z-index:99">
+<nav class="desktop-nav" style="display:none;max-width:100%;padding:10px 48px;gap:4px;border-bottom:1px solid var(--border);background:#15141Fee;backdrop-filter:blur(10px);position:sticky;top:52px;z-index:99">
   <button class="nav-btn" data-tab="inicio"><span class="icon">🏠</span><span class="label">Inicio</span></button>
   <button class="nav-btn" data-tab="calendario"><span class="icon">📅</span><span class="label">Calendario</span></button>
   <button class="nav-btn" data-tab="eventos"><span class="icon">🗓</span><span class="label">Eventos</span></button>
@@ -622,7 +621,7 @@ input::placeholder{color:var(--muted);}
 
 <!-- MIS CUOTAS MODAL (bottom sheet) -->
 <div id="mis-cuotas-modal" class="modal" style="z-index:701;align-items:flex-end;padding:0">
-  <div style="background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border-radius:24px 24px 0 0;padding:22px 18px 28px;width:100%;max-width:860px;box-shadow:0 -20px 60px -20px #000000aa;max-height:85vh;overflow-y:auto">
+  <div style="background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border-radius:24px 24px 0 0;padding:22px 18px 28px;width:100%;max-width:100%;box-shadow:0 -20px 60px -20px #000000aa;max-height:85vh;overflow-y:auto">
     <div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 18px"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
       <div style="font-size:18px;font-weight:800" id="mis-cuotas-titulo">💰 Mis Cuotas</div>
