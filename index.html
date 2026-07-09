@@ -1738,6 +1738,40 @@ const buildEvDetail = (ev, backFn) => {
       wrap.appendChild(rs);
     }
   }
+  // Equipo asignado resumen
+  const grupos = [
+    {icon:'🎸', label:'Música', arr: ev.asignados||[]},
+    {icon:'🎙️', label:'Voces', arr: ev.vozAsignados||[]},
+    {icon:'🔊', label:'Sonido', arr: ev.sonidoAsignados||[]},
+    {icon:'📡', label:'Multimedia', arr: ev.multiAsignados||[]},
+    {icon:'🛒', label:'Pulpería', arr: (ev.pulperia||[]).map(id=>({musId:id}))},
+  ];
+  const colorMap = {Música:'#7B6FD422|var(--accent)', Voces:'#F0A50022|#F0A500', Sonido:'#E8C96A22|var(--gold)', Multimedia:'#E8C96A22|var(--gold)', Pulpería:'#7EC8A022|var(--success)'};
+  const tieneEquipo = grupos.some(g=>g.arr.length>0);
+  if(tieneEquipo){
+    const ts = document.createElement('div'); ts.className='ev-sec';
+    ts.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">👥 Equipo asignado</div>';
+    grupos.forEach(g=>{
+      if(!g.arr.length) return;
+      const [bg, color] = colorMap[g.label].split('|');
+      const nombres = g.arr.map(a=>{
+        const musId = typeof a==='string' ? a : a.musId;
+        const m = musicos.find(x=>x.id===musId);
+        return m ? '<span style="display:inline-block;font-size:11px;font-weight:600;padding:2px 9px;border-radius:99px;background:'+bg+';color:'+color+';margin:2px 3px 2px 0">'+m.nombre+'</span>' : '';
+      }).join('');
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)';
+      row.innerHTML = '<span style="font-size:16px;width:24px;text-align:center;flex-shrink:0">'+g.icon+'</span>'
+        +'<span style="font-size:11px;font-weight:700;color:var(--muted);width:70px;flex-shrink:0;padding-top:3px">'+g.label+'</span>'
+        +'<div style="flex:1">'+nombres+'</div>';
+      ts.appendChild(row);
+    });
+    // Remove border from last row
+    const rows = ts.querySelectorAll('div[style*="border-bottom"]');
+    if(rows.length) rows[rows.length-1].style.borderBottom = 'none';
+    wrap.appendChild(ts);
+  }
+
   // Comentarios
   const coms=ev.comentarios||[];
   const cs=document.createElement('div'); cs.className='ev-sec'; cs.innerHTML='<h4>💬 Comentarios ('+coms.length+')</h4>';
