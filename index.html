@@ -17,6 +17,15 @@
   --text:#F5F3F0;--muted:#8C88A0;--danger:#E06C75;--success:#7EC8A0;--warn:#F0A500;
 }
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding-bottom:80px;min-height:100vh;}
+@media(min-width:768px){
+  body{max-width:860px;padding-bottom:0;padding-top:20px;}
+  header{max-width:860px;left:50%;transform:translateX(-50%);border-radius:0 0 12px 12px;border:1px solid var(--border);border-top:none;}
+  .nav{display:none !important;}
+  .desktop-nav{display:flex !important;}
+  .content{padding:24px;}
+  .section.active{display:flex;gap:24px;}
+  .sec-main{flex:1;min-width:0;}
+}
 header{background:#15141Fee;backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;}
 header h1{font-size:15px;font-weight:800;color:var(--gold);}
 .content{padding:16px;}
@@ -36,7 +45,7 @@ input::placeholder{color:var(--muted);}
 .btn-full{width:100%;}
 .row{display:flex;gap:8px;align-items:center;}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#15141Fee;backdrop-filter:blur(10px);border-top:1px solid var(--border);display:flex;z-index:200;}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:860px;background:#15141Fee;backdrop-filter:blur(10px);border-top:1px solid var(--border);display:flex;z-index:200;}
 .nav-btn{flex:1;background:none;border:none;cursor:pointer;padding:8px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit;}
 .nav-btn .icon{font-size:16px;}
 .nav-btn .label{font-size:9px;font-weight:600;color:var(--muted);}
@@ -140,6 +149,19 @@ input::placeholder{color:var(--muted);}
   <h1>✨ Ministerio de Alabanza</h1>
   <span id="hdr-user" style="font-size:11px;color:var(--muted);cursor:pointer"></span>
 </header>
+
+<!-- Desktop nav -->
+<nav class="desktop-nav" style="display:none;max-width:860px;margin:0 auto;padding:10px 16px;gap:4px;border-bottom:1px solid var(--border);background:#15141Fee;backdrop-filter:blur(10px);position:sticky;top:52px;z-index:99">
+  <button class="nav-btn" data-tab="inicio"><span class="icon">🏠</span><span class="label">Inicio</span></button>
+  <button class="nav-btn" data-tab="calendario"><span class="icon">📅</span><span class="label">Calendario</span></button>
+  <button class="nav-btn" data-tab="eventos"><span class="icon">🗓</span><span class="label">Eventos</span></button>
+  <button class="nav-btn" data-tab="canciones"><span class="icon">🎵</span><span class="label">Canciones</span></button>
+  <button class="nav-btn" data-tab="ayuno"><span class="icon">🙏</span><span class="label">Ayuno</span></button>
+  <button class="nav-btn" data-tab="anuncios"><span class="icon">📢</span><span class="label">Anuncios</span></button>
+  <button class="nav-btn nav-admin" data-tab="musicos"><span class="icon">🎸</span><span class="label">Músicos</span></button>
+  <button class="nav-btn nav-admin" data-tab="cantantes"><span class="icon">🎤</span><span class="label">Cantantes</span></button>
+  <button class="nav-btn nav-cuotas" data-tab="cuotas"><span class="icon">💰</span><span class="label">Cuotas</span></button>
+</nav>
 <div id="toast"></div>
 
 <!-- INICIO -->
@@ -600,7 +622,7 @@ input::placeholder{color:var(--muted);}
 
 <!-- MIS CUOTAS MODAL (bottom sheet) -->
 <div id="mis-cuotas-modal" class="modal" style="z-index:701;align-items:flex-end;padding:0">
-  <div style="background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border-radius:24px 24px 0 0;padding:22px 18px 28px;width:100%;max-width:480px;box-shadow:0 -20px 60px -20px #000000aa;max-height:85vh;overflow-y:auto">
+  <div style="background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border-radius:24px 24px 0 0;padding:22px 18px 28px;width:100%;max-width:860px;box-shadow:0 -20px 60px -20px #000000aa;max-height:85vh;overflow-y:auto">
     <div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 18px"></div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
       <div style="font-size:18px;font-weight:800" id="mis-cuotas-titulo">💰 Mis Cuotas</div>
