@@ -1426,8 +1426,54 @@ function renderEvPulperiaTags() {
   renderGroupList('ev-pulperia-list', evPulperia, true);
 }
 function renderEvPredTags() {
-  setupGroupSearch('ev-pred-search','ev-pred-dropdown','ev-pred-list',evPred,()=>true,true);
-  renderGroupList('ev-pred-list', evPred, true);
+  const searchInput = $('ev-pred-search');
+  const dropdown = $('ev-pred-dropdown');
+  if(!searchInput || !dropdown) return;
+
+  const showDropdown = () => {
+    const q = searchInput.value.toLowerCase();
+    // Combine musicos and cantantes, exclude already selected
+    const candidates = [
+      ...musicos.filter(m=>!evPred.includes('m_'+m.id) && m.nombre.toLowerCase().includes(q)).map(m=>({id:'m_'+m.id, nombre:m.nombre, icon:roleIcon(m.rol)})),
+      ...cantantes.filter(c=>!evPred.includes('c_'+c.id) && c.nombre.toLowerCase().includes(q)).map(c=>({id:'c_'+c.id, nombre:c.nombre, icon:'🎤'})),
+    ].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+    dropdown.innerHTML = '';
+    if(!candidates.length){
+      dropdown.innerHTML = '<div class="search-dd-empty">'+(q?'Sin resultados':'No hay más opciones')+'</div>';
+    } else {
+      candidates.forEach(p=>{
+        const item = document.createElement('div');
+        item.className = 'search-dd-item';
+        item.innerHTML = '<span>'+p.icon+'</span><span>'+p.nombre+'</span>';
+        item.addEventListener('click', ()=>{
+          evPred.push(p.id);
+          searchInput.value = '';
+          dropdown.style.display = 'none';
+          renderEvPredTags();
+        });
+        dropdown.appendChild(item);
+      });
+    }
+    dropdown.style.display = 'block';
+  };
+  searchInput.oninput = showDropdown;
+  searchInput.onfocus = showDropdown;
+  searchInput.onblur = () => setTimeout(()=>dropdown.style.display='none', 200);
+
+  // Render assigned list
+  const listEl = $('ev-pred-list'); if(!listEl) return; listEl.innerHTML='';
+  if(!evPred.length){ listEl.innerHTML='<div class="search-dd-empty">Nadie asignado aún</div>'; return; }
+  evPred.forEach((id,i)=>{
+    const isCantante = id.startsWith('c_');
+    const realId = id.slice(2);
+    const p = isCantante ? cantantes.find(x=>x.id===realId) : musicos.find(x=>x.id===realId);
+    if(!p) return;
+    const div=document.createElement('div'); div.className='assigned-item';
+    div.innerHTML='<span style="font-size:15px">'+(isCantante?'🎤':roleIcon(p.rol))+'</span><span style="flex:1;font-size:13px;font-weight:600">'+p.nombre+'</span>';
+    const rmBtn=document.createElement('button'); rmBtn.className='btn btn-danger btn-sm'; rmBtn.textContent='✕';
+    rmBtn.addEventListener('click',()=>{evPred.splice(i,1);renderEvPredTags();});
+    div.appendChild(rmBtn); listEl.appendChild(div);
+  });
 }
 
 function renderEvCanTags() {
@@ -1680,9 +1726,12 @@ const buildEvDetail = (ev, backFn) => {
       const ps=document.createElement('div'); ps.className='ev-sec';
       ps.innerHTML='<h4>📖 Predicador(es)</h4>';
       ev.predicadores.forEach(id=>{
-        const m=musicos.find(x=>x.id===id); if(!m) return;
+        const isCantante = id.startsWith('c_');
+        const realId = isCantante ? id.slice(2) : (id.startsWith('m_') ? id.slice(2) : id);
+        const p = isCantante ? cantantes.find(x=>x.id===realId) : musicos.find(x=>x.id===realId);
+        if(!p) return;
         const row=document.createElement('div'); row.className='row'; row.style.marginTop='6px';
-        row.innerHTML='<div class="avatar">'+roleIcon(m.rol)+'</div><div style="font-weight:600;font-size:14px">'+m.nombre+'</div>';
+        row.innerHTML='<div class="avatar">'+(isCantante?'🎤':roleIcon(p.rol))+'</div><div style="font-weight:600;font-size:14px">'+p.nombre+'</div>';
         ps.appendChild(row);
       });
       wrap.appendChild(ps);
@@ -1937,7 +1986,10 @@ function renderCalList(date) {
     }
     if((ev.predicadores||[]).length){
       const predNombres = ev.predicadores.map(id=>{
-        const m=musicos.find(x=>x.id===id); return m?'<span style="display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;background:#7EC8A022;color:var(--success);margin:1px 2px">'+m.nombre+'</span>':'';
+        const isCantante = id.startsWith('c_');
+        const realId = isCantante ? id.slice(2) : (id.startsWith('m_') ? id.slice(2) : id);
+        const p = isCantante ? cantantes.find(x=>x.id===realId) : musicos.find(x=>x.id===realId);
+        return p?'<span style="display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;background:#7EC8A022;color:var(--success);margin:1px 2px">'+p.nombre+'</span>':'';
       }).join('');
       presididorHtml += '<div style="display:flex;align-items:center;gap:6px;margin-top:5px"><span style="font-size:12px">📖</span><span style="font-size:10px;color:var(--muted);font-weight:700;width:52px;flex-shrink:0">Predicador</span><div>'+predNombres+'</div></div>';
     }
