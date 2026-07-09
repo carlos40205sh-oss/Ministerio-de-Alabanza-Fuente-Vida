@@ -1835,8 +1835,35 @@ function renderCalList(date) {
   $('cal-ev-detail').innerHTML='';
 
   const el=$('cal-ev-list'); el.innerHTML='';
-  if(!devs.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">'+fmt(date)+' — Sin eventos</div>';return;}
-  el.innerHTML='<div style="color:var(--muted);font-size:12px;margin-bottom:8px;padding-top:4px">'+fmt(date)+'</div>';
+
+  // Header row with date + new event button for admins
+  const hdrRow = document.createElement('div');
+  hdrRow.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-top:4px';
+  hdrRow.innerHTML = '<div style="color:var(--muted);font-size:12px">'+fmt(date)+'</div>';
+  if(CU && CU.admin){
+    const newBtn = document.createElement('button');
+    newBtn.className = 'btn btn-primary btn-sm';
+    newBtn.textContent = '+ Nuevo evento';
+    newBtn.addEventListener('click', ()=>{
+      goTab('eventos', true);
+      setTimeout(()=>{
+        showEvForm(null);
+        // Pre-fill date
+        const dateInput = $('ev-fecha');
+        if(dateInput) dateInput.value = date;
+      }, 100);
+    });
+    hdrRow.appendChild(newBtn);
+  }
+  el.appendChild(hdrRow);
+
+  if(!devs.length){
+    const empty = document.createElement('div');
+    empty.style.cssText = 'color:var(--muted);font-size:13px;padding:8px 0';
+    empty.textContent = 'Sin eventos este día';
+    el.appendChild(empty);
+    return;
+  }
   devs.forEach(ev=>{
     const div=document.createElement('div');
     div.style.cssText='background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px;position:relative;overflow:hidden';
