@@ -1900,9 +1900,35 @@ function renderCalList(date) {
   }
   devs.forEach(ev=>{
     const div=document.createElement('div');
-    div.style.cssText='background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px;position:relative;overflow:hidden';
-    div.innerHTML='<div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:'+tipoColor(ev.tipo)+'"></div><div style="flex:1"><div style="font-weight:700;font-size:13px">'+ev.titulo+'</div>'+(ev.horaIni?'<div style="color:var(--muted);font-size:11px;margin-top:2px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'')+'<span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;margin-top:6px;background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+'">'+ev.tipo+'</span></div><span style="color:var(--muted);font-size:18px">›</span>';
-    div.addEventListener('click',()=>{
+    div.style.cssText='background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px;position:relative;overflow:hidden';
+
+    // Build team summary
+    const gruposEquipo = [
+      {icon:'🎸', label:'Música', arr: ev.asignados||[], color:'var(--accent)', bg:'#7B6FD422'},
+      {icon:'🎙️', label:'Voces', arr: ev.vozAsignados||[], color:'#F0A500', bg:'#F0A50022'},
+      {icon:'🔊', label:'Sonido', arr: ev.sonidoAsignados||[], color:'var(--gold)', bg:'#E8C96A22'},
+      {icon:'📡', label:'Multi', arr: ev.multiAsignados||[], color:'var(--gold)', bg:'#E8C96A22'},
+      {icon:'🛒', label:'Pulpería', arr: (ev.pulperia||[]).map(id=>({musId:id})), color:'var(--success)', bg:'#7EC8A022'},
+    ];
+    const equipoHtml = gruposEquipo.filter(g=>g.arr.length).map(g=>{
+      const nombres = g.arr.map(a=>{
+        const musId = typeof a==='string' ? a : a.musId;
+        const m = musicos.find(x=>x.id===musId);
+        return m ? '<span style="display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;background:'+g.bg+';color:'+g.color+';margin:1px 2px">'+m.nombre+'</span>' : '';
+      }).join('');
+      return '<div style="display:flex;align-items:center;gap:6px;margin-top:5px"><span style="font-size:12px">'+g.icon+'</span><span style="font-size:10px;color:var(--muted);font-weight:700;width:52px;flex-shrink:0">'+g.label+'</span><div>'+nombres+'</div></div>';
+    }).join('');
+
+    div.innerHTML='<div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:'+tipoColor(ev.tipo)+'"></div>'
+      +'<div style="display:flex;align-items:center;gap:10px;cursor:pointer" class="cal-ev-header">'
+        +'<div style="flex:1"><div style="font-weight:700;font-size:13px">'+ev.titulo+'</div>'
+        +(ev.horaIni?'<div style="color:var(--muted);font-size:11px;margin-top:2px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'')
+        +'<span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;margin-top:5px;background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+'">'+ev.tipo+'</span></div>'
+        +'<span style="color:var(--muted);font-size:18px">›</span>'
+      +'</div>'
+      +(equipoHtml ? '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">'+equipoHtml+'</div>' : '');
+
+    div.querySelector('.cal-ev-header').addEventListener('click',()=>{
       // Hide calendar, show detail
       $('cal-ev-list').style.display='none';
       $('cal-grid').style.display='none';
