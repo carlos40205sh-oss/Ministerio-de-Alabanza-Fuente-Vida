@@ -1639,8 +1639,31 @@ const buildEvDetail = (ev, backFn) => {
     });
     const delBtn=document.createElement('button'); delBtn.className='btn btn-danger btn-sm'; delBtn.textContent='🗑️';
     delBtn.addEventListener('click',()=>deleteEvento(ev.id));
+    const dupBtn=document.createElement('button'); dupBtn.className='btn btn-ghost btn-sm'; dupBtn.textContent='📋 Prueba';
+    dupBtn.title='Crear prueba de audio con el mismo equipo';
+    dupBtn.addEventListener('click',async()=>{
+      if(!confirm('¿Crear prueba de audio a las 9:00 AM con el mismo equipo?')) return;
+      await addDoc(collection(db,'eventos'),{
+        titulo:'Prueba de audio - '+ev.titulo,
+        fecha:ev.fecha,
+        tipo:'Ensayo',
+        horaIni:'09:00',
+        horaFin:'09:50',
+        notas:'Prueba de audio previa al servicio',
+        director:ev.director||'',
+        predicadores:ev.predicadores||[],
+        asignados:ev.asignados||[],
+        vozAsignados:ev.vozAsignados||[],
+        sonidoAsignados:ev.sonidoAsignados||[],
+        multiAsignados:ev.multiAsignados||[],
+        pulperia:ev.pulperia||[],
+        orden:[],
+        creadoEn:Date.now()
+      });
+      toast('✅ Prueba de audio creada');
+    });
     const btnRow=document.createElement('div'); btnRow.style.cssText='display:flex;gap:6px';
-    btnRow.appendChild(editBtn); btnRow.appendChild(delBtn); hdr.appendChild(btnRow);
+    btnRow.appendChild(editBtn); btnRow.appendChild(dupBtn); btnRow.appendChild(delBtn); hdr.appendChild(btnRow);
   }
   wrap.appendChild(hdr);
   // Info
