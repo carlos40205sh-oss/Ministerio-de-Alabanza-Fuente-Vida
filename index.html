@@ -269,6 +269,15 @@ input::placeholder{color:var(--muted);}
         <select id="ev-presididor"><option value="">-- Seleccionar --</option></select>
       </div>
       <div class="form-sec">
+        <h4>📖 Predicador(es)</h4>
+        <div class="search-wrap">
+          <input id="ev-pred-search" class="search-input" placeholder="Buscar predicador..." autocomplete="off"/>
+          <span class="search-icon">🔍</span>
+          <div id="ev-pred-dropdown" class="search-dropdown" style="display:none"></div>
+        </div>
+        <div id="ev-pred-list"></div>
+      </div>
+      <div class="form-sec">
         <h4>🎸 Músicos</h4>
         <div class="search-wrap">
           <input id="ev-mus-search" class="search-input" placeholder="Buscar músico..." autocomplete="off"/>
@@ -723,7 +732,7 @@ const registerFCMToken = async () => {
 
 // ── STATE ──
 let CU = null, canciones = [], musicos = [], eventos = [], cantantes = [], allUsers = [], historialCanciones = [];
-let evAssigned = [], evVoz = [], evSonido = [], evMulti = [], evSetlist = [], evOrden = [], evPulperia = [], editingEvId = null, editingEstructuraIdx = null, evOrdenOriginal = [];
+let evAssigned = [], evVoz = [], evSonido = [], evMulti = [], evSetlist = [], evOrden = [], evPulperia = [], evPred = [], editingEvId = null, editingEstructuraIdx = null, evOrdenOriginal = [];
 let sortMode = 'artist', musMode = 'rol';
 let calY, calM, calDates = [];
 
@@ -1098,7 +1107,7 @@ $('btn-save-ev').addEventListener('click', async () => {
   if(!titulo||!fecha){alert('Título y fecha son requeridos');return;}
   const tipo=$('ev-tipo').value;
   const todosAsignados = tipo==='Ayuno' ? musicos.map(m=>({musId:m.id, rol:m.rol||'Voz'})) : evAssigned;
-  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),director:tipo!=='Ayuno'?$('ev-presididor').value:'',asignados:todosAsignados,vozAsignados:tipo!=='Ayuno'?evVoz:[],sonidoAsignados:tipo!=='Ayuno'?evSonido:[],multiAsignados:tipo!=='Ayuno'?evMulti:[],setlist:tipo!=='Ayuno'?evSetlist:[],orden:tipo!=='Ayuno'?evOrden:[],pulperia:tipo!=='Ayuno'?evPulperia:[]};
+  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),director:tipo!=='Ayuno'?$('ev-presididor').value:'',predicadores:tipo!=='Ayuno'?evPred:[],asignados:todosAsignados,vozAsignados:tipo!=='Ayuno'?evVoz:[],sonidoAsignados:tipo!=='Ayuno'?evSonido:[],multiAsignados:tipo!=='Ayuno'?evMulti:[],setlist:tipo!=='Ayuno'?evSetlist:[],orden:tipo!=='Ayuno'?evOrden:[],pulperia:tipo!=='Ayuno'?evPulperia:[]};
   if(editingEvId){await updateDoc(doc(db,'eventos',editingEvId),data);toast('✅ Evento actualizado');}
   else{await addDoc(collection(db,'eventos'),{...data,creadoEn:Date.now()});toast('✅ Evento guardado');}
   // Update historialCanciones only for NEWLY added canciones (not ones that were already there)
@@ -1129,6 +1138,7 @@ const showEvForm = evId => {
   evOrden=ev?[...(ev.orden||[])]:[];
   evOrdenOriginal=ev?JSON.parse(JSON.stringify(ev.orden||[])):[];
   evPulperia=ev?[...(ev.pulperia||[])]:[];
+  evPred=ev?[...(ev.predicadores||[])]:[];
   evVoz=ev?[...(ev.vozAsignados||[])]:[];
   evSonido=ev?[...(ev.sonidoAsignados||[])]:[];
   evMulti=ev?[...(ev.multiAsignados||[])]:[];
@@ -1138,7 +1148,7 @@ const showEvForm = evId => {
   $('ev-form-title').textContent=ev?'Editar evento':'Nuevo evento';
   $('ev-extra').style.display=(ev&&ev.tipo==='Ayuno')?'none':'block';
   populatePresididorSelect($('ev-presididor'),ev?ev.director:'');
-  renderEvMusTags(); renderEvVozTags(); renderEvSonidoTags(); renderEvMultiTags(); renderEvPulperiaTags(); renderEvCanTags(); renderEvOrden();
+  renderEvMusTags(); renderEvVozTags(); renderEvSonidoTags(); renderEvMultiTags(); renderEvPulperiaTags(); renderEvPredTags(); renderEvCanTags(); renderEvOrden();
   $('ev-list-view').style.display='none'; $('ev-form-view').style.display='block'; $('ev-detail-view').style.display='none';
   history.pushState({tab:'eventos', view:'form'}, '', location.pathname);
 };
@@ -1415,6 +1425,10 @@ function renderEvPulperiaTags() {
   setupGroupSearch('ev-pulperia-search','ev-pulperia-dropdown','ev-pulperia-list',evPulperia,()=>true,true);
   renderGroupList('ev-pulperia-list', evPulperia, true);
 }
+function renderEvPredTags() {
+  setupGroupSearch('ev-pred-search','ev-pred-dropdown','ev-pred-list',evPred,()=>true,true);
+  renderGroupList('ev-pred-list', evPred, true);
+}
 
 function renderEvCanTags() {
   const tipo = $('ev-orden-tipo') ? $('ev-orden-tipo').value : 'cancion';
@@ -1619,7 +1633,10 @@ const buildEvDetail = (ev, backFn) => {
   }
   if(CU&&CU.admin){
     const editBtn=document.createElement('button'); editBtn.className='btn btn-accent btn-sm'; editBtn.textContent='✏️';
-    editBtn.addEventListener('click',()=>showEvForm(ev.id));
+    editBtn.addEventListener('click',()=>{
+      goTab('eventos', true);
+      setTimeout(()=>showEvForm(ev.id), 100);
+    });
     const delBtn=document.createElement('button'); delBtn.className='btn btn-danger btn-sm'; delBtn.textContent='🗑️';
     delBtn.addEventListener('click',()=>deleteEvento(ev.id));
     const btnRow=document.createElement('div'); btnRow.style.cssText='display:flex;gap:6px';
@@ -1636,6 +1653,17 @@ const buildEvDetail = (ev, backFn) => {
     wrap.appendChild(ay);
   } else {
     if(presididor){const ds=document.createElement('div');ds.className='ev-sec';ds.innerHTML='<h4>🎤 Presididor</h4><div class="row"><div class="avatar">'+roleIcon(dirRol)+'</div><div style="font-weight:600;font-size:14px">'+presididor.nombre+'</div><span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+dirRol+'</span></div>';wrap.appendChild(ds);}
+    if((ev.predicadores||[]).length){
+      const ps=document.createElement('div'); ps.className='ev-sec';
+      ps.innerHTML='<h4>📖 Predicador(es)</h4>';
+      ev.predicadores.forEach(id=>{
+        const m=musicos.find(x=>x.id===id); if(!m) return;
+        const row=document.createElement('div'); row.className='row'; row.style.marginTop='6px';
+        row.innerHTML='<div class="avatar">'+roleIcon(m.rol)+'</div><div style="font-weight:600;font-size:14px">'+m.nombre+'</div>';
+        ps.appendChild(row);
+      });
+      wrap.appendChild(ps);
+    }
     // Define role groups
     const VOICE_ROLES = ['Voz','Líder'];
     const SOUND_ROLES = ['Sonidista'];
@@ -1809,7 +1837,7 @@ function renderCalendar() {
   for(let d=1;d<=days;d++){
     const ds=calY+'-'+String(calM+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
     calDates.push(ds);
-    const devs=eventos.filter(e=>e.fecha===ds);
+    const devs=eventos.filter(e=>e.fecha===ds).sort((a,b)=>(a.horaIni||'').localeCompare(b.horaIni||''));
     const cell=document.createElement('div');
     cell.className='cal-day'+(devs.length?' has-ev':'')+(ds===todayStr?' today':'');
     cell.innerHTML='<div class="cal-day-num">'+d+'</div>'+devs.map(e=>'<div class="cal-dot" style="background:'+tipoColor(e.tipo)+';"></div>').join('');
@@ -1824,7 +1852,7 @@ function renderCalendar() {
 }
 
 function renderCalList(date) {
-  const devs=eventos.filter(e=>e.fecha===date);
+  const devs=eventos.filter(e=>e.fecha===date).sort((a,b)=>(a.horaIni||'').localeCompare(b.horaIni||''));
   // Show calendar views
   $('cal-ev-list').style.display='block';
   $('cal-grid').style.display='grid';
@@ -1876,6 +1904,20 @@ function renderCalList(date) {
       {icon:'📡', label:'Multi', arr: ev.multiAsignados||[], color:'var(--gold)', bg:'#E8C96A22'},
       {icon:'🛒', label:'Pulpería', arr: (ev.pulperia||[]).map(id=>({musId:id})), color:'var(--success)', bg:'#7EC8A022'},
     ];
+    // Add presididor if present
+    let presididorHtml = '';
+    if(ev.director){
+      const presName = ev.director.startsWith('c_')
+        ? cantantes.find(x=>x.id===ev.director.slice(2))?.nombre
+        : musicos.find(x=>x.id===(ev.director.startsWith('m_')?ev.director.slice(2):ev.director))?.nombre;
+      if(presName) presididorHtml += '<div style="display:flex;align-items:center;gap:6px;margin-top:5px"><span style="font-size:12px">🎤</span><span style="font-size:10px;color:var(--muted);font-weight:700;width:52px;flex-shrink:0">Presididor</span><span style="display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;background:#9590E022;color:#C9BFFF;margin:1px 2px">'+presName+'</span></div>';
+    }
+    if((ev.predicadores||[]).length){
+      const predNombres = ev.predicadores.map(id=>{
+        const m=musicos.find(x=>x.id===id); return m?'<span style="display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;background:#7EC8A022;color:var(--success);margin:1px 2px">'+m.nombre+'</span>':'';
+      }).join('');
+      presididorHtml += '<div style="display:flex;align-items:center;gap:6px;margin-top:5px"><span style="font-size:12px">📖</span><span style="font-size:10px;color:var(--muted);font-weight:700;width:52px;flex-shrink:0">Predicador</span><div>'+predNombres+'</div></div>';
+    }
     const equipoHtml = gruposEquipo.filter(g=>g.arr.length).map(g=>{
       const nombres = g.arr.map(a=>{
         const musId = typeof a==='string' ? a : a.musId;
@@ -1892,7 +1934,7 @@ function renderCalList(date) {
         +'<span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;margin-top:5px;background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+'">'+ev.tipo+'</span></div>'
         +'<span style="color:var(--muted);font-size:18px">›</span>'
       +'</div>'
-      +(equipoHtml ? '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">'+equipoHtml+'</div>' : '');
+      +((equipoHtml||presididorHtml) ? '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">'+presididorHtml+equipoHtml+'</div>' : '');
 
     div.querySelector('.cal-ev-header').addEventListener('click',()=>{
       // Hide calendar, show detail
