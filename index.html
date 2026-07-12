@@ -1139,6 +1139,7 @@ const showEvForm = evId => {
   evOrdenOriginal=ev?JSON.parse(JSON.stringify(ev.orden||[])):[];
   evPulperia=ev?[...(ev.pulperia||[])]:[];
   evPred=ev?[...(ev.predicadores||[])]:[];
+  const predInput=$('ev-pred-search');if(predInput)predInput._predSetup=false;
   evVoz=ev?[...(ev.vozAsignados||[])]:[];
   evSonido=ev?[...(ev.sonidoAsignados||[])]:[];
   evMulti=ev?[...(ev.multiAsignados||[])]:[];
@@ -1432,10 +1433,9 @@ function renderEvPredTags() {
 
   const showDropdown = () => {
     const q = searchInput.value.toLowerCase();
-    // Combine musicos and cantantes, exclude already selected
     const candidates = [
       ...musicos.filter(m=>!evPred.includes('m_'+m.id) && m.nombre.toLowerCase().includes(q)).map(m=>({id:'m_'+m.id, nombre:m.nombre, icon:roleIcon(m.rol)})),
-      ...cantantes.filter(c=>!evPred.includes('c_'+c.id) && c.nombre.toLowerCase().includes(q)).map(c=>({id:'c_'+c.id, nombre:c.nombre, icon:'🎤'})),
+      ...(cantantes||[]).filter(c=>!evPred.includes('c_'+c.id) && c.nombre.toLowerCase().includes(q)).map(c=>({id:'c_'+c.id, nombre:c.nombre, icon:'🎤'})),
     ].sort((a,b)=>a.nombre.localeCompare(b.nombre));
     dropdown.innerHTML = '';
     if(!candidates.length){
@@ -1445,22 +1445,34 @@ function renderEvPredTags() {
         const item = document.createElement('div');
         item.className = 'search-dd-item';
         item.innerHTML = '<span>'+p.icon+'</span><span>'+p.nombre+'</span>';
-        item.addEventListener('click', ()=>{
+        item.addEventListener('mousedown', (e)=>{
+          e.preventDefault(); // Prevent blur before click
           evPred.push(p.id);
           searchInput.value = '';
           dropdown.style.display = 'none';
-          renderEvPredTags();
+          renderEvPredList();
         });
         dropdown.appendChild(item);
       });
     }
     dropdown.style.display = 'block';
   };
-  searchInput.oninput = showDropdown;
-  searchInput.onfocus = showDropdown;
-  searchInput.onblur = () => setTimeout(()=>dropdown.style.display='none', 200);
 
-  // Render assigned list
+  // Only register events once
+  if(!searchInput._predSetup){
+    searchInput._predSetup = true;
+    searchInput.addEventListener('input', showDropdown);
+    searchInput.addEventListener('focus', showDropdown);
+    searchInput.addEventListener('blur', ()=>setTimeout(()=>dropdown.style.display='none', 200));
+  } else {
+    // Re-show dropdown if already focused
+    showDropdown();
+  }
+
+  renderEvPredList();
+}
+
+function renderEvPredList() {
   const listEl = $('ev-pred-list'); if(!listEl) return; listEl.innerHTML='';
   if(!evPred.length){ listEl.innerHTML='<div class="search-dd-empty">Nadie asignado aún</div>'; return; }
   evPred.forEach((id,i)=>{
@@ -1471,7 +1483,7 @@ function renderEvPredTags() {
     const div=document.createElement('div'); div.className='assigned-item';
     div.innerHTML='<span style="font-size:15px">'+(isCantante?'🎤':roleIcon(p.rol))+'</span><span style="flex:1;font-size:13px;font-weight:600">'+p.nombre+'</span>';
     const rmBtn=document.createElement('button'); rmBtn.className='btn btn-danger btn-sm'; rmBtn.textContent='✕';
-    rmBtn.addEventListener('click',()=>{evPred.splice(i,1);renderEvPredTags();});
+    rmBtn.addEventListener('click',()=>{evPred.splice(i,1);renderEvPredList();});
     div.appendChild(rmBtn); listEl.appendChild(div);
   });
 }
