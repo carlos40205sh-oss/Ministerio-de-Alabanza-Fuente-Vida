@@ -237,6 +237,7 @@ input::placeholder{color:var(--muted);}
       <h2 class="sec-title" style="font-size:18px">🗓 Eventos</h2>
       <div style="display:flex;gap:6px">
         <button class="btn btn-ghost btn-sm" id="btn-resumen-roles">📊 Roles</button>
+        <button class="btn btn-ghost btn-sm" id="btn-export-pdf">📄 PDF</button>
         <button class="btn btn-primary btn-sm" id="btn-new-ev" style="display:none">+ Nuevo</button>
       </div>
     </div>
@@ -1323,6 +1324,101 @@ const renderResumenRoles = () => {
 };
 
 $('btn-resumen-roles').addEventListener('click', showResumenRoles);
+
+$('btn-export-pdf').addEventListener('click', () => {
+  const now = new Date();
+  const mes = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][now.getMonth()];
+  const año = now.getFullYear();
+  const evsDelMes = [...eventos].filter(ev=>(ev.fecha||'').startsWith(año+'-'+String(now.getMonth()+1).padStart(2,'0'))).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+
+  const getNombre = id => {
+    if(!id) return '';
+    const isCant = id.startsWith('c_');
+    const realId = id.startsWith('c_')||id.startsWith('m_') ? id.slice(2) : id;
+    const p = isCant ? cantantes.find(x=>x.id===realId) : musicos.find(x=>x.id===realId);
+    return p ? p.nombre : '';
+  };
+
+  let evHtml = '';
+  evsDelMes.forEach(ev => {
+    const [y,mo,d] = (ev.fecha||'').split('-');
+    const mesAbrev = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mo)-1]||'';
+    const presididor = getNombre(ev.director);
+    const predicadores = (ev.predicadores||[]).map(getNombre).filter(Boolean).join(', ');
+    const musArr = (ev.asignados||[]).map(a=>{const m=musicos.find(x=>x.id===a.musId);return m?m.nombre+' ('+a.rol+')':'';}).filter(Boolean);
+    const vozArr = (ev.vozAsignados||[]).map(a=>{const m=musicos.find(x=>x.id==(a.musId||a));return m?m.nombre:'';}).filter(Boolean);
+    const sonArr = (ev.sonidoAsignados||[]).map(a=>{const m=musicos.find(x=>x.id==(a.musId||a));return m?m.nombre:'';}).filter(Boolean);
+    const mulArr = (ev.multiAsignados||[]).map(a=>{const m=musicos.find(x=>x.id==(a.musId||a));return m?m.nombre:'';}).filter(Boolean);
+    const pulArr = (ev.pulperia||[]).map(id=>{const m=musicos.find(x=>x.id===id);return m?m.nombre:'';}).filter(Boolean);
+    const canciones = (ev.orden||[]).filter(i=>i.tipo==='cancion').map((i,idx)=>`<li>${idx+1}. ${i.titulo}${i.tono?' <span style="color:#666">(${i.tono})</span>':''}</li>`).join('');
+
+    evHtml += `
+    <div class="ev-block">
+      <div class="ev-header">
+        <span class="ev-date">${d} ${mesAbrev}</span>
+        <span class="ev-title">${ev.titulo}</span>
+        <span class="ev-tipo">${ev.tipo}</span>
+        ${ev.horaIni?`<span class="ev-hora">${ev.horaIni}${ev.horaFin?' - '+ev.horaFin:''}</span>`:''}
+      </div>
+      <table class="ev-table">
+        ${presididor?`<tr><td class="lbl">🎤 Presididor</td><td>${presididor}</td></tr>`:''}
+        ${predicadores?`<tr><td class="lbl">📖 Predicador</td><td>${predicadores}</td></tr>`:''}
+        ${musArr.length?`<tr><td class="lbl">🎸 Música</td><td>${musArr.join(' · ')}</td></tr>`:''}
+        ${vozArr.length?`<tr><td class="lbl">🎙️ Voces</td><td>${vozArr.join(' · ')}</td></tr>`:''}
+        ${sonArr.length?`<tr><td class="lbl">🔊 Sonido</td><td>${sonArr.join(' · ')}</td></tr>`:''}
+        ${mulArr.length?`<tr><td class="lbl">📡 Multimedia</td><td>${mulArr.join(' · ')}</td></tr>`:''}
+        ${pulArr.length?`<tr><td class="lbl">🛒 Pulpería</td><td>${pulArr.join(' · ')}</td></tr>`:''}
+      </table>
+      ${canciones?`<div class="repertorio-label">🎵 Repertorio</div><ul class="repertorio">${canciones}</ul>`:''}
+    </div>`;
+  });
+
+  if(!evHtml) evHtml = '<p style="color:#666;text-align:center;padding:20px">No hay eventos este mes</p>';
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<title>Programación ${mes} ${año} · Ministerio de Alabanza</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a1a;padding:30px;max-width:750px;margin:0 auto;}
+  .page-header{text-align:center;border-bottom:2px solid #4A3F9F;padding-bottom:16px;margin-bottom:24px;}
+  .page-header h1{font-size:20px;color:#4A3F9F;}
+  .page-header p{font-size:13px;color:#666;margin-top:4px;}
+  .ev-block{margin-bottom:22px;break-inside:avoid;border:1px solid #ddd;border-radius:8px;overflow:hidden;}
+  .ev-header{background:#4A3F9F;color:#fff;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .ev-date{font-size:13px;font-weight:700;background:#E8C96A;color:#1a1408;padding:2px 10px;border-radius:99px;}
+  .ev-title{font-size:15px;font-weight:800;flex:1;}
+  .ev-tipo{font-size:11px;background:#ffffff33;padding:2px 8px;border-radius:99px;}
+  .ev-hora{font-size:11px;color:#ffffffcc;}
+  .ev-table{width:100%;border-collapse:collapse;padding:12px;}
+  .ev-table tr{border-bottom:1px solid #f0f0f0;}
+  .ev-table tr:last-child{border-bottom:none;}
+  .ev-table td{padding:7px 14px;font-size:13px;}
+  .ev-table td.lbl{font-weight:700;color:#4A3F9F;width:110px;white-space:nowrap;}
+  .repertorio-label{font-weight:700;color:#4A3F9F;font-size:12px;padding:6px 14px;background:#f7f7ff;border-top:1px solid #eee;}
+  .repertorio{list-style:none;padding:8px 14px 10px;display:flex;flex-wrap:wrap;gap:4px 14px;}
+  .repertorio li{font-size:12px;color:#333;}
+  .footer{text-align:center;margin-top:32px;font-size:11px;color:#999;border-top:1px solid #eee;padding-top:12px;}
+  @media print{body{padding:10px;} .ev-block{break-inside:avoid;}}
+</style>
+</head>
+<body>
+<div class="page-header">
+  <h1>✨ Ministerio de Alabanza · Fuente de Vida</h1>
+  <p>Programación ${mes} ${año}</p>
+</div>
+${evHtml}
+<div class="footer">Generado desde la app · Ministerio de Alabanza Fuente de Vida</div>
+<script>window.onload=()=>window.print();<\/script>
+</body>
+</html>`;
+
+  const win = window.open('','_blank');
+  win.document.write(html);
+  win.document.close();
+});
 
 const MUS_ROLES = ['Guitarra','Bajo','Teclado/Piano','Batería','Saxofón','Otros'];
 const VOZ_ROLES = ['Voz','Líder'];
