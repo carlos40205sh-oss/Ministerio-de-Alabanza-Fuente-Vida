@@ -1793,7 +1793,23 @@ const buildEvDetail = (ev, backFn) => {
   }
   if(CU&&CU.admin){
     const editBtn=document.createElement('button'); editBtn.className='btn btn-ghost btn-sm'; editBtn.textContent='✏️ Editar';
-    editBtn.addEventListener('click',()=>{goTab('eventos',true);setTimeout(()=>showEvForm(ev.id),100);});
+    editBtn.addEventListener('click',()=>{
+      goTab('eventos',true);
+      setTimeout(()=>{
+        showEvForm(ev.id);
+        // Scroll to relevant section based on active tab
+        setTimeout(()=>{
+          let targetId = null;
+          if(activeTab==='orden') targetId='ev-can-search-wrap';
+          else if(activeTab==='equipo') targetId='ev-mus-search';
+          else if(activeTab==='notas') targetId='ev-notas';
+          if(targetId){
+            const el=document.getElementById(targetId);
+            if(el) el.scrollIntoView({behavior:'smooth', block:'center'});
+          }
+        }, 300);
+      }, 100);
+    });
     const dupBtn=document.createElement('button'); dupBtn.className='btn btn-ghost btn-sm'; dupBtn.textContent='📋 Prueba';
     dupBtn.addEventListener('click',async()=>{
       if(!confirm('¿Crear prueba de audio a las 9:00 AM con el mismo equipo?')) return;
@@ -1828,7 +1844,9 @@ const buildEvDetail = (ev, backFn) => {
   TABS.forEach(t=>wrap.appendChild(tabContents[t.id]));
 
   // Tab switching logic
+  let activeTab = 'orden';
   const switchTab = (tabId) => {
+    activeTab = tabId;
     tabBar.querySelectorAll('div').forEach(b=>{
       const isActive=b.dataset.tab===tabId;
       b.style.color=isActive?'var(--gold)':'var(--muted)';
