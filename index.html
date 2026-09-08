@@ -1766,204 +1766,194 @@ const delComentario = async (evId,idx) => {
 const deleteEvento = async id => { if(confirm('¿Eliminar?')){await deleteDoc(doc(db,'eventos',id));hideEvForm();toast('🗑️ Eliminado');} };
 
 const buildEvDetail = (ev, backFn) => {
-  const evCans=canciones.filter(c=>(ev.setlist||[]).includes(c.id)); // legacy
   const presididor=resolvePresididor(ev.director);
   const dirRol=presididorRolStr(ev.director);
   const horaStr=(ev.horaIni||ev.horaFin)?' · '+(ev.horaIni||'')+(ev.horaFin?' - '+ev.horaFin:''):'';
   const wrap=document.createElement('div');
-  // Header
-  const hdr=document.createElement('div'); hdr.className='row'; hdr.style.marginBottom='14px';
+
+  // ── HEADER ──
+  const hdrDiv=document.createElement('div');
+  hdrDiv.style.cssText='background:linear-gradient(135deg,#2A2350 0%,var(--bg) 100%);padding:16px;border-bottom:1px solid var(--border)';
   const backBtn=document.createElement('button'); backBtn.className='btn btn-ghost btn-sm'; backBtn.textContent='← Volver';
-  backBtn.addEventListener('click',backFn);
-  const title=document.createElement('h2'); title.style.cssText='color:var(--gold);font-size:15px;margin:0;flex:1'; title.textContent=ev.titulo;
-  hdr.appendChild(backBtn); hdr.appendChild(title);
-  // Modo Servicio button (visible for all if event has orden)
-  if((ev.orden||[]).length > 0) {
-    const msBtn=document.createElement('button');
-    msBtn.style.cssText='border:none;background:var(--gold);color:#0F0E1A;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap';
-    msBtn.textContent='⭐ Modo Servicio';
-    msBtn.addEventListener('click',()=>iniciarModoServicio(ev));
-    hdr.appendChild(msBtn);
+  backBtn.style.marginBottom='8px'; backBtn.addEventListener('click',backFn);
+  const tipoBadge=document.createElement('div');
+  tipoBadge.style.cssText='display:inline-block;font-size:10px;font-weight:700;padding:3px 10px;border-radius:99px;background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';margin-bottom:6px';
+  tipoBadge.textContent=ev.tipo;
+  const titleEl=document.createElement('div'); titleEl.style.cssText='font-size:20px;font-weight:800;color:var(--text)'; titleEl.textContent=ev.titulo;
+  const metaEl=document.createElement('div'); metaEl.style.cssText='font-size:12px;color:var(--muted);margin-top:4px';
+  const fechaParts=(ev.fecha||'').split('-');
+  const diasSem=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  const diaNom=ev.fecha?diasSem[new Date(ev.fecha+'T12:00:00').getDay()]:'';
+  const mesNom=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(fechaParts[1])-1]||'';
+  metaEl.textContent='📅 '+diaNom+' '+parseInt(fechaParts[2])+' '+mesNom+(horaStr?'  ⏰'+horaStr.replace(' · ',''):'');
+  const actionsRow=document.createElement('div'); actionsRow.style.cssText='display:flex;gap:6px;margin-top:12px;flex-wrap:wrap';
+  if((ev.orden||[]).length>0){
+    const msBtn=document.createElement('button'); msBtn.className='btn btn-accent btn-sm'; msBtn.textContent='⭐ Modo Servicio';
+    msBtn.addEventListener('click',()=>iniciarModoServicio(ev)); actionsRow.appendChild(msBtn);
   }
   if(CU&&CU.admin){
-    const editBtn=document.createElement('button'); editBtn.className='btn btn-accent btn-sm'; editBtn.textContent='✏️';
-    editBtn.addEventListener('click',()=>{
-      goTab('eventos', true);
-      setTimeout(()=>showEvForm(ev.id), 100);
+    const editBtn=document.createElement('button'); editBtn.className='btn btn-ghost btn-sm'; editBtn.textContent='✏️ Editar';
+    editBtn.addEventListener('click',()=>{goTab('eventos',true);setTimeout(()=>showEvForm(ev.id),100);});
+    const dupBtn=document.createElement('button'); dupBtn.className='btn btn-ghost btn-sm'; dupBtn.textContent='📋 Prueba';
+    dupBtn.addEventListener('click',async()=>{
+      if(!confirm('¿Crear prueba de audio a las 9:00 AM con el mismo equipo?')) return;
+      await addDoc(collection(db,'eventos'),{titulo:'Prueba de audio - '+ev.titulo,fecha:ev.fecha,tipo:'Ensayo',horaIni:'09:00',horaFin:'09:50',notas:'Prueba de audio previa al servicio',director:ev.director||'',predicadores:ev.predicadores||[],asignados:ev.asignados||[],vozAsignados:ev.vozAsignados||[],sonidoAsignados:ev.sonidoAsignados||[],multiAsignados:ev.multiAsignados||[],pulperia:ev.pulperia||[],orden:[],creadoEn:Date.now()});
+      toast('✅ Prueba de audio creada');
     });
     const delBtn=document.createElement('button'); delBtn.className='btn btn-danger btn-sm'; delBtn.textContent='🗑️';
     delBtn.addEventListener('click',()=>deleteEvento(ev.id));
-    const dupBtn=document.createElement('button'); dupBtn.className='btn btn-ghost btn-sm'; dupBtn.textContent='📋 Prueba';
-    dupBtn.title='Crear prueba de audio con el mismo equipo';
-    dupBtn.addEventListener('click',async()=>{
-      if(!confirm('¿Crear prueba de audio a las 9:00 AM con el mismo equipo?')) return;
-      await addDoc(collection(db,'eventos'),{
-        titulo:'Prueba de audio - '+ev.titulo,
-        fecha:ev.fecha,
-        tipo:'Ensayo',
-        horaIni:'09:00',
-        horaFin:'09:50',
-        notas:'Prueba de audio previa al servicio',
-        director:ev.director||'',
-        predicadores:ev.predicadores||[],
-        asignados:ev.asignados||[],
-        vozAsignados:ev.vozAsignados||[],
-        sonidoAsignados:ev.sonidoAsignados||[],
-        multiAsignados:ev.multiAsignados||[],
-        pulperia:ev.pulperia||[],
-        orden:[],
-        creadoEn:Date.now()
-      });
-      toast('✅ Prueba de audio creada');
-    });
-    const btnRow=document.createElement('div'); btnRow.style.cssText='display:flex;gap:6px';
-    btnRow.appendChild(editBtn); btnRow.appendChild(dupBtn); btnRow.appendChild(delBtn); hdr.appendChild(btnRow);
+    actionsRow.appendChild(editBtn); actionsRow.appendChild(dupBtn); actionsRow.appendChild(delBtn);
   }
-  wrap.appendChild(hdr);
-  // Info
-  const info=document.createElement('div'); info.className='ev-sec';
-  info.innerHTML='<div style="display:flex;gap:6px;flex-wrap:wrap"><span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">📅 '+fmt(ev.fecha)+horaStr+'</span><span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span></div>'+(ev.notas?'<p style="color:var(--muted);font-size:13px;margin-top:8px">'+ev.notas+'</p>':'');
-  wrap.appendChild(info);
-  if(ev.tipo==='Ayuno'){
-    const ay=document.createElement('div'); ay.className='ev-sec'; ay.style.textAlign='center'; ay.style.padding='32px';
-    ay.innerHTML='<div style="font-size:48px">🙏</div><div style="color:var(--success);font-size:16px;font-weight:700;margin-top:12px">Día de Ayuno</div>';
-    wrap.appendChild(ay);
+  hdrDiv.appendChild(backBtn); hdrDiv.appendChild(tipoBadge); hdrDiv.appendChild(titleEl);
+  hdrDiv.appendChild(metaEl); hdrDiv.appendChild(actionsRow);
+  wrap.appendChild(hdrDiv);
+
+  // ── TABS ──
+  const TABS=[{id:'orden',label:'📋 Orden'},{id:'equipo',label:'👥 Equipo'},{id:'notas',label:'📝 Notas'}];
+  const tabBar=document.createElement('div');
+  tabBar.style.cssText='display:flex;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto';
+  const tabContents={};
+  TABS.forEach(t=>{
+    const tabBtn=document.createElement('div');
+    tabBtn.style.cssText='flex-shrink:0;padding:12px 16px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap';
+    tabBtn.textContent=t.label;
+    tabBtn.dataset.tab=t.id;
+    tabBar.appendChild(tabBtn);
+    const panel=document.createElement('div');
+    panel.style.cssText='display:none;padding:16px';
+    panel.dataset.panel=t.id;
+    tabContents[t.id]=panel;
+  });
+  wrap.appendChild(tabBar);
+  TABS.forEach(t=>wrap.appendChild(tabContents[t.id]));
+
+  // Tab switching logic
+  const switchTab = (tabId) => {
+    tabBar.querySelectorAll('div').forEach(b=>{
+      const isActive=b.dataset.tab===tabId;
+      b.style.color=isActive?'var(--gold)':'var(--muted)';
+      b.style.borderBottom=isActive?'2px solid var(--gold)':'2px solid transparent';
+    });
+    Object.values(tabContents).forEach(p=>p.style.display='none');
+    tabContents[tabId].style.display='block';
+  };
+  tabBar.querySelectorAll('div').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+  switchTab('orden');
+
+  // ── TAB: ORDEN DEL SERVICIO ──
+  const ordenPanel=tabContents['orden'];
+  const icons={'cancion':'🎵','oracion':'🙏','lectura':'📖','ofrendas':'💝','anuncio':'📢','otro':'✨'};
+  if(!(ev.orden||[]).length){
+    ordenPanel.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px;font-size:13px">Sin orden del servicio</div>';
   } else {
-    if(presididor){const ds=document.createElement('div');ds.className='ev-sec';ds.innerHTML='<h4>🎤 Presididor</h4><div class="row"><div class="avatar">'+roleIcon(dirRol)+'</div><div style="font-weight:600;font-size:14px">'+presididor.nombre+'</div><span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+dirRol+'</span></div>';wrap.appendChild(ds);}
-    if((ev.predicadores||[]).length){
-      const ps=document.createElement('div'); ps.className='ev-sec';
-      ps.innerHTML='<h4>📖 Predicador(es)</h4>';
-      ev.predicadores.forEach(id=>{
-        const isCantante = id.startsWith('c_');
-        const realId = isCantante ? id.slice(2) : (id.startsWith('m_') ? id.slice(2) : id);
-        const p = isCantante ? cantantes.find(x=>x.id===realId) : musicos.find(x=>x.id===realId);
-        if(!p) return;
-        const row=document.createElement('div'); row.className='row'; row.style.marginTop='6px';
-        row.innerHTML='<div class="avatar">'+(isCantante?'🎤':roleIcon(p.rol))+'</div><div style="font-weight:600;font-size:14px">'+p.nombre+'</div>';
-        ps.appendChild(row);
-      });
-      wrap.appendChild(ps);
-    }
-    // Define role groups
-    const VOICE_ROLES = ['Voz','Líder'];
-    const SOUND_ROLES = ['Sonidista'];
-    const MULTI_ROLES = ['Presentación','Transmisión'];
-
-    const getGroup = (rol) => {
-      if(VOICE_ROLES.includes(rol)) return 'voces';
-      if(SOUND_ROLES.includes(rol)) return 'sonido';
-      if(MULTI_ROLES.includes(rol)) return 'multimedia';
-      return 'musicos';
-    };
-
-    // Helper to build attendance row
-    const makeAsistRow = (m, rol, asist, evId, colorAccent) => {
-      const est=asist[m.id]||'pendiente';
-      const estColor=est==='llego'?'var(--success)':est==='no-llego'?'var(--danger)':'var(--muted)';
-      const esMio=CU&&!CU.admin&&CU.key===m.username;
-      const row=document.createElement('div'); row.className='rol-row';
-      row.innerHTML='<div class="avatar" style="width:30px;height:30px;font-size:13px">'+roleIcon(m.rol)+'</div><div style="flex:1;font-size:13px;font-weight:600">'+m.nombre+'</div>'+(rol?'<span class="badge" style="background:'+colorAccent+'22;color:'+colorAccent+';border:1px solid '+colorAccent+'44;margin-right:4px">'+rol+'</span>':'');
-      if(CU&&CU.admin||esMio){
-        const bg1=est==='llego'?'#7EC8A0':'#7EC8A022',c1=est==='llego'?'#0F0E1A':'var(--success)';
-        const bg2=est==='no-llego'?'#E06C75':'#E06C7522',c2=est==='no-llego'?'#fff':'var(--danger)';
-        const b1=document.createElement('button'); b1.style.cssText='border:none;border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;background:'+bg1+';color:'+c1; b1.textContent=CU&&CU.admin?'✅':'✅ Voy';
-        b1.addEventListener('click',()=>marcarAsist(evId,m.id,'llego'));
-        const b2=document.createElement('button'); b2.style.cssText='border:none;border-radius:6px;padding:3px 7px;font-size:11px;cursor:pointer;background:'+bg2+';color:'+c2; b2.textContent=CU&&CU.admin?'❌':'❌ No voy';
-        b2.addEventListener('click',()=>marcarAsist(evId,m.id,'no-llego'));
-        const btnRow=document.createElement('div'); btnRow.style.cssText='display:flex;gap:3px'; btnRow.appendChild(b1); btnRow.appendChild(b2); row.appendChild(btnRow);
-      } else { const sp=document.createElement('span'); sp.style.cssText='font-size:11px;color:'+estColor; sp.textContent=est==='llego'?'✅ Llegó':est==='no-llego'?'❌ No llegó':'⏳ Pendiente'; row.appendChild(sp); }
-      return row;
-    };
-
-    const asist=ev.asistencia||{};
-    const pulpAsist=ev.asistenciaPulperia||{};
-
-    // Render each group separately
-    const groupDefs = [
-      {label:'🎸 Músicos', color:'#7B6FD4', items: ev.asignados||[]},
-      {label:'🎙️ Voces',   color:'#F0A500', items: (ev.vozAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Voz'}:a)},
-      {label:'🔊 Sonido',  color:'#E8C96A', items: (ev.sonidoAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Sonidista'}:a)},
-      {label:'📡 Multimedia', color:'#7EC8A0', items: (ev.multiAsignados||[]).map(a=>typeof a==='string'?{musId:a,rol:'Multimedia'}:a)},
-    ];
-    groupDefs.forEach(grp=>{
-      if(!grp.items.length) return;
-      const es=document.createElement('div'); es.className='ev-sec';
-      es.innerHTML='<h4 style="color:'+grp.color+'">'+grp.label+' ('+grp.items.length+')</h4>';
-      grp.items.forEach(a=>{
-        const m=musicos.find(x=>x.id===a.musId); if(!m) return;
-        es.appendChild(makeAsistRow(m, a.rol, asist, ev.id, grp.color));
-      });
-      wrap.appendChild(es);
+    ev.orden.forEach((item,i)=>{
+      const d=document.createElement('div');
+      d.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px';
+      const can=item.tipo==='cancion'?canciones.find(c=>c.id===item.cancionId):null;
+      const estructura=(item.estructura||[]).map(p=>p.nombre+' ×'+p.veces).join(' → ');
+      d.innerHTML='<span style="font-size:13px;font-weight:800;color:var(--gold);width:20px;flex-shrink:0">'+(i+1)+'</span>'
+        +'<span style="font-size:18px;flex-shrink:0">'+(icons[item.tipo]||'✨')+'</span>'
+        +'<div style="flex:1">'
+          +'<div style="font-size:14px;font-weight:700">'+item.titulo+'</div>'
+          +(item.tono?'<div style="font-size:11px;color:var(--muted);margin-top:2px">Tono: '+item.tono+'</div>':'')
+          +(estructura?'<div style="font-size:10px;color:var(--accent);margin-top:3px">'+estructura+'</div>':'')
+          +(can&&can.linkYoutube?'<a href="'+can.linkYoutube+'" target="_blank" style="font-size:10px;color:var(--gold);margin-top:3px;display:block">▶ Ver en YouTube</a>':'')
+        +'</div>';
+      ordenPanel.appendChild(d);
     });
-
-    // Pulpería section
-    const pulpAsign = ev.pulperia||[];
-    if(pulpAsign.length){
-      const ps=document.createElement('div'); ps.className='ev-sec';
-      ps.innerHTML='<h4 style="color:var(--success)">🛒 Pulpería ('+pulpAsign.length+')</h4>';
-      pulpAsign.forEach(musId=>{
-        const m=musicos.find(x=>x.id===musId); if(!m) return;
-        ps.appendChild(makeAsistRow(m, '', pulpAsist, ev.id+'_pulp', '#7EC8A0'));
-      });
-      wrap.appendChild(ps);
-    }
-    const orden = ev.orden||[];
-    if(orden.length){
-      const icons={'cancion':'🎵','oracion':'🙏','lectura':'📖','ofrendas':'💝','anuncio':'📢','otro':'✨'};
-      const rs=document.createElement('div'); rs.className='ev-sec';
-      rs.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><h4 style="margin:0">📋 Orden del servicio</h4>'+(CU&&CU.admin?'<span id="orden-actual-lbl" style="font-size:11px;color:var(--muted)">Toca un ítem para marcarlo activo</span>':'')+'</div>';
-      orden.forEach((item,i)=>{
-        const cancion = item.tipo==='cancion' ? canciones.find(c=>c.id===item.cancionId) : null;
-        const isActivo = ev.ordenActivo === i;
-        const row=document.createElement('div');
-        row.style.cssText='display:flex;align-items:center;gap:8px;padding:10px;border-radius:10px;margin-bottom:6px;transition:background .2s;cursor:'+(CU&&CU.admin?'pointer':'default')+';background:'+(isActivo?'linear-gradient(135deg,#7B6FD433,#E8C96A22)':'var(--bg)')+';border:1px solid '+(isActivo?'var(--gold)':'var(--border)');
-        // Build estructura display
-        const estructuraHtml = (item.estructura||[]).length ? 
-          '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;padding-left:40px">'+
-          (item.estructura||[]).map((p,pi)=>'<div style="display:flex;align-items:center;gap:3px;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px"><span style="font-weight:600">'+p.nombre+'</span><span style="background:var(--accent);color:#fff;border-radius:99px;padding:0px 5px;font-size:9px">×'+p.veces+'</span></div>'+(pi<(item.estructura||[]).length-1?'<span style="color:var(--muted);font-size:11px;align-self:center">→</span>':'')).join('')+
-          '</div>' : '';
-        row.innerHTML='<span style="color:'+(isActivo?'var(--gold)':'var(--muted)')+';font-weight:700;font-size:13px;width:22px">'+(i+1)+'</span>'
-          +'<span style="font-size:18px">'+icons[item.tipo]+'</span>'
-          +'<div style="flex:1"><div style="font-size:13px;font-weight:'+(isActivo?'700':'600')+';color:'+(isActivo?'var(--gold)':'var(--text)')+'">'+item.titulo+'</div>'
-          +(cancion&&cancion.artista?'<div style="font-size:11px;color:var(--muted)">'+cancion.artista+'</div>':'')+'</div>'
-          +(item.tono?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">'+item.tono+'</span>':'')
-          +(isActivo?'<span style="color:var(--gold);font-size:11px;font-weight:700">▶ ACTUAL</span>':'');
-        if(estructuraHtml) row.innerHTML += estructuraHtml;
-        if(CU&&CU.admin){
-          row.addEventListener('click',async()=>{
-            const newActivo = ev.ordenActivo===i ? null : i;
-            await updateDoc(doc(db,'eventos',ev.id),{ordenActivo:newActivo});
-          });
-        }
-        if(cancion&&(cancion.linkLetra||cancion.linkAcordes)){
-          const links=document.createElement('div'); links.style.cssText='display:flex;gap:6px;padding:4px 0 0 40px';
-          links.innerHTML=(cancion.linkLetra?'<a href="'+cancion.linkLetra+'" target="_blank" class="link-btn">📄 Letra</a>':'')+(cancion.linkAcordes?' <a href="'+cancion.linkAcordes+'" target="_blank" class="link-btn">🎼 Acordes</a>':'')+(cancion.linkYoutube?' <a href="'+cancion.linkYoutube+'" target="_blank" class="link-btn" style="background:#FF000011;border-color:#FF000044;color:#FF4444">🎬 YouTube</a>':'');
-          const wrap2=document.createElement('div'); wrap2.appendChild(row); wrap2.appendChild(links); rs.appendChild(wrap2);
-        } else {
-          rs.appendChild(row);
-        }
-      });
-      wrap.appendChild(rs);
-    }
   }
-  // Comentarios
+
+  // ── TAB: EQUIPO ──
+  const equipoPanel=tabContents['equipo'];
+  const gruposEq=[
+    {icon:'🎤',label:'Presididor',items:presididor?[{nombre:presididor.nombre,sub:dirRol}]:[]},
+    {icon:'📖',label:'Predicador(es)',items:(ev.predicadores||[]).map(id=>{
+      const isCant=id.startsWith('c_');const realId=id.slice(2);
+      const p=isCant?cantantes.find(x=>x.id===realId):musicos.find(x=>x.id===realId);
+      return p?{nombre:p.nombre,sub:isCant?'Cantante':'Músico'}:null;
+    }).filter(Boolean)},
+    {icon:'🎸',label:'Música',items:(ev.asignados||[]).map(a=>{const m=musicos.find(x=>x.id===a.musId);return m?{nombre:m.nombre,sub:a.rol,musId:a.musId}:null;}).filter(Boolean)},
+    {icon:'🎙️',label:'Voces',items:(ev.vozAsignados||[]).map(a=>{const m=musicos.find(x=>x.id==(a.musId||a));return m?{nombre:m.nombre,sub:'Voz',musId:m.id}:null;}).filter(Boolean)},
+    {icon:'🔊',label:'Sonido',items:(ev.sonidoAsignados||[]).map(a=>{const m=musicos.find(x=>x.id==(a.musId||a));return m?{nombre:m.nombre,sub:'Sonidista',musId:m.id}:null;}).filter(Boolean)},
+    {icon:'📡',label:'Multimedia',items:(ev.multiAsignados||[]).map(a=>{const m=musicos.find(x=>x.id==(a.musId||a));return m?{nombre:m.nombre,sub:'Multimedia',musId:m.id}:null;}).filter(Boolean)},
+    {icon:'🛒',label:'Pulpería',items:(ev.pulperia||[]).map(id=>{const m=musicos.find(x=>x.id===id);return m?{nombre:m.nombre,sub:'Pulpería',musId:m.id}:null;}).filter(Boolean)},
+  ];
+  const asist=ev.asistencia||{};
+  const asistPulp=ev.asistenciaPulperia||{};
+  let hasEquipo=false;
+  gruposEq.forEach(g=>{
+    if(!g.items.length) return;
+    hasEquipo=true;
+    const grpTitle=document.createElement('div');
+    grpTitle.style.cssText='font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 8px;display:flex;align-items:center;gap:6px';
+    grpTitle.innerHTML='<span>'+g.icon+'</span>'+g.label;
+    equipoPanel.appendChild(grpTitle);
+    const grpWrap=document.createElement('div');
+    grpWrap.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:12px;padding:4px 14px';
+    g.items.forEach((item,i)=>{
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:'+(i<g.items.length-1?'1px solid var(--border)':'none');
+      const av=document.createElement('div'); av.className='avatar'; av.style.cssText='width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9590E0);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0';
+      av.textContent=g.icon;
+      const info=document.createElement('div'); info.style.flex='1';
+      info.innerHTML='<div style="font-size:13px;font-weight:700">'+item.nombre+'</div><div style="font-size:11px;color:var(--muted)">'+item.sub+'</div>';
+      row.appendChild(av); row.appendChild(info);
+      // Asistencia para músicos
+      if(item.musId && CU&&CU.admin){
+        const isPulp = g.label==='Pulpería';
+        const evIdKey = isPulp?ev.id+'_pulp':ev.id;
+        const asistMap = isPulp?asistPulp:asist;
+        const estado=asistMap[item.musId]||'pendiente';
+        const asistDiv=document.createElement('div'); asistDiv.style.cssText='display:flex;gap:4px';
+        ['llego','no'].forEach(e=>{
+          const btn=document.createElement('button');
+          btn.style.cssText='border:none;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer;background:'+(estado===e?(e==='llego'?'#7EC8A0':'#E06C75'):'var(--surface)')+';color:'+(estado===e?'#fff':'var(--muted)');
+          btn.textContent=e==='llego'?'✅':'❌';
+          btn.addEventListener('click',()=>marcarAsist(evIdKey,item.musId,e));
+          asistDiv.appendChild(btn);
+        });
+        row.appendChild(asistDiv);
+      }
+      grpWrap.appendChild(row);
+    });
+    equipoPanel.appendChild(grpWrap);
+  });
+  if(!hasEquipo) equipoPanel.innerHTML='<div style="color:var(--muted);text-align:center;padding:32px;font-size:13px">Sin equipo asignado</div>';
+
+  // ── TAB: NOTAS ──
+  const notasPanel=tabContents['notas'];
+  if(ev.notas){
+    const notaBox=document.createElement('div');
+    notaBox.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:13px;color:var(--text);line-height:1.6;margin-bottom:16px';
+    notaBox.textContent=ev.notas;
+    notasPanel.appendChild(notaBox);
+  }
   const coms=ev.comentarios||[];
-  const cs=document.createElement('div'); cs.className='ev-sec'; cs.innerHTML='<h4>💬 Comentarios ('+coms.length+')</h4>';
+  const comTitle=document.createElement('div');
+  comTitle.style.cssText='font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px';
+  comTitle.textContent='💬 Comentarios ('+coms.length+')';
+  notasPanel.appendChild(comTitle);
   coms.forEach((c,i)=>{
-    const cd=document.createElement('div'); cd.style.cssText='background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:6px';
-    cd.innerHTML='<div style="display:flex;justify-content:space-between"><span style="font-size:12px;font-weight:600;color:var(--accent)">'+c.autor+'</span><div style="display:flex;gap:6px;align-items:center"><span style="font-size:10px;color:var(--muted)">'+c.fecha+'</span></div></div><div style="font-size:13px;color:var(--text);margin-top:4px">'+c.texto+'</div>';
-    if(CU&&CU.admin){const db2=cd.querySelector('.row-inner')||cd.querySelector('div div');const xBtn=document.createElement('button');xBtn.style.cssText='border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:12px';xBtn.textContent='✕';xBtn.addEventListener('click',()=>delComentario(ev.id,i));cd.querySelector('div').lastElementChild.appendChild(xBtn);}
-    cs.appendChild(cd);
+    const cd=document.createElement('div');
+    cd.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px';
+    cd.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:600;color:var(--accent)">'+c.autor+'</span><span style="font-size:10px;color:var(--muted)">'+c.fecha+'</span></div><div style="font-size:13px;color:var(--text);margin-top:6px">'+c.texto+'</div>';
+    if(CU&&CU.admin){
+      const xBtn=document.createElement('button'); xBtn.style.cssText='border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:12px;float:right';
+      xBtn.textContent='✕'; xBtn.addEventListener('click',()=>delComentario(ev.id,i));
+      cd.querySelector('div').appendChild(xBtn);
+    }
+    notasPanel.appendChild(cd);
   });
   const comRow=document.createElement('div'); comRow.style.cssText='display:flex;gap:6px;margin-top:8px';
-  const comInp=document.createElement('input'); comInp.id='com-inp-'+ev.id; comInp.placeholder='Escribí un comentario...'; comInp.style.cssText='flex:1;margin:0;padding:8px 10px;font-size:12px';
-  const comBtn=document.createElement('button'); comBtn.style.cssText='border:none;background:var(--accent);color:#fff;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap'; comBtn.textContent='Enviar';
-  comBtn.addEventListener('click',()=>addComentario(ev.id));
-  comRow.appendChild(comInp); comRow.appendChild(comBtn); cs.appendChild(comRow);
-  wrap.appendChild(cs);
+  const comInp=document.createElement('input'); comInp.id='com-inp-'+ev.id; comInp.placeholder='Escribí un comentario...';
+  comInp.style.cssText='flex:1;margin:0;padding:8px 10px;font-size:12px';
+  const comBtn=document.createElement('button');
+  comBtn.style.cssText='border:none;background:var(--accent);color:#fff;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap';
+  comBtn.textContent='Enviar'; comBtn.addEventListener('click',()=>addComentario(ev.id));
+  comRow.appendChild(comInp); comRow.appendChild(comBtn); notasPanel.appendChild(comRow);
+
   return wrap;
 };
-
 const showEvDetail = (id, fromTab) => {
   const ev=eventos.find(e=>e.id===id); if(!ev) return;
   const detEl=$('ev-detail-view'); detEl.innerHTML='';
