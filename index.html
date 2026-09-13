@@ -199,9 +199,9 @@ input::placeholder{color:var(--muted);}
     <h2 style="font-size:24px;font-weight:800;color:var(--text);letter-spacing:-.5px;position:relative;margin:0" id="welcome-msg">Bienvenido</h2>
   </div>
   <div style="display:flex;gap:10px;padding:0 16px;margin-top:-16px;position:relative;z-index:2">
-    <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer" onclick="showStatModal('canciones')"><div style="font-size:22px;font-weight:800;color:var(--gold)" id="st-c">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Canciones</div></div>
-    <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer" onclick="showStatModal('musicos')"><div style="font-size:22px;font-weight:800;color:var(--accent)" id="st-m">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Músicos</div></div>
-    <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer" onclick="showStatModal('eventos')"><div style="font-size:22px;font-weight:800;color:var(--success)" id="st-e">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Eventos</div></div>
+    <div id="st-card-c" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer"><div style="font-size:22px;font-weight:800;color:var(--gold)" id="st-c">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Canciones</div></div>
+    <div id="st-card-m" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer"><div style="font-size:22px;font-weight:800;color:var(--accent)" id="st-m">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Músicos</div></div>
+    <div id="st-card-e" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer"><div style="font-size:22px;font-weight:800;color:var(--success)" id="st-e">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Eventos</div></div>
     <div id="mi-rol-stat-card" style="display:none;flex:1;background:var(--card);border:1px solid var(--accent);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer"><div style="font-size:22px;font-weight:800;color:var(--accent)" id="st-mi-rol">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Mi Rol</div></div>
   </div>
   <div style="padding:20px 16px 0">
@@ -3108,6 +3108,11 @@ window.closeStatModals = (skipHistory) => {
   });
   if(!skipHistory) history.back();
 };
+
+// Stat card listeners
+const stCardC = $('st-card-c'); if(stCardC) stCardC.addEventListener('click',()=>showStatModal('canciones'));
+const stCardM = $('st-card-m'); if(stCardM) stCardM.addEventListener('click',()=>showStatModal('musicos'));
+const stCardE = $('st-card-e'); if(stCardE) stCardE.addEventListener('click',()=>showStatModal('eventos'));
 
 ['canciones','musicos','eventos'].forEach(t=>{
   const btn=$('close-stat-'+t);
