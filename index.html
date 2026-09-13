@@ -3037,25 +3037,43 @@ window.showStatModal = (tipo) => {
 
   if(tipo==='canciones'){
     const sorted = [...canciones].sort((a,b)=>a.titulo.localeCompare(b.titulo));
-    let html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:4px 14px">';
-    if(!sorted.length){ html += '<div style="color:var(--muted);text-align:center;padding:16px;font-size:13px">Sin canciones</div>'; }
-    sorted.forEach((c,i)=>{
-      const isLast = i===sorted.length-1;
-      let badge = '';
-      if(c.nueva) badge='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#E8C96A22;color:var(--gold)">🆕</span>';
-      else if(c.aprender) badge='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#7EC8A022;color:var(--success)">📚</span>';
-      html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;'+(isLast?'':'border-bottom:1px solid var(--border)')+'">'+
-        '<div style="width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#7B6FD4,#5A4FB0);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🎵</div>'+
-        '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.titulo+'</div>'+
-        '<div style="font-size:11px;color:var(--muted)">'+(c.artista||'')+(c.tono?' · '+c.tono:'')+'</div></div>'+
-        badge+'</div>';
-    });
-    html += '</div>';
-    $('stat-canciones-content').innerHTML = html;
+    const renderCanList = (q='') => {
+      const filtered = sorted.filter(c=>c.titulo.toLowerCase().includes(q)||((c.artista||'').toLowerCase().includes(q)));
+      let html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:4px 14px">';
+      if(!filtered.length){ html += '<div style="color:var(--muted);text-align:center;padding:16px;font-size:13px">Sin resultados</div>'; }
+      filtered.forEach((c,i)=>{
+        const isLast = i===filtered.length-1;
+        let badge = '';
+        if(c.nueva) badge='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#E8C96A22;color:var(--gold)">🆕</span>';
+        else if(c.aprender) badge='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#7EC8A022;color:var(--success)">📚</span>';
+        const btns = [
+          c.linkLetra ? '<a href="'+c.linkLetra+'" target="_blank" style="border:none;background:#7B6FD422;color:var(--accent);border-radius:7px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer;text-decoration:none">📄 Letra</a>' : '',
+          c.linkAcordes ? '<a href="'+c.linkAcordes+'" target="_blank" style="border:none;background:#7B6FD422;color:var(--accent);border-radius:7px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer;text-decoration:none">🎸 Acordes</a>' : '',
+          c.linkYoutube ? '<a href="'+c.linkYoutube+'" target="_blank" style="border:none;background:#E06C7522;color:#E06C75;border-radius:7px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer;text-decoration:none">▶️ YouTube</a>' : '',
+        ].filter(Boolean).join(' ');
+        html += '<div style="padding:10px 0;'+(isLast?'':'border-bottom:1px solid var(--border)')+'">'+
+          '<div style="display:flex;align-items:center;gap:10px">'+
+          '<div style="width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#7B6FD4,#5A4FB0);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🎵</div>'+
+          '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.titulo+'</div>'+
+          '<div style="font-size:11px;color:var(--muted)">'+(c.artista||'')+(c.tono?' · '+c.tono:'')+'</div></div>'+
+          badge+'</div>'+
+          (btns?'<div style="margin-top:6px;margin-left:44px;display:flex;gap:5px;flex-wrap:wrap">'+btns+'</div>':'')+
+          '</div>';
+      });
+      html += '</div>';
+      $('stat-canciones-list').innerHTML = html;
+    };
+    $('stat-canciones-content').innerHTML =
+      '<input id="stat-can-search" placeholder="🔍 Buscar canción..." style="width:100%;margin-bottom:12px;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;outline:none;font-family:inherit"/>'+
+      '<div id="stat-canciones-list"></div>';
+    renderCanList();
+    const searchInp = $('stat-can-search');
+    if(searchInp) searchInp.addEventListener('input', ()=>renderCanList(searchInp.value.toLowerCase().trim()));
     $('stat-modal-canciones').style.display='flex';
     history.pushState({tab:'inicio',view:'modal',modal:'stat-canciones'},'',location.pathname);
   }
-  else if(tipo==='musicos'){
+
+    else if(tipo==='musicos'){
     const sorted = [...musicos].sort((a,b)=>a.nombre.localeCompare(b.nombre));
     let html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:4px 14px">';
     if(!sorted.length){ html += '<div style="color:var(--muted);text-align:center;padding:16px;font-size:13px">Sin músicos</div>'; }
