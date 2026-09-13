@@ -756,10 +756,12 @@ input::placeholder{color:var(--muted);}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
 
 const FB = { apiKey:"AIzaSyC1OvY10grOXME6_Kdb28LTyyITIxxcjm0", authDomain:"ministerio-de-alabanza-ac3f2.firebaseapp.com", projectId:"ministerio-de-alabanza-ac3f2", storageBucket:"ministerio-de-alabanza-ac3f2.firebasestorage.app", messagingSenderId:"314404534308", appId:"1:314404534308:web:cbb3543a559a71c7a780b1" };
 const db = getFirestore(initializeApp(FB));
+const storage = getStorage();
 
 let messaging;
 try { messaging = getMessaging(); } catch(e) { console.log('FCM not supported:', e); }
@@ -1065,7 +1067,33 @@ function renderMusicos() {
     const rolesBadges=(m.roles||[m.rol]).map(r=>'<span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+roleIcon(r)+' '+r+'</span>').join(' ');
     const dispBadge='<span class="badge" style="background:'+(m.disponible?'#7EC8A022':'#E06C7522')+';color:'+(m.disponible?'var(--success)':'var(--danger)')+';border:1px solid '+(m.disponible?'#7EC8A044':'#E06C7544')+'">'+(m.disponible?'Disponible':'No disponible')+'</span>';
     const accesoHtml = (CU&&CU.admin) ? '<div style="font-size:11px;margin-top:4px">📲 '+fmtUltimoAcceso(m.ultimoAcceso)+'</div>' : '';
-    card.innerHTML='<div class="row" style="align-items:flex-start"><div class="avatar">'+roleIcon(m.rol)+'</div><div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="margin-top:4px">'+rolesBadges+' '+dispBadge+'</div>'+(m.admin?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44;margin-top:4px">🔑 Admin</span>':'')+(m.username?'<div style="color:var(--muted);font-size:11px;margin-top:3px">👤 '+m.username+'</div>':'')+(m.bday?'<div style="color:var(--muted);font-size:11px;margin-top:2px">🎂 '+fmtBday(m.bday)+'</div>':'')+accesoHtml+'</div></div>';
+    const avatarHtml = m.fotoUrl
+      ? '<img src="'+m.fotoUrl+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--accent)" alt="'+m.nombre+'"/>'
+      : '<div class="avatar">'+roleIcon(m.rol)+'</div>';
+    card.innerHTML='<div class="row" style="align-items:flex-start">'+avatarHtml+'<div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="margin-top:4px">'+rolesBadges+' '+dispBadge+'</div>'+(m.admin?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44;margin-top:4px">🔑 Admin</span>':'')+(m.username?'<div style="color:var(--muted);font-size:11px;margin-top:3px">👤 '+m.username+'</div>':'')+(m.bday?'<div style="color:var(--muted);font-size:11px;margin-top:2px">🎂 '+fmtBday(m.bday)+'</div>':'')+accesoHtml+'</div></div>';
+    const rowEl = card.querySelector('.row');
+    // Botón de foto para el propio músico
+    const esMiPerfil = CU && !CU.admin && musicos.find(x=>x.username===CU.key)?.id===m.id;
+    if(esMiPerfil){
+      const fotoBtn=document.createElement('button'); fotoBtn.className='btn btn-ghost btn-sm'; fotoBtn.textContent='📷';
+      fotoBtn.title='Cambiar foto de perfil';
+      fotoBtn.addEventListener('click',e=>{
+        e.stopPropagation();
+        const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+        inp.addEventListener('change',async()=>{
+          const file=inp.files[0]; if(!file) return;
+          if(file.size>2*1024*1024){toast('⚠️ La imagen debe ser menor a 2MB');return;}
+          toast('⬆️ Subiendo foto...');
+          const sRef=storageRef(storage,'fotos/'+m.id);
+          await uploadBytes(sRef,file);
+          const url=await getDownloadURL(sRef);
+          await updateDoc(doc(db,'musicos',m.id),{fotoUrl:url});
+          toast('✅ Foto actualizada!');
+        });
+        inp.click();
+      });
+      rowEl.appendChild(fotoBtn);
+    }
     if(CU&&CU.admin){
       const btns=document.createElement('div'); btns.style.cssText='display:flex;flex-direction:column;gap:4px;flex-shrink:0';
       const eBtn=document.createElement('button'); eBtn.className='btn btn-accent btn-sm'; eBtn.textContent='✏️ Editar';
@@ -1074,8 +1102,25 @@ function renderMusicos() {
       dBtn.addEventListener('click',e=>{e.stopPropagation();toggleDisp(m.id,m.disponible);});
       const xBtn=document.createElement('button'); xBtn.className='btn btn-danger btn-sm'; xBtn.textContent='✕ Borrar';
       xBtn.addEventListener('click',e=>{e.stopPropagation();deleteMusico(m.id);});
-      btns.appendChild(eBtn); btns.appendChild(dBtn); btns.appendChild(xBtn);
-      card.querySelector('.row').appendChild(btns);
+      // Admin también puede cambiar foto
+      const fotoAdminBtn=document.createElement('button'); fotoAdminBtn.className='btn btn-ghost btn-sm'; fotoAdminBtn.textContent='📷';
+      fotoAdminBtn.addEventListener('click',e=>{
+        e.stopPropagation();
+        const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+        inp.addEventListener('change',async()=>{
+          const file=inp.files[0]; if(!file) return;
+          if(file.size>2*1024*1024){toast('⚠️ La imagen debe ser menor a 2MB');return;}
+          toast('⬆️ Subiendo foto...');
+          const sRef=storageRef(storage,'fotos/'+m.id);
+          await uploadBytes(sRef,file);
+          const url=await getDownloadURL(sRef);
+          await updateDoc(doc(db,'musicos',m.id),{fotoUrl:url});
+          toast('✅ Foto actualizada!');
+        });
+        inp.click();
+      });
+      btns.appendChild(eBtn); btns.appendChild(fotoAdminBtn); btns.appendChild(dBtn); btns.appendChild(xBtn);
+      rowEl.appendChild(btns);
     }
     return card;
   };
@@ -1772,7 +1817,9 @@ function buildEstructuraEditor(idx) {
 function renderEvOrden() {
   const el = $('ev-orden-list'); el.innerHTML='';
   if(!evOrden.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:12px">Sin items aún</div>';return;}
+  let totalMins = 0;
   evOrden.forEach((item,i)=>{
+    totalMins += parseInt(item.duracion||0);
     const div=document.createElement('div');
     div.style.cssText='background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:6px';
     const icons={'cancion':'🎵','oracion':'🙏','lectura':'📖','ofrendas':'💝','anuncio':'📢','otro':'✨'};
@@ -1781,13 +1828,25 @@ function renderEvOrden() {
       +'<span style="font-size:15px">'+icons[item.tipo]+'</span>'
       +'<div style="flex:1"><div style="font-size:13px;font-weight:600">'+item.titulo+'</div>'
       +(item.tono?'<div style="font-size:11px;color:var(--muted)">Tono: '+item.tono+'</div>':'')+'</div>';
+    // Duration input
+    const durWrap=document.createElement('div'); durWrap.style.cssText='display:flex;align-items:center;gap:2px;flex-shrink:0';
+    const durInp=document.createElement('input'); durInp.type='number'; durInp.min='0'; durInp.max='60';
+    durInp.value=item.duracion||''; durInp.placeholder='0';
+    durInp.style.cssText='width:36px;padding:3px 4px;font-size:11px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);margin:0';
+    durInp.addEventListener('input',()=>{ evOrden[i].duracion=parseInt(durInp.value)||0; renderEvOrdenTotal(); });
+    durWrap.innerHTML='<span style="font-size:10px;color:var(--muted)">⏱</span>';
+    durWrap.appendChild(durInp);
+    durWrap.innerHTML+='<span style="font-size:10px;color:var(--muted)">min</span>';
+    // Re-append durInp after innerHTML reset
+    const durSpanBefore = durWrap.querySelector('span');
+    durWrap.insertBefore(durInp, durWrap.children[1]);
     const upBtn=document.createElement('button'); upBtn.className='btn btn-ghost btn-sm'; upBtn.textContent='↑'; upBtn.style.padding='3px 7px';
     upBtn.addEventListener('click',()=>{if(i>0){[evOrden[i-1],evOrden[i]]=[evOrden[i],evOrden[i-1]];renderEvOrden();}});
     const downBtn=document.createElement('button'); downBtn.className='btn btn-ghost btn-sm'; downBtn.textContent='↓'; downBtn.style.padding='3px 7px';
     downBtn.addEventListener('click',()=>{if(i<evOrden.length-1){[evOrden[i+1],evOrden[i]]=[evOrden[i],evOrden[i+1]];renderEvOrden();}});
     const delBtn=document.createElement('button'); delBtn.className='btn btn-danger btn-sm'; delBtn.textContent='✕'; delBtn.style.padding='3px 7px';
     delBtn.addEventListener('click',()=>{evOrden.splice(i,1);$('estructura-panel').style.display='none';renderEvOrden();});
-    topRow.appendChild(upBtn); topRow.appendChild(downBtn); topRow.appendChild(delBtn);
+    topRow.appendChild(durWrap); topRow.appendChild(upBtn); topRow.appendChild(downBtn); topRow.appendChild(delBtn);
     div.appendChild(topRow);
     if(item.tipo==='cancion'){
       const estBtn=document.createElement('button');
@@ -1796,7 +1855,6 @@ function renderEvOrden() {
       const partes=item.estructura||[];
       estBtn.textContent=partes.length?'🎼 '+partes.map(p=>p.nombre+' ×'+p.veces).join(' → '):'+ Agregar estructura';
       estBtn.addEventListener('click',()=>{
-        // Toggle inline editor
         const existing = div.querySelector('.estructura-editor');
         if(existing){ existing.remove(); return; }
         const editor = buildEstructuraEditor(i);
@@ -1807,6 +1865,27 @@ function renderEvOrden() {
     }
     el.appendChild(div);
   });
+  renderEvOrdenTotal();
+}
+
+function renderEvOrdenTotal() {
+  let total = evOrden.reduce((sum,item)=>sum+(parseInt(item.duracion)||0),0);
+  let totalEl = $('ev-orden-total');
+  if(!totalEl){
+    totalEl = document.createElement('div');
+    totalEl.id = 'ev-orden-total';
+    const list = $('ev-orden-list');
+    if(list && list.parentNode) list.parentNode.insertBefore(totalEl, list.nextSibling);
+  }
+  if(total>0){
+    const horas = Math.floor(total/60);
+    const mins = total%60;
+    const durStr = horas>0 ? horas+'h '+(mins>0?mins+'min':'') : mins+'min';
+    totalEl.style.cssText='text-align:right;font-size:12px;font-weight:700;color:var(--gold);padding:6px 4px;margin-top:2px';
+    totalEl.textContent='⏱ Total: '+durStr;
+  } else {
+    totalEl.textContent='';
+  }
 }
 
 // ── EVENTO DETAIL ──
@@ -1945,11 +2024,23 @@ const buildEvDetail = (ev, backFn) => {
         +'<div style="flex:1">'
           +'<div style="font-size:14px;font-weight:700">'+item.titulo+'</div>'
           +(item.tono?'<div style="font-size:11px;color:var(--muted);margin-top:2px">Tono: '+item.tono+'</div>':'')
+          +(item.duracion?'<div style="font-size:10px;color:var(--gold);margin-top:2px">⏱ '+item.duracion+' min</div>':'')
           +(estructura?'<div style="font-size:10px;color:var(--accent);margin-top:3px">'+estructura+'</div>':'')
           +(can&&can.linkYoutube?'<a href="'+can.linkYoutube+'" target="_blank" style="font-size:10px;color:var(--gold);margin-top:3px;display:block">▶ Ver en YouTube</a>':'')
         +'</div>';
       ordenPanel.appendChild(d);
     });
+  }
+
+  // Total duración
+  const totalMins = (ev.orden||[]).reduce((s,i)=>s+(parseInt(i.duracion)||0),0);
+  if(totalMins>0){
+    const horas=Math.floor(totalMins/60); const mins=totalMins%60;
+    const durStr=horas>0?horas+'h '+(mins>0?mins+'min':''):mins+'min';
+    const totalEl=document.createElement('div');
+    totalEl.style.cssText='text-align:right;font-size:13px;font-weight:700;color:var(--gold);padding:10px 4px 4px;border-top:1px solid var(--border);margin-top:4px';
+    totalEl.textContent='⏱ Duración total: '+durStr;
+    ordenPanel.appendChild(totalEl);
   }
 
   // Notas generales al final del Orden
@@ -2026,8 +2117,12 @@ const buildEvDetail = (ev, backFn) => {
     g.items.forEach((item,i)=>{
       const row=document.createElement('div');
       row.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:'+(i<g.items.length-1?'1px solid var(--border)':'none');
-      const av=document.createElement('div'); av.className='avatar'; av.style.cssText='width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9590E0);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0';
-      av.textContent=g.icon;
+      const av=document.createElement('div'); av.style.cssText='width:32px;height:32px;border-radius:50%;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;';
+      if(item.musId){
+        const mData=musicos.find(x=>x.id===item.musId);
+        if(mData&&mData.fotoUrl){ av.innerHTML='<img src="'+mData.fotoUrl+'" style="width:100%;height:100%;object-fit:cover" alt="'+mData.nombre+'"/>'; }
+        else { av.style.cssText+=';background:linear-gradient(135deg,var(--accent),#9590E0);font-size:14px;'; av.textContent=g.icon; }
+      } else { av.style.cssText+=';background:linear-gradient(135deg,var(--accent),#9590E0);font-size:14px;'; av.textContent=g.icon; }
       const info=document.createElement('div'); info.style.flex='1';
       info.innerHTML='<div style="font-size:13px;font-weight:700">'+item.nombre+'</div><div style="font-size:11px;color:var(--muted)">'+item.sub+'</div>';
       row.appendChild(av); row.appendChild(info);
