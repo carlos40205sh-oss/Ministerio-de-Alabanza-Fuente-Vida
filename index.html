@@ -207,6 +207,7 @@ input::placeholder{color:var(--muted);}
   <div style="padding:20px 16px 0">
     <div id="bday-hoy" style="display:none;background:linear-gradient(135deg,#E8C96A 0%,#F0A500 100%);border-radius:16px;padding:14px;margin-bottom:16px"></div>
     <div id="mis-cuotas-card" style="display:none"></div>
+    <div id="bloquear-fechas-card" style="display:none"></div>
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
       <div style="font-size:14px;font-weight:800;color:var(--text)">📅 Próximos eventos</div>
     </div>
@@ -710,6 +711,24 @@ input::placeholder{color:var(--muted);}
   </div>
 </div>
 
+<!-- BLOQUEAR FECHAS MODAL -->
+<div id="bloquear-fechas-modal" class="modal" style="z-index:701;align-items:flex-end;padding:0">
+  <div style="background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border-radius:24px 24px 0 0;padding:22px 18px 28px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;box-shadow:0 -20px 60px -20px #000000aa">
+    <div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 18px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <div style="font-size:18px;font-weight:800">🚫 Mis fechas bloqueadas</div>
+      <button id="btn-close-bloquear" style="width:30px;height:30px;border-radius:50%;background:var(--card2,var(--surface));border:none;color:var(--muted);font-size:14px;cursor:pointer">✕</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:18px">Agregá los días que no podés servir. El admin verá un aviso al intentar asignarte.</p>
+    <div style="display:flex;gap:8px;margin-bottom:18px">
+      <input type="date" id="bloquear-fecha-input" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:13px;padding:10px 12px;outline:none"/>
+      <button id="btn-agregar-fecha-bloqueada" style="background:var(--danger);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap">+ Agregar</button>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Fechas bloqueadas</div>
+    <div id="bloquear-fechas-list"></div>
+  </div>
+</div>
+
 <!-- MODO SERVICIO -->
 <div id="modo-servicio">
   <div class="ms-header">
@@ -880,6 +899,7 @@ window.addEventListener('popstate', e => {
   // Always close the Mis Cuotas / Mi Rol / Stat modals on any back navigation
   if(state.modal !== 'mis-cuotas') closeMisCuotas(true);
   if(state.modal !== 'mi-rol') closeMiRol(true);
+  if(state.modal !== 'bloquear-fechas') { const bf=$('bloquear-fechas-modal'); if(bf) bf.style.display='none'; }
   if(!state.modal || !state.modal.startsWith('stat-')) closeStatModals(true);
   if(state.view==='detail' || state.view==='form') {
     // Go back to list view of that tab
@@ -1489,6 +1509,7 @@ const setupGroupSearch = (searchId, dropdownId, listElId, arr, filterFn, simple)
 
   const showDropdown = () => {
     const q = searchInput.value.toLowerCase();
+    const evFecha = $('ev-fecha') ? $('ev-fecha').value : '';
     const ids = simple ? arr : arr.map(a=>a.musId);
     const candidates = musicos.filter(m=>(m.roles||[m.rol]).some(filterFn) && !ids.includes(m.id) && m.nombre.toLowerCase().includes(q));
     dropdown.innerHTML = '';
@@ -1499,8 +1520,15 @@ const setupGroupSearch = (searchId, dropdownId, listElId, arr, filterFn, simple)
         const item = document.createElement('div');
         item.className = 'search-dd-item';
         const yaAsignado = !simple ? checkYaAsignadoEnOtroGrupo(m.id) : null;
-        item.innerHTML = '<span>'+roleIcon(m.rol)+'</span><span>'+m.nombre+'</span>'+(yaAsignado?'<span style="margin-left:auto;font-size:10px;color:var(--warn)">⚠️ ya en '+yaAsignado+'</span>':'');
-        item.addEventListener('click', ()=>{
+        const tieneFechaBloqueada = !simple && evFecha && (m.fechasBloqueadas||[]).includes(evFecha);
+        item.innerHTML = '<span>'+roleIcon(m.rol)+'</span><span style="flex:1">'+m.nombre+'</span>'
+          +(yaAsignado?'<span style="font-size:10px;color:var(--warn)">⚠️ ya en '+yaAsignado+'</span>':'')
+          +(tieneFechaBloqueada?'<span style="font-size:10px;color:var(--danger)">🚫 No disponible</span>':'');
+        if(tieneFechaBloqueada){
+          item.style.opacity='0.5';
+          item.style.cursor='not-allowed';
+        } else {
+          item.addEventListener('click', ()=>{
           if(simple){
             arr.push(m.id);
           } else {
@@ -1512,6 +1540,7 @@ const setupGroupSearch = (searchId, dropdownId, listElId, arr, filterFn, simple)
           dropdown.style.display = 'none';
           renderGroupList(listElId, arr, simple);
         });
+        } // end else (not fecha bloqueada)  });
         dropdown.appendChild(item);
       });
     }
@@ -2252,6 +2281,7 @@ function renderCalList(date) {
 function renderDashboard() {
   $('st-c').textContent=canciones.length; $('st-m').textContent=musicos.length; $('st-e').textContent=eventos.length;
   if(typeof renderMisEventosCard === 'function') renderMisEventosCard();
+  if(typeof renderBloquearCard === 'function') renderBloquearCard();
   const hoy=new Date().toISOString().slice(0,10);
   const prox=[...eventos].filter(e=>e.fecha>=hoy).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(0,4);
   const proxEl=$('proximos-list'); proxEl.innerHTML='';
@@ -3041,6 +3071,81 @@ onSnapshot(collection(db,'eventos'),snap=>{
   renderEventos();renderDashboard();renderCalendar();
 });
 
+
+// ── BLOQUEAR FECHAS ──
+const renderBloquearCard = () => {
+  const cardEl = $('bloquear-fechas-card');
+  if(!cardEl) return;
+  if(!CU){ cardEl.style.display='none'; return; }
+  const m = musicos.find(x=>x.username===CU.key);
+  if(!m){ cardEl.style.display='none'; return; }
+
+  const fechasBloqueadas = m.fechasBloqueadas||[];
+  const hoy = new Date().toISOString().slice(0,10);
+  const activas = fechasBloqueadas.filter(f=>f>=hoy);
+
+  cardEl.style.display='block';
+  cardEl.innerHTML = '<div style="background:linear-gradient(135deg,#E06C75 0%,#B04050 100%);border-radius:18px;padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:12px;box-shadow:0 10px 26px -10px #E06C7555;cursor:pointer">'
+    +'<div style="font-size:22px">🚫</div>'
+    +'<div style="flex:1"><div style="font-size:14px;font-weight:800;color:#fff">Bloquear fechas</div>'
+    +'<div style="font-size:11.5px;color:#ffffffcc;margin-top:2px">Marcá los días que no podés servir</div></div>'
+    +(activas.length?'<span style="background:#fff;color:#B04050;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px">'+activas.length+' bloqueada'+(activas.length>1?'s':'')+'</span>':'<span style="color:#fff;font-size:18px">›</span>')
+    +'</div>';
+  cardEl.onclick = showBloquearFechas;
+};
+
+window.showBloquearFechas = () => {
+  const m = musicos.find(x=>x.username===CU.key);
+  if(!m) return;
+  renderBloquearList(m);
+  $('bloquear-fechas-modal').style.display='flex';
+  history.pushState({tab:'inicio',view:'modal',modal:'bloquear-fechas'},'',location.pathname);
+};
+
+const renderBloquearList = (m) => {
+  const listEl = $('bloquear-fechas-list'); if(!listEl) return;
+  const fechas = (m.fechasBloqueadas||[]).sort();
+  const diasSem = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  if(!fechas.length){
+    listEl.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px;background:var(--surface);border-radius:12px">Sin fechas bloqueadas</div>';
+    return;
+  }
+  listEl.innerHTML = fechas.map((f,i)=>{
+    const [y,mo,d]=f.split('-');
+    const diaNom=diasSem[new Date(f+'T12:00:00').getDay()];
+    const mesNom=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mo)-1]||'';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid #E06C7533;border-radius:12px;padding:12px 14px;margin-bottom:8px">'
+      +'<div><div style="font-size:13px;font-weight:700;color:var(--danger)">📅 '+parseInt(d)+' '+mesNom+' '+y+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+diaNom+'</div></div>'
+      +'<button onclick="removeFechaBloqueada(\''+f+'\')" style="border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:16px;padding:4px">✕</button>'
+      +'</div>';
+  }).join('');
+};
+
+window.removeFechaBloqueada = async (fecha) => {
+  const m = musicos.find(x=>x.username===CU.key); if(!m) return;
+  const nuevas = (m.fechasBloqueadas||[]).filter(f=>f!==fecha);
+  await updateDoc(doc(db,'musicos',m.id),{fechasBloqueadas:nuevas});
+  toast('✅ Fecha desbloqueada');
+};
+
+function closeBloquerarFechas(skipHistory){
+  $('bloquear-fechas-modal').style.display='none';
+  if(!skipHistory) history.back();
+}
+$('btn-close-bloquear').addEventListener('click',()=>closeBloquerarFechas());
+$('btn-agregar-fecha-bloqueada').addEventListener('click', async()=>{
+  const inp=$('bloquear-fecha-input'); if(!inp||!inp.value) return;
+  const m=musicos.find(x=>x.username===CU.key); if(!m) return;
+  const fechas=[...(m.fechasBloqueadas||[])];
+  if(fechas.includes(inp.value)){toast('⚠️ Ya está bloqueada');return;}
+  fechas.push(inp.value);
+  await updateDoc(doc(db,'musicos',m.id),{fechasBloqueadas:fechas});
+  inp.value='';
+  toast('✅ Fecha bloqueada');
+  renderBloquearList(musicos.find(x=>x.username===CU.key));
+  renderBloquearCard();
+});
 
 // ── STAT MODALS ──
 window.showStatModal = (tipo) => {
