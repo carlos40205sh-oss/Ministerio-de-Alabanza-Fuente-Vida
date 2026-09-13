@@ -199,9 +199,9 @@ input::placeholder{color:var(--muted);}
     <h2 style="font-size:24px;font-weight:800;color:var(--text);letter-spacing:-.5px;position:relative;margin:0" id="welcome-msg">Bienvenido</h2>
   </div>
   <div style="display:flex;gap:10px;padding:0 16px;margin-top:-16px;position:relative;z-index:2">
-    <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--gold)" id="st-c">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Canciones</div></div>
-    <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--accent)" id="st-m">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Músicos</div></div>
-    <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--success)" id="st-e">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Eventos</div></div>
+    <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer" onclick="showStatModal('canciones')"><div style="font-size:22px;font-weight:800;color:var(--gold)" id="st-c">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Canciones</div></div>
+    <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer" onclick="showStatModal('musicos')"><div style="font-size:22px;font-weight:800;color:var(--accent)" id="st-m">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Músicos</div></div>
+    <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer" onclick="showStatModal('eventos')"><div style="font-size:22px;font-weight:800;color:var(--success)" id="st-e">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Eventos</div></div>
     <div id="mi-rol-stat-card" style="display:none;flex:1;background:var(--card);border:1px solid var(--accent);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer"><div style="font-size:22px;font-weight:800;color:var(--accent)" id="st-mi-rol">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Mi Rol</div></div>
   </div>
   <div style="padding:20px 16px 0">
@@ -678,6 +678,38 @@ input::placeholder{color:var(--muted);}
   <div id="mi-rol-content" style="padding:16px"></div>
 </div>
 
+<!-- STAT MODALS -->
+<div id="stat-modal-canciones" class="modal" style="z-index:701;align-items:flex-end;padding:0">
+  <div style="background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border-radius:24px 24px 0 0;padding:22px 18px 28px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 -20px 60px -20px #000000aa">
+    <div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 18px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:18px;font-weight:800">🎵 Canciones</div>
+      <button id="close-stat-canciones" style="width:30px;height:30px;border-radius:50%;background:var(--card2,var(--surface));border:none;color:var(--muted);font-size:14px;cursor:pointer">✕</button>
+    </div>
+    <div id="stat-canciones-content"></div>
+  </div>
+</div>
+<div id="stat-modal-musicos" class="modal" style="z-index:701;align-items:flex-end;padding:0">
+  <div style="background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border-radius:24px 24px 0 0;padding:22px 18px 28px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 -20px 60px -20px #000000aa">
+    <div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 18px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:18px;font-weight:800">🎸 Músicos</div>
+      <button id="close-stat-musicos" style="width:30px;height:30px;border-radius:50%;background:var(--card2,var(--surface));border:none;color:var(--muted);font-size:14px;cursor:pointer">✕</button>
+    </div>
+    <div id="stat-musicos-content"></div>
+  </div>
+</div>
+<div id="stat-modal-eventos" class="modal" style="z-index:701;align-items:flex-end;padding:0">
+  <div style="background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border-radius:24px 24px 0 0;padding:22px 18px 28px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 -20px 60px -20px #000000aa">
+    <div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 18px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-size:18px;font-weight:800">🗓 Próximos eventos</div>
+      <button id="close-stat-eventos" style="width:30px;height:30px;border-radius:50%;background:var(--card2,var(--surface));border:none;color:var(--muted);font-size:14px;cursor:pointer">✕</button>
+    </div>
+    <div id="stat-eventos-content"></div>
+  </div>
+</div>
+
 <!-- MODO SERVICIO -->
 <div id="modo-servicio">
   <div class="ms-header">
@@ -845,9 +877,10 @@ const goTab = (tab, pushState=true) => {
 // Handle back button
 window.addEventListener('popstate', e => {
   const state = e.state || {tab:'inicio', view:'list'};
-  // Always close the Mis Cuotas / Mi Rol modals on any back navigation, unless we're navigating INTO that modal
+  // Always close the Mis Cuotas / Mi Rol / Stat modals on any back navigation
   if(state.modal !== 'mis-cuotas') closeMisCuotas(true);
   if(state.modal !== 'mi-rol') closeMiRol(true);
+  if(!state.modal || !state.modal.startsWith('stat-')) closeStatModals(true);
   if(state.view==='detail' || state.view==='form') {
     // Go back to list view of that tab
     goTab(state.tab||'eventos', false);
@@ -3001,6 +3034,92 @@ onSnapshot(collection(db,'eventos'),snap=>{
 </div><!-- end app-wrapper -->
 <script>
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+// ── STAT MODALS ──
+window.showStatModal = (tipo) => {
+  const hoy = new Date().toISOString().slice(0,10);
+
+  if(tipo==='canciones'){
+    const sorted = [...canciones].sort((a,b)=>a.titulo.localeCompare(b.titulo));
+    let html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:4px 14px">';
+    if(!sorted.length){ html += '<div style="color:var(--muted);text-align:center;padding:16px;font-size:13px">Sin canciones</div>'; }
+    sorted.forEach((c,i)=>{
+      const isLast = i===sorted.length-1;
+      let badge = '';
+      if(c.nueva) badge='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#E8C96A22;color:var(--gold)">🆕</span>';
+      else if(c.aprender) badge='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#7EC8A022;color:var(--success)">📚</span>';
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;'+(isLast?'':'border-bottom:1px solid var(--border)')+'">'+
+        '<div style="width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#7B6FD4,#5A4FB0);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🎵</div>'+
+        '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.titulo+'</div>'+
+        '<div style="font-size:11px;color:var(--muted)">'+(c.artista||'')+(c.tono?' · '+c.tono:'')+'</div></div>'+
+        badge+'</div>';
+    });
+    html += '</div>';
+    $('stat-canciones-content').innerHTML = html;
+    $('stat-modal-canciones').style.display='flex';
+    history.pushState({tab:'inicio',view:'modal',modal:'stat-canciones'},'',location.pathname);
+  }
+  else if(tipo==='musicos'){
+    const sorted = [...musicos].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+    let html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:4px 14px">';
+    if(!sorted.length){ html += '<div style="color:var(--muted);text-align:center;padding:16px;font-size:13px">Sin músicos</div>'; }
+    sorted.forEach((m,i)=>{
+      const isLast = i===sorted.length-1;
+      const dot = m.disponible
+        ? '<div style="width:7px;height:7px;border-radius:50%;background:var(--success);flex-shrink:0"></div>'
+        : '<div style="width:7px;height:7px;border-radius:50%;background:var(--border);flex-shrink:0"></div>';
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;'+(isLast?'':'border-bottom:1px solid var(--border)')+'">'+
+        '<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9590E0);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">'+roleIcon(m.rol)+'</div>'+
+        '<div style="flex:1"><div style="font-size:13px;font-weight:700">'+m.nombre+'</div>'+
+        '<div style="font-size:11px;color:var(--muted)">'+(m.roles||[m.rol]).join(', ')+'</div></div>'+
+        dot+'</div>';
+    });
+    html += '</div>';
+    $('stat-musicos-content').innerHTML = html;
+    $('stat-modal-musicos').style.display='flex';
+    history.pushState({tab:'inicio',view:'modal',modal:'stat-musicos'},'',location.pathname);
+  }
+  else if(tipo==='eventos'){
+    const prox = [...eventos].filter(e=>e.fecha>=hoy).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+    let html = '<div style="display:flex;flex-direction:column;gap:8px">';
+    if(!prox.length){ html += '<div style="color:var(--muted);text-align:center;padding:16px;font-size:13px">No hay eventos próximos</div>'; }
+    prox.forEach(ev=>{
+      const [y,mo,d]=(ev.fecha||'').split('-');
+      const mesAbrev=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mo)-1]||'';
+      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden;cursor:pointer" onclick="closeStatModals();goTab(\'eventos\',true);setTimeout(()=>showEvDetail(\''+ev.id+'\',\'inicio\'),100)">'+
+        '<div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:'+tipoColor(ev.tipo)+'"></div>'+
+        '<div style="width:42px;height:48px;border-radius:10px;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">'+
+          '<div style="font-size:17px;font-weight:800;color:var(--gold);line-height:1">'+(d||'?')+'</div>'+
+          '<div style="font-size:8px;color:var(--muted);text-transform:uppercase;margin-top:2px">'+mesAbrev+'</div>'+
+        '</div>'+
+        '<div style="flex:1"><div style="font-size:14px;font-weight:700">'+ev.titulo+'</div>'+
+        (ev.horaIni?'<div style="font-size:11px;color:var(--muted);margin-top:2px">⏰ '+ev.horaIni+'</div>':'')+'</div>'+
+        '<span style="color:var(--muted);font-size:18px">›</span></div>';
+    });
+    html += '</div>';
+    $('stat-eventos-content').innerHTML = html;
+    $('stat-modal-eventos').style.display='flex';
+    history.pushState({tab:'inicio',view:'modal',modal:'stat-eventos'},'',location.pathname);
+  }
+};
+
+window.closeStatModals = (skipHistory) => {
+  ['canciones','musicos','eventos'].forEach(t=>{
+    const el=$('stat-modal-'+t); if(el) el.style.display='none';
+  });
+  if(!skipHistory) history.back();
+};
+
+['canciones','musicos','eventos'].forEach(t=>{
+  const btn=$('close-stat-'+t);
+  if(btn) btn.addEventListener('click',()=>closeStatModals());
+});
+
+// Close on overlay click
+['stat-modal-canciones','stat-modal-musicos','stat-modal-eventos'].forEach(id=>{
+  const el=$(id); if(!el) return;
+  el.addEventListener('click',e=>{ if(e.target===el) closeStatModals(); });
+});
+
 // Theme toggle
 const themeBtn = document.getElementById('btn-theme');
 const themeBtnSidebar = document.getElementById('btn-theme-sidebar');
