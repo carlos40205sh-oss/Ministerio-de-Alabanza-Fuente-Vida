@@ -1902,6 +1902,38 @@ const buildEvDetail = (ev, backFn) => {
     ordenPanel.appendChild(notaBox);
   }
 
+  // Comentarios al final del Orden
+  const comsOrden=ev.comentarios||[];
+  const comTitleOrden=document.createElement('div');
+  comTitleOrden.style.cssText='font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px';
+  comTitleOrden.textContent='💬 Comentarios ('+comsOrden.length+')';
+  ordenPanel.appendChild(comTitleOrden);
+  comsOrden.forEach((c,i)=>{
+    const cd=document.createElement('div');
+    cd.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px';
+    cd.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:600;color:var(--accent)">'+c.autor+'</span><span style="font-size:10px;color:var(--muted)">'+c.fecha+'</span></div><div style="font-size:13px;color:var(--text);margin-top:6px">'+c.texto+'</div>';
+    if(CU&&CU.admin){
+      const xBtn=document.createElement('button'); xBtn.style.cssText='border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:12px;float:right';
+      xBtn.textContent='✕'; xBtn.addEventListener('click',()=>delComentario(ev.id,i));
+      cd.querySelector('div').appendChild(xBtn);
+    }
+    ordenPanel.appendChild(cd);
+  });
+  const comRowOrden=document.createElement('div'); comRowOrden.style.cssText='display:flex;gap:6px;margin-top:8px';
+  const comInpOrden=document.createElement('input'); comInpOrden.id='com-inp-orden-'+ev.id; comInpOrden.placeholder='Escribí un comentario...';
+  comInpOrden.style.cssText='flex:1;margin:0;padding:8px 10px;font-size:12px';
+  const comBtnOrden=document.createElement('button');
+  comBtnOrden.style.cssText='border:none;background:var(--accent);color:#fff;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap';
+  comBtnOrden.textContent='Enviar';
+  comBtnOrden.addEventListener('click',async()=>{
+    const inp=$('com-inp-orden-'+ev.id); const txt=inp?inp.value.trim():''; if(!txt) return;
+    const fecha=new Date().toLocaleDateString('es-CR');
+    const nuevos=[...(ev.comentarios||[]),{autor:CU.nombre,texto:txt,fecha}];
+    await updateDoc(doc(db,'eventos',ev.id),{comentarios:nuevos});
+    inp.value=''; toast('💬 Comentario enviado');
+  });
+  comRowOrden.appendChild(comInpOrden); comRowOrden.appendChild(comBtnOrden); ordenPanel.appendChild(comRowOrden);
+
   // ── TAB: EQUIPO ──
   const equipoPanel=tabContents['equipo'];
   const gruposEq=[
