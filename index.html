@@ -2195,6 +2195,17 @@ function renderCalList(date) {
       }).join('');
       presididorHtml += '<div style="display:flex;align-items:center;gap:6px;margin-top:5px"><span style="font-size:12px">📖</span><span style="font-size:10px;color:var(--muted);font-weight:700;width:52px;flex-shrink:0">Predicador</span><div>'+predNombres+'</div></div>';
     }
+    // Build canciones del orden
+    const cancionesOrden = (ev.orden||[]).filter(i=>i.tipo==='cancion'&&i.titulo);
+    const cancionesHtml = cancionesOrden.length
+      ? '<div style="margin-top:6px"><div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap">'
+        +'<span style="font-size:12px">🎵</span>'
+        +'<span style="font-size:10px;color:var(--muted);font-weight:700;width:52px;flex-shrink:0">Canciones</span>'
+        +'<div style="display:flex;flex-wrap:wrap;gap:3px">'
+        +cancionesOrden.map((c,i)=>'<span style="display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;background:#7B6FD422;color:var(--accent);margin:1px 2px">'+(i+1)+'. '+c.titulo+(c.tono?' ('+c.tono+')':'')+'</span>').join('')
+        +'</div></div></div>'
+      : '';
+
     const equipoHtml = gruposEquipo.filter(g=>g.arr.length).map(g=>{
       const nombres = g.arr.map(a=>{
         const musId = typeof a==='string' ? a : a.musId;
@@ -2211,7 +2222,7 @@ function renderCalList(date) {
         +'<span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;margin-top:5px;background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+'">'+ev.tipo+'</span></div>'
         +'<span style="color:var(--muted);font-size:18px">›</span>'
       +'</div>'
-      +((equipoHtml||presididorHtml) ? '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">'+presididorHtml+equipoHtml+'</div>' : '');
+      +((equipoHtml||presididorHtml||cancionesHtml) ? '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">'+presididorHtml+equipoHtml+cancionesHtml+'</div>' : '');
 
     div.querySelector('.cal-ev-header').addEventListener('click',()=>{
       // Hide calendar, show detail
