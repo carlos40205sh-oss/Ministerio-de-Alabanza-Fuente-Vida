@@ -2031,8 +2031,18 @@ const buildEvDetail = (ev, backFn) => {
       const info=document.createElement('div'); info.style.flex='1';
       info.innerHTML='<div style="font-size:13px;font-weight:700">'+item.nombre+'</div><div style="font-size:11px;color:var(--muted)">'+item.sub+'</div>';
       row.appendChild(av); row.appendChild(info);
-      // Asistencia para músicos
+      // Asistencia + confirmación para músicos
       if(item.musId && CU&&CU.admin){
+        const confirmaciones = ev.confirmaciones||{};
+        const confEstado = confirmaciones[item.musId];
+        const confBadge = confEstado==='confirmo'
+          ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#7EC8A022;color:var(--success);border:1px solid #7EC8A044">✅ Confirmó</span>'
+          : confEstado==='nopuedo'
+          ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#E06C7522;color:var(--danger);border:1px solid #E06C7544">❌ No puede</span>'
+          : '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--border);color:var(--muted)">⏳ Pendiente</span>';
+        const confEl = document.createElement('span');
+        confEl.innerHTML = confBadge;
+        row.appendChild(confEl);
         const isPulp = g.label==='Pulpería';
         const evIdKey = isPulp?ev.id+'_pulp':ev.id;
         const asistMap = isPulp?asistPulp:asist;
@@ -2591,30 +2601,63 @@ const renderMisEventosCard = () => {
 window.showMiRol = () => {
   const m = musicos.find(x=>x.username===CU.key);
   if(!m || !misEventosDelMes.length) return;
+  renderMiRolContent(m);
+  $('mi-rol-modal').style.display='flex';
+  history.pushState({tab:history.state?.tab||'inicio', view:'modal', modal:'mi-rol'}, '', location.pathname);
+};
 
-  let rowsHtml = '';
-  misEventosDelMes.forEach((ev,i)=>{
+const renderMiRolContent = (m) => {
+  let cardsHtml = '';
+  misEventosDelMes.forEach((ev)=>{
     const [yy,mm,dd] = (ev.fecha||'').split('-');
     const mesAbrev = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mm)-1]||'';
-    const isLast = i === misEventosDelMes.length-1;
-    rowsHtml += '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;'+(isLast?'':'border-bottom:1px solid var(--border);')+'cursor:pointer" data-evid="'+ev.id+'">'
-      +'<div style="font-size:12px;font-weight:800;color:var(--gold);width:42px;flex-shrink:0">'+(dd||'?')+' '+mesAbrev+'</div>'
-      +'<div style="font-size:13px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ev.titulo+'</div>'
-      +'<div style="font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0;white-space:nowrap">'+getMiRolDeEvento(m, ev)+'</div>'
+    const confirmaciones = ev.confirmaciones||{};
+    const estado = confirmaciones[m.id] || 'pendiente';
+    const estadoBadge = estado==='confirmo'
+      ? '<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;background:#7EC8A022;color:var(--success);border:1px solid #7EC8A044;flex-shrink:0">✅ Confirmado</span>'
+      : estado==='nopuedo'
+      ? '<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;background:#E06C7522;color:var(--danger);border:1px solid #E06C7544;flex-shrink:0">❌ No puede</span>'
+      : '<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--border);color:var(--muted);flex-shrink:0">⏳ Pendiente</span>';
+
+    cardsHtml += '<div style="background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+        +'<div style="font-size:12px;font-weight:800;color:var(--gold);width:42px;flex-shrink:0">'+(dd||'?')+' '+mesAbrev+'</div>'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ev.titulo+'</div>'
+          +'<div style="font-size:11px;font-weight:700;color:var(--accent);margin-top:2px">'+getMiRolDeEvento(m,ev)+'</div>'
+          +(ev.horaIni?'<div style="font-size:11px;color:var(--muted);margin-top:1px">⏰ '+ev.horaIni+'</div>':'')
+        +'</div>'
+        +estadoBadge
+      +'</div>'
+      +'<div style="display:flex;gap:8px">'
+        +'<button data-evid="'+ev.id+'" data-musid="'+m.id+'" data-fecha="'+ev.fecha+'" data-accion="confirmo" style="flex:1;border:2px solid '+(estado==='confirmo'?'var(--success)':'#7EC8A044')+';background:'+(estado==='confirmo'?'var(--success)':'#7EC8A022')+';color:'+(estado==='confirmo'?'#fff':'var(--success)')+';border-radius:12px;padding:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">✅ Confirmo</button>'
+        +'<button data-evid="'+ev.id+'" data-musid="'+m.id+'" data-fecha="'+ev.fecha+'" data-accion="nopuedo" style="flex:1;border:2px solid '+(estado==='nopuedo'?'var(--danger)':'#E06C7544')+';background:'+(estado==='nopuedo'?'var(--danger)':'#E06C7522')+';color:'+(estado==='nopuedo'?'#fff':'var(--danger)')+';border-radius:12px;padding:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">❌ No puedo</button>'
+      +'</div>'
     +'</div>';
   });
 
-  $('mi-rol-content').innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:4px 14px">'+rowsHtml+'</div>';
-  $('mi-rol-modal').style.display='flex';
-  history.pushState({tab:history.state?.tab||'inicio', view:'modal', modal:'mi-rol'}, '', location.pathname);
+  $('mi-rol-content').innerHTML = '<div style="font-size:12px;color:var(--muted);margin-bottom:14px">Confirmá tu asistencia a cada evento</div>' + cardsHtml;
 
-  $('mi-rol-content').querySelectorAll('[data-evid]').forEach(line=>{
-    line.addEventListener('click', ()=>{
-      closeMiRol();
-      setTimeout(()=>{
-        goTab('eventos', false);
-        showEvDetail(line.dataset.evid, 'inicio');
-      }, 50);
+  $('mi-rol-content').querySelectorAll('button[data-accion]').forEach(btn=>{
+    btn.addEventListener('click', async()=>{
+      const evId = btn.dataset.evid;
+      const musId = btn.dataset.musid;
+      const fecha = btn.dataset.fecha;
+      const accion = btn.dataset.accion;
+      const ev = eventos.find(e=>e.id===evId); if(!ev) return;
+      const confirmaciones = {...(ev.confirmaciones||{})};
+      confirmaciones[musId] = accion;
+      await updateDoc(doc(db,'eventos',evId),{confirmaciones});
+      // Si dice "no puedo", bloquear la fecha automáticamente
+      if(accion==='nopuedo'){
+        const mData = musicos.find(x=>x.id===musId);
+        if(mData){
+          const fechas=[...(mData.fechasBloqueadas||[])];
+          if(!fechas.includes(fecha)){ fechas.push(fecha); await updateDoc(doc(db,'musicos',musId),{fechasBloqueadas:fechas}); }
+        }
+      }
+      toast(accion==='confirmo'?'✅ Confirmado!':'❌ Fecha bloqueada automáticamente');
+      renderMiRolContent(musicos.find(x=>x.username===CU.key));
     });
   });
 };
