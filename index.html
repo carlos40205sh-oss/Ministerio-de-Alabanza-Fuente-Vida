@@ -1090,8 +1090,7 @@ function renderMusicos() {
             const sRef=storageRef(storage,'fotos/'+m.id);
             await uploadBytes(sRef,file);
             const url=await getDownloadURL(sRef);
-            toast('ID: '+m.id+' URL: '+url.slice(0,30));
-            await updateDoc(doc(db,'musicos',m.id),{fotoUrl:url});
+            await updateDoc(doc(db,'musicos',m.id),{fotoUrl:url}).catch(err=>toast('❌ '+err.message));
             toast('✅ Foto actualizada!');
             renderMusicos();
           }catch(err){
