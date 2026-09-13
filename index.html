@@ -3030,10 +3030,7 @@ onSnapshot(collection(db,'eventos'),snap=>{
   renderEventos();renderDashboard();renderCalendar();
 });
 
-</script>
-</div><!-- end app-wrapper -->
-<script>
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+
 // ── STAT MODALS ──
 window.showStatModal = (tipo) => {
   const hoy = new Date().toISOString().slice(0,10);
@@ -3149,6 +3146,11 @@ if(sidebarExit) sidebarExit.addEventListener('click', () => {
   const btn = document.getElementById('hdr-user');
   if(btn) btn.click();
 });
+</script>
+</div><!-- end app-wrapper -->
+<script>
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+
 </script>
 </body>
 </html>
