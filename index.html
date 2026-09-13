@@ -1074,53 +1074,44 @@ function renderMusicos() {
     const rowEl = card.querySelector('.row');
     // Botón de foto para el propio músico
     const esMiPerfil = CU && !CU.admin && musicos.find(x=>x.username===CU.key)?.id===m.id;
-    if(esMiPerfil){
-      const fotoBtn=document.createElement('button'); fotoBtn.className='btn btn-ghost btn-sm'; fotoBtn.textContent='📷';
+    if(esMiPerfil || (CU&&CU.admin)){
+      const fotoBtn=document.createElement('button'); 
+      fotoBtn.className='btn btn-ghost btn-sm'; 
+      fotoBtn.textContent='📷';
       fotoBtn.title='Cambiar foto de perfil';
-      fotoBtn.addEventListener('click',e=>{
+      fotoBtn.addEventListener('click',async e=>{
         e.stopPropagation();
         const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
         inp.addEventListener('change',async()=>{
           const file=inp.files[0]; if(!file) return;
-          if(file.size>2*1024*1024){toast('⚠️ La imagen debe ser menor a 2MB');return;}
-          toast('⬆️ Subiendo foto...');
-          const sRef=storageRef(storage,'fotos/'+m.id);
-          await uploadBytes(sRef,file);
-          const url=await getDownloadURL(sRef);
-          await updateDoc(doc(db,'musicos',m.id),{fotoUrl:url});
-          toast('✅ Foto actualizada!');
+          if(file.size>5*1024*1024){toast('⚠️ La imagen debe ser menor a 5MB');return;}
+          try{
+            toast('⬆️ Subiendo foto...');
+            const sRef=storageRef(storage,'fotos/'+m.id);
+            await uploadBytes(sRef,file);
+            const url=await getDownloadURL(sRef);
+            await updateDoc(doc(db,'musicos',m.id),{fotoUrl:url});
+            toast('✅ Foto actualizada!');
+          }catch(err){
+            toast('❌ Error: '+err.message);
+            console.error(err);
+          }
         });
         inp.click();
       });
-      rowEl.appendChild(fotoBtn);
-    }
-    if(CU&&CU.admin){
-      const btns=document.createElement('div'); btns.style.cssText='display:flex;flex-direction:column;gap:4px;flex-shrink:0';
-      const eBtn=document.createElement('button'); eBtn.className='btn btn-accent btn-sm'; eBtn.textContent='✏️ Editar';
-      eBtn.addEventListener('click',e=>{e.stopPropagation();editMusico(m.id);});
-      const dBtn=document.createElement('button'); dBtn.className='btn btn-ghost btn-sm'; dBtn.textContent=m.disponible?'🔴 Ocupado':'🟢 Disponible';
-      dBtn.addEventListener('click',e=>{e.stopPropagation();toggleDisp(m.id,m.disponible);});
-      const xBtn=document.createElement('button'); xBtn.className='btn btn-danger btn-sm'; xBtn.textContent='✕ Borrar';
-      xBtn.addEventListener('click',e=>{e.stopPropagation();deleteMusico(m.id);});
-      // Admin también puede cambiar foto
-      const fotoAdminBtn=document.createElement('button'); fotoAdminBtn.className='btn btn-ghost btn-sm'; fotoAdminBtn.textContent='📷';
-      fotoAdminBtn.addEventListener('click',e=>{
-        e.stopPropagation();
-        const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
-        inp.addEventListener('change',async()=>{
-          const file=inp.files[0]; if(!file) return;
-          if(file.size>2*1024*1024){toast('⚠️ La imagen debe ser menor a 2MB');return;}
-          toast('⬆️ Subiendo foto...');
-          const sRef=storageRef(storage,'fotos/'+m.id);
-          await uploadBytes(sRef,file);
-          const url=await getDownloadURL(sRef);
-          await updateDoc(doc(db,'musicos',m.id),{fotoUrl:url});
-          toast('✅ Foto actualizada!');
-        });
-        inp.click();
-      });
-      btns.appendChild(eBtn); btns.appendChild(fotoAdminBtn); btns.appendChild(dBtn); btns.appendChild(xBtn);
-      rowEl.appendChild(btns);
+      if(CU&&CU.admin){
+        const btns=document.createElement('div'); btns.style.cssText='display:flex;flex-direction:column;gap:4px;flex-shrink:0';
+        const eBtn=document.createElement('button'); eBtn.className='btn btn-accent btn-sm'; eBtn.textContent='✏️ Editar';
+        eBtn.addEventListener('click',e=>{e.stopPropagation();editMusico(m.id);});
+        const dBtn=document.createElement('button'); dBtn.className='btn btn-ghost btn-sm'; dBtn.textContent=m.disponible?'🔴 Ocupado':'🟢 Disponible';
+        dBtn.addEventListener('click',e=>{e.stopPropagation();toggleDisp(m.id,m.disponible);});
+        const xBtn=document.createElement('button'); xBtn.className='btn btn-danger btn-sm'; xBtn.textContent='✕ Borrar';
+        xBtn.addEventListener('click',e=>{e.stopPropagation();deleteMusico(m.id);});
+        btns.appendChild(eBtn); btns.appendChild(fotoBtn); btns.appendChild(dBtn); btns.appendChild(xBtn);
+        rowEl.appendChild(btns);
+      } else {
+        rowEl.appendChild(fotoBtn);
+      }
     }
     return card;
   };
