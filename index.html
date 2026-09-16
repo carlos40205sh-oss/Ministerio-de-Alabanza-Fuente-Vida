@@ -195,8 +195,17 @@ input::placeholder{color:var(--muted);}
 <div id="sec-inicio" class="section active" style="padding:0">
   <div style="padding:24px 16px 22px;background:linear-gradient(180deg,#2A2350 0%,var(--bg) 100%);position:relative;overflow:hidden">
     <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,#E8C96A22 0%,transparent 70%)"></div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:4px;position:relative">✨ Ministerio de Alabanza</div>
-    <h2 style="font-size:24px;font-weight:800;color:var(--text);letter-spacing:-.5px;position:relative;margin:0" id="welcome-msg">Bienvenido</h2>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px;position:relative">✨ Ministerio de Alabanza</div>
+    <div style="display:flex;align-items:center;gap:14px;position:relative">
+      <div style="position:relative;flex-shrink:0">
+        <div id="hero-avatar" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9590E0);display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid var(--accent)">🎵</div>
+        <button id="hero-foto-btn" style="display:none;position:absolute;bottom:0;right:0;width:20px;height:20px;border-radius:50%;background:var(--gold);border:2px solid var(--bg);font-size:10px;cursor:pointer;padding:0;line-height:1">📷</button>
+      </div>
+      <div style="flex:1">
+        <h2 style="font-size:22px;font-weight:800;color:var(--text);letter-spacing:-.5px;margin:0" id="welcome-msg">Bienvenido</h2>
+        <div id="hero-rol" style="font-size:12px;color:var(--accent);margin-top:3px"></div>
+      </div>
+    </div>
   </div>
   <div style="display:flex;gap:10px;padding:0 16px;margin-top:-16px;position:relative;z-index:2">
     <div id="st-card-c" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer"><div style="font-size:22px;font-weight:800;color:var(--gold)" id="st-c">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Canciones</div></div>
@@ -832,6 +841,53 @@ const applyLogin = user => {
   $('login-screen').style.display='none';
   $('hdr-user').textContent = CU.nombre+' · Salir';
   $('welcome-msg').textContent = 'Bienvenido, '+CU.nombre;
+  // Update hero avatar
+  const updateHeroAvatar = () => {
+    const heroAvatar = $('hero-avatar');
+    const heroFotoBtn = $('hero-foto-btn');
+    const heroRol = $('hero-rol');
+    if(!heroAvatar) return;
+    const miMus = musicos.find(x=>x.username&&x.username.toLowerCase()===CU.key.toLowerCase());
+    if(miMus){
+      if(miMus.fotoUrl){
+        heroAvatar.style.backgroundImage='url('+miMus.fotoUrl+')';
+        heroAvatar.style.backgroundSize='cover';
+        heroAvatar.style.backgroundPosition='center';
+        heroAvatar.textContent='';
+      } else {
+        heroAvatar.style.backgroundImage='';
+        heroAvatar.textContent=roleIcon(miMus.rol);
+      }
+      if(heroRol) heroRol.textContent=(miMus.roles||[miMus.rol]).map(r=>roleIcon(r)+' '+r).join(' · ');
+      if(heroFotoBtn){
+        heroFotoBtn.style.display='flex';
+        heroFotoBtn.onclick = () => {
+          const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
+          inp.addEventListener('change',async()=>{
+            const file=inp.files[0]; if(!file) return;
+            try{
+              toast('⬆️ Subiendo foto...');
+              const bitmap=await createImageBitmap(file);
+              const canvas=document.createElement('canvas');
+              const MAX=400; const scale=Math.min(MAX/bitmap.width,MAX/bitmap.height,1);
+              canvas.width=bitmap.width*scale; canvas.height=bitmap.height*scale;
+              canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+              const blob=await new Promise(res=>canvas.toBlob(res,'image/jpeg',0.85));
+              const sRef=storageRef(storage,'fotos/'+miMus.id+'.jpg');
+              await uploadBytes(sRef,blob);
+              const url=await getDownloadURL(sRef);
+              await updateDoc(doc(db,'musicos',miMus.id),{fotoUrl:url});
+              toast('✅ Foto actualizada!');
+            }catch(err){ toast('❌ Error: '+err.message); }
+          });
+          inp.click();
+        };
+      }
+    }
+  };
+  updateHeroAvatar();
+  // Re-update when musicos data refreshes
+  const _origRenderDash = typeof renderDashboard === 'function' ? renderDashboard : null;
   const sidebarName = $('sidebar-user-name');
   if(sidebarName) sidebarName.textContent = CU.nombre;
   // Track last access for musicians
@@ -2386,6 +2442,7 @@ function renderDashboard() {
   $('st-c').textContent=canciones.length; $('st-m').textContent=musicos.length; $('st-e').textContent=eventos.length;
   if(typeof renderMisEventosCard === 'function') renderMisEventosCard();
   if(typeof renderBloquearCard === 'function') renderBloquearCard();
+  if(typeof updateHeroAvatar === 'function') updateHeroAvatar();
   const hoy=new Date().toISOString().slice(0,10);
   const prox=[...eventos].filter(e=>e.fecha>=hoy).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(0,4);
   const proxEl=$('proximos-list'); proxEl.innerHTML='';
