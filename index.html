@@ -1068,7 +1068,7 @@ function renderMusicos() {
     const dispBadge='<span class="badge" style="background:'+(m.disponible?'#7EC8A022':'#E06C7522')+';color:'+(m.disponible?'var(--success)':'var(--danger)')+';border:1px solid '+(m.disponible?'#7EC8A044':'#E06C7544')+'">'+(m.disponible?'Disponible':'No disponible')+'</span>';
     const accesoHtml = (CU&&CU.admin) ? '<div style="font-size:11px;margin-top:4px">📲 '+fmtUltimoAcceso(m.ultimoAcceso)+'</div>' : '';
     const avatarHtml = m.fotoUrl
-      ? '<img src="'+m.fotoUrl+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover;object-position:center center;flex-shrink:0;border:2px solid var(--accent)" alt="'+m.nombre+'"/>'
+      ? '<div style="width:40px;height:40px;border-radius:50%;background-image:url(\''+m.fotoUrl+'\');background-size:cover;background-position:center;flex-shrink:0;border:2px solid var(--accent)"></div>'
       : '<div class="avatar">'+roleIcon(m.rol)+'</div>';
     card.innerHTML='<div class="row" style="align-items:flex-start">'+avatarHtml+'<div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="margin-top:4px">'+rolesBadges+' '+dispBadge+'</div>'+(m.admin?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44;margin-top:4px">🔑 Admin</span>':'')+(m.username?'<div style="color:var(--muted);font-size:11px;margin-top:3px">👤 '+m.username+'</div>':'')+(m.bday?'<div style="color:var(--muted);font-size:11px;margin-top:2px">🎂 '+fmtBday(m.bday)+'</div>':'')+accesoHtml+'</div></div>';
     const rowEl = card.querySelector('.row');
@@ -2110,7 +2110,7 @@ const buildEvDetail = (ev, backFn) => {
       const av=document.createElement('div'); av.style.cssText='width:32px;height:32px;border-radius:50%;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;';
       if(item.musId){
         const mData=musicos.find(x=>x.id===item.musId);
-        if(mData&&mData.fotoUrl){ av.innerHTML='<img src="'+mData.fotoUrl+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;object-position:center center" alt="'+mData.nombre+'"/>'; }
+        if(mData&&mData.fotoUrl){ av.style.backgroundImage='url('+mData.fotoUrl+')'; av.style.backgroundSize='cover'; av.style.backgroundPosition='center'; av.style.background='url('+mData.fotoUrl+') center/cover'; }
         else { av.style.cssText+=';background:linear-gradient(135deg,var(--accent),#9590E0);font-size:14px;'; av.textContent=g.icon; }
       } else { av.style.cssText+=';background:linear-gradient(135deg,var(--accent),#9590E0);font-size:14px;'; av.textContent=g.icon; }
       const info=document.createElement('div'); info.style.flex='1';
