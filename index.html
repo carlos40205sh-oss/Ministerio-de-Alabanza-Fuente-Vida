@@ -9,18 +9,26 @@
 <meta name="apple-mobile-web-app-title" content="Ministerio"/>
 <link rel="manifest" href="manifest.json"/>
 <title>Ministerio de Alabanza</title>
+<script>
+try{ if(localStorage.getItem('min_theme')==='light') document.documentElement.setAttribute('data-theme','light'); }catch(e){}
+</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --bg:#0B0B12;--surface:#15141F;--card:#1C1A29;--border:#2A2838;
   --gold:#E8C96A;--gold-dim:#A8922E;--accent:#7B6FD4;
   --text:#F5F3F0;--muted:#8C88A0;--danger:#E06C75;--success:#7EC8A0;--warn:#F0A500;
+  --glass:#15141Fee;--hero-grad:#211C3E;--sidebar-bg:#0D0C17;--sticky-bg:#15141F;
+  --shadow-soft:0 20px 60px -16px #00000088;
 }
-body.light-theme{
-  --bg:#F5F5F5;--surface:#FFFFFF;--card:#FFFFFF;--border:#E0E0E0;
-  --gold:#A8922E;--gold-dim:#A8922E;--accent:#5A4FB0;
-  --text:#1A1A1A;--muted:#666666;--danger:#E06C75;--success:#2E9E6A;--warn:#F0A500;
+[data-theme="light"]{
+  --bg:#F3F2F7;--surface:#FFFFFF;--card:#FFFFFF;--border:#E3E0EC;
+  --gold:#B8860F;--gold-dim:#8F6A0C;--accent:#6656C7;
+  --text:#1E1B2E;--muted:#6E6A80;--danger:#D2434F;--success:#1F8F5E;--warn:#B36A00;
+  --glass:#FFFFFFee;--hero-grad:#EAE6F7;--sidebar-bg:#FBFAFD;--sticky-bg:#FFFFFF;
+  --shadow-soft:0 20px 60px -16px #00000022;
 }
+[data-theme="light"] .btn-primary,[data-theme="light"] #btn-entrar{color:#1A1408 !important;}
 body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;max-width:480px;margin:0 auto;padding-bottom:80px;min-height:100vh;}
 @media(min-width:768px){
   body{max-width:100%;margin:0;padding-bottom:0;display:flex;min-height:100vh;}
@@ -34,12 +42,12 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;ma
   .section{padding:0;}
   .content{padding:0;}
 }
-header{background:var(--surface);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;}
+header{background:var(--glass);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:12px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;}
 header h1{font-size:15px;font-weight:800;color:var(--gold);}
 .content{padding:16px;}
 .card{background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;}
 .sec-title{font-size:20px;font-weight:800;color:var(--text);letter-spacing:-.3px;margin:0;display:flex;align-items:center;gap:8px;}
-.sec-hero{padding:18px 16px 16px;background:linear-gradient(180deg,#211C3E 0%,var(--bg) 100%);margin:-16px -16px 18px;}
+.sec-hero{padding:18px 16px 16px;background:linear-gradient(180deg,var(--hero-grad) 0%,var(--bg) 100%);margin:-16px -16px 18px;}
 .badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;}
 input,select{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:8px 12px;width:100%;outline:none;margin-bottom:8px;}
 input::placeholder{color:var(--muted);}
@@ -53,7 +61,7 @@ input::placeholder{color:var(--muted);}
 .btn-full{width:100%;}
 .row{display:flex;gap:8px;align-items:center;}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:860px;background:var(--surface);backdrop-filter:blur(10px);border-top:1px solid var(--border);display:flex;z-index:200;}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:860px;background:var(--glass);backdrop-filter:blur(10px);border-top:1px solid var(--border);display:flex;z-index:200;}
 .nav-btn{flex:1;background:none;border:none;cursor:pointer;padding:8px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit;}
 .nav-btn .icon{font-size:16px;}
 .nav-btn .label{font-size:9px;font-weight:600;color:var(--muted);}
@@ -121,7 +129,7 @@ input::placeholder{color:var(--muted);}
 .assigned-item{display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:8px;padding:7px 10px;margin-bottom:6px;}
 .link-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;border:1px solid var(--border);color:var(--accent);background:#7B6FD411;}
 .modal{display:none;position:fixed;inset:0;background:#000000BB;z-index:600;align-items:center;justify-content:center;padding:16px;}
-.modal-box{background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:20px;padding:20px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px -16px #00000088;}
+.modal-box{background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:20px;padding:20px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-soft);}
 .roles-check{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
 .roles-check label{display:flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);cursor:pointer;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px 10px;}
 .chk-lbl{color:var(--muted);font-size:13px;display:flex;gap:8px;align-items:center;margin-bottom:8px;cursor:pointer;}
@@ -155,14 +163,14 @@ input::placeholder{color:var(--muted);}
 
 <header>
   <h1>✨ Ministerio de Alabanza</h1>
-  <div style="display:flex;align-items:center;gap:8px">
-    <button id="btn-theme" style="border:none;background:transparent;font-size:18px;cursor:pointer;padding:4px" title="Cambiar tema">🌙</button>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button id="theme-toggle" title="Cambiar tema" style="background:var(--card);border:1px solid var(--border);border-radius:99px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;padding:0">🌙</button>
     <span id="hdr-user" style="font-size:11px;color:var(--muted);cursor:pointer"></span>
   </div>
 </header>
 
 <!-- Desktop sidebar -->
-<div id="desktop-sidebar" style="display:none;width:220px;flex-shrink:0;background:var(--bg);border-right:1px solid var(--border);flex-direction:column;padding:20px 12px;gap:4px;position:fixed;top:0;left:0;height:100vh;z-index:150;overflow-y:auto">
+<div id="desktop-sidebar" style="display:none;width:220px;flex-shrink:0;background:var(--sidebar-bg);border-right:1px solid var(--border);flex-direction:column;padding:20px 12px;gap:4px;position:fixed;top:0;left:0;height:100vh;z-index:150;overflow-y:auto">
   <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:16px">
     <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#7B6FD4,#4A3F9F);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">✨</div>
     <div>
@@ -181,10 +189,12 @@ input::placeholder{color:var(--muted);}
   <button class="nav-btn sidebar-btn nav-admin" data-tab="musicos"><span class="icon">🎸</span><span class="label">Músicos</span></button>
   <button class="nav-btn sidebar-btn nav-admin" data-tab="cantantes"><span class="icon">🎤</span><span class="label">Cantantes</span></button>
   <button class="nav-btn sidebar-btn nav-cuotas" data-tab="cuotas"><span class="icon">💰</span><span class="label">Cuotas</span></button>
-  <div id="sidebar-user" style="margin-top:20px;padding:12px;background:var(--card);border-radius:12px;display:flex;align-items:center;gap:10px">
+  <button id="theme-toggle-desktop" style="margin-top:16px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;color:var(--muted);width:100%">
+    <span id="theme-toggle-desktop-icon">🌙</span><span id="theme-toggle-desktop-label">Tema oscuro</span>
+  </button>
+  <div id="sidebar-user" style="margin-top:8px;padding:12px;background:var(--card);border-radius:12px;display:flex;align-items:center;gap:10px">
     <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9590E0);display:flex;align-items:center;justify-content:center;font-size:14px">🎸</div>
     <div style="font-size:12px;font-weight:700;flex:1" id="sidebar-user-name">-</div>
-    <button id="btn-theme-sidebar" style="border:none;background:transparent;font-size:16px;cursor:pointer;padding:2px" title="Cambiar tema">🌙</button>
     <span id="sidebar-exit" style="font-size:10px;color:var(--muted);cursor:pointer">Salir</span>
   </div>
 </div>
@@ -193,21 +203,20 @@ input::placeholder{color:var(--muted);}
 
 <!-- INICIO -->
 <div id="sec-inicio" class="section active" style="padding:0">
-  <div style="padding:24px 16px 22px;background:linear-gradient(180deg,#2A2350 0%,var(--bg) 100%);position:relative;overflow:hidden">
+  <div style="padding:24px 16px 22px;background:linear-gradient(180deg,var(--hero-grad) 0%,var(--bg) 100%);position:relative;overflow:hidden">
     <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,#E8C96A22 0%,transparent 70%)"></div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:4px;position:relative">✨ Ministerio de Alabanza</div>
     <h2 style="font-size:24px;font-weight:800;color:var(--text);letter-spacing:-.5px;position:relative;margin:0" id="welcome-msg">Bienvenido</h2>
   </div>
   <div style="display:flex;gap:10px;padding:0 16px;margin-top:-16px;position:relative;z-index:2">
-    <div id="st-card-c" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer"><div style="font-size:22px;font-weight:800;color:var(--gold)" id="st-c">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Canciones</div></div>
-    <div id="st-card-m" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer"><div style="font-size:22px;font-weight:800;color:var(--accent)" id="st-m">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Músicos</div></div>
-    <div id="st-card-e" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer"><div style="font-size:22px;font-weight:800;color:var(--success)" id="st-e">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Eventos</div></div>
+    <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--gold)" id="st-c">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Canciones</div></div>
+    <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--accent)" id="st-m">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Músicos</div></div>
+    <div style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 8px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--success)" id="st-e">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Eventos</div></div>
     <div id="mi-rol-stat-card" style="display:none;flex:1;background:var(--card);border:1px solid var(--accent);border-radius:14px;padding:12px 8px;text-align:center;cursor:pointer"><div style="font-size:22px;font-weight:800;color:var(--accent)" id="st-mi-rol">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px">Mi Rol</div></div>
   </div>
   <div style="padding:20px 16px 0">
     <div id="bday-hoy" style="display:none;background:linear-gradient(135deg,#E8C96A 0%,#F0A500 100%);border-radius:16px;padding:14px;margin-bottom:16px"></div>
     <div id="mis-cuotas-card" style="display:none"></div>
-    <div id="bloquear-fechas-card" style="display:none"></div>
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
       <div style="font-size:14px;font-weight:800;color:var(--text)">📅 Próximos eventos</div>
     </div>
@@ -272,7 +281,7 @@ input::placeholder{color:var(--muted);}
         <div><label class="lbl">Hora inicio</label><input id="ev-hora-ini" type="time"/></div>
         <div><label class="lbl">Hora fin</label><input id="ev-hora-fin" type="time"/></div>
       </div>
-      <label class="lbl">Notas</label><textarea id="ev-notas" placeholder="Opcional" style="height:80px;resize:vertical"></textarea>
+      <label class="lbl">Notas</label><input id="ev-notas" placeholder="Opcional"/>
     </div>
     <div id="ev-extra">
       <div class="form-sec">
@@ -672,61 +681,11 @@ input::placeholder{color:var(--muted);}
 
 <!-- MI ROL MODAL (bottom sheet) -->
 <div id="mi-rol-modal" style="display:none;position:fixed;inset:0;background:var(--bg);z-index:701;flex-direction:column;overflow-y:auto">
-  <div style="background:var(--surface);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:14px 16px;position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:10px">
+  <div style="background:var(--glass);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:14px 16px;position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:10px">
     <button id="btn-close-mi-rol" style="border:none;background:var(--card);color:var(--muted);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer">← Volver</button>
     <div style="font-size:16px;font-weight:800">🎵 Mi rol este mes</div>
   </div>
   <div id="mi-rol-content" style="padding:16px"></div>
-</div>
-
-<!-- STAT MODALS -->
-<div id="stat-modal-canciones" class="modal" style="z-index:701;align-items:flex-end;padding:0">
-  <div style="background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border-radius:24px 24px 0 0;padding:22px 18px 28px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 -20px 60px -20px #000000aa">
-    <div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 18px"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-size:18px;font-weight:800">🎵 Canciones</div>
-      <button id="close-stat-canciones" style="width:30px;height:30px;border-radius:50%;background:var(--card2,var(--surface));border:none;color:var(--muted);font-size:14px;cursor:pointer">✕</button>
-    </div>
-    <div id="stat-canciones-content"></div>
-  </div>
-</div>
-<div id="stat-modal-musicos" class="modal" style="z-index:701;align-items:flex-end;padding:0">
-  <div style="background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border-radius:24px 24px 0 0;padding:22px 18px 28px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 -20px 60px -20px #000000aa">
-    <div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 18px"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-size:18px;font-weight:800">🎸 Músicos</div>
-      <button id="close-stat-musicos" style="width:30px;height:30px;border-radius:50%;background:var(--card2,var(--surface));border:none;color:var(--muted);font-size:14px;cursor:pointer">✕</button>
-    </div>
-    <div id="stat-musicos-content"></div>
-  </div>
-</div>
-<div id="stat-modal-eventos" class="modal" style="z-index:701;align-items:flex-end;padding:0">
-  <div style="background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border-radius:24px 24px 0 0;padding:22px 18px 28px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto;box-shadow:0 -20px 60px -20px #000000aa">
-    <div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 18px"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-size:18px;font-weight:800">🗓 Próximos eventos</div>
-      <button id="close-stat-eventos" style="width:30px;height:30px;border-radius:50%;background:var(--card2,var(--surface));border:none;color:var(--muted);font-size:14px;cursor:pointer">✕</button>
-    </div>
-    <div id="stat-eventos-content"></div>
-  </div>
-</div>
-
-<!-- BLOQUEAR FECHAS MODAL -->
-<div id="bloquear-fechas-modal" class="modal" style="z-index:701;align-items:flex-end;padding:0">
-  <div style="background:linear-gradient(160deg,var(--card) 0%,var(--surface) 100%);border-radius:24px 24px 0 0;padding:22px 18px 28px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;box-shadow:0 -20px 60px -20px #000000aa">
-    <div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 18px"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <div style="font-size:18px;font-weight:800">🚫 Mis fechas bloqueadas</div>
-      <button id="btn-close-bloquear" style="width:30px;height:30px;border-radius:50%;background:var(--card2,var(--surface));border:none;color:var(--muted);font-size:14px;cursor:pointer">✕</button>
-    </div>
-    <p style="font-size:12px;color:var(--muted);margin-bottom:18px">Agregá los días que no podés servir. El admin verá un aviso al intentar asignarte.</p>
-    <div style="display:flex;gap:8px;margin-bottom:18px">
-      <input type="date" id="bloquear-fecha-input" style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:13px;padding:10px 12px;outline:none"/>
-      <button id="btn-agregar-fecha-bloqueada" style="background:var(--danger);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap">+ Agregar</button>
-    </div>
-    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Fechas bloqueadas</div>
-    <div id="bloquear-fechas-list"></div>
-  </div>
 </div>
 
 <!-- MODO SERVICIO -->
@@ -756,12 +715,10 @@ input::placeholder{color:var(--muted);}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
-
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 const FB = { apiKey:"AIzaSyC1OvY10grOXME6_Kdb28LTyyITIxxcjm0", authDomain:"ministerio-de-alabanza-ac3f2.firebaseapp.com", projectId:"ministerio-de-alabanza-ac3f2", storageBucket:"ministerio-de-alabanza-ac3f2.firebasestorage.app", messagingSenderId:"314404534308", appId:"1:314404534308:web:cbb3543a559a71c7a780b1" };
 const db = getFirestore(initializeApp(FB));
-const storage = getStorage();
 
 let messaging;
 try { messaging = getMessaging(); } catch(e) { console.log('FCM not supported:', e); }
@@ -898,11 +855,9 @@ const goTab = (tab, pushState=true) => {
 // Handle back button
 window.addEventListener('popstate', e => {
   const state = e.state || {tab:'inicio', view:'list'};
-  // Always close the Mis Cuotas / Mi Rol / Stat modals on any back navigation
+  // Always close the Mis Cuotas / Mi Rol modals on any back navigation, unless we're navigating INTO that modal
   if(state.modal !== 'mis-cuotas') closeMisCuotas(true);
   if(state.modal !== 'mi-rol') closeMiRol(true);
-  if(state.modal !== 'bloquear-fechas') { const bf=$('bloquear-fechas-modal'); if(bf) bf.style.display='none'; }
-  if(!state.modal || !state.modal.startsWith('stat-')) closeStatModals(true);
   if(state.view==='detail' || state.view==='form') {
     // Go back to list view of that tab
     goTab(state.tab||'eventos', false);
@@ -1067,52 +1022,17 @@ function renderMusicos() {
     const rolesBadges=(m.roles||[m.rol]).map(r=>'<span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+roleIcon(r)+' '+r+'</span>').join(' ');
     const dispBadge='<span class="badge" style="background:'+(m.disponible?'#7EC8A022':'#E06C7522')+';color:'+(m.disponible?'var(--success)':'var(--danger)')+';border:1px solid '+(m.disponible?'#7EC8A044':'#E06C7544')+'">'+(m.disponible?'Disponible':'No disponible')+'</span>';
     const accesoHtml = (CU&&CU.admin) ? '<div style="font-size:11px;margin-top:4px">📲 '+fmtUltimoAcceso(m.ultimoAcceso)+'</div>' : '';
-    const avatarHtml = m.fotoUrl
-      ? '<img src="'+m.fotoUrl+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover;object-position:center center;flex-shrink:0;border:2px solid var(--accent)" alt="'+m.nombre+'"/>'
-      : '<div class="avatar">'+roleIcon(m.rol)+'</div>';
-    card.innerHTML='<div class="row" style="align-items:flex-start">'+avatarHtml+'<div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="margin-top:4px">'+rolesBadges+' '+dispBadge+'</div>'+(m.admin?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44;margin-top:4px">🔑 Admin</span>':'')+(m.username?'<div style="color:var(--muted);font-size:11px;margin-top:3px">👤 '+m.username+'</div>':'')+(m.bday?'<div style="color:var(--muted);font-size:11px;margin-top:2px">🎂 '+fmtBday(m.bday)+'</div>':'')+accesoHtml+'</div></div>';
-    const rowEl = card.querySelector('.row');
-    // Botón de foto para el propio músico
-    const esMiPerfil = CU && !CU.admin && musicos.find(x=>x.username===CU.key)?.id===m.id;
-    if(esMiPerfil || (CU&&CU.admin)){
-      const fotoBtn=document.createElement('button'); 
-      fotoBtn.className='btn btn-ghost btn-sm'; 
-      fotoBtn.textContent='📷';
-      fotoBtn.title='Cambiar foto de perfil';
-      fotoBtn.addEventListener('click',async e=>{
-        e.stopPropagation();
-        const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
-        inp.addEventListener('change',async()=>{
-          const file=inp.files[0]; if(!file) return;
-          if(file.size>5*1024*1024){toast('⚠️ La imagen debe ser menor a 5MB');return;}
-          try{
-            toast('⬆️ Subiendo foto...');
-            const sRef=storageRef(storage,'fotos/'+m.id);
-            await uploadBytes(sRef,file);
-            const url=await getDownloadURL(sRef);
-            await updateDoc(doc(db,'musicos',m.id),{fotoUrl:url}).catch(err=>toast('❌ '+err.message));
-            toast('✅ Foto actualizada!');
-            renderMusicos();
-          }catch(err){
-            toast('❌ Error: '+err.message);
-            console.error(err);
-          }
-        });
-        inp.click();
-      });
-      if(CU&&CU.admin){
-        const btns=document.createElement('div'); btns.style.cssText='display:flex;flex-direction:column;gap:4px;flex-shrink:0';
-        const eBtn=document.createElement('button'); eBtn.className='btn btn-accent btn-sm'; eBtn.textContent='✏️ Editar';
-        eBtn.addEventListener('click',e=>{e.stopPropagation();editMusico(m.id);});
-        const dBtn=document.createElement('button'); dBtn.className='btn btn-ghost btn-sm'; dBtn.textContent=m.disponible?'🔴 Ocupado':'🟢 Disponible';
-        dBtn.addEventListener('click',e=>{e.stopPropagation();toggleDisp(m.id,m.disponible);});
-        const xBtn=document.createElement('button'); xBtn.className='btn btn-danger btn-sm'; xBtn.textContent='✕ Borrar';
-        xBtn.addEventListener('click',e=>{e.stopPropagation();deleteMusico(m.id);});
-        btns.appendChild(eBtn); btns.appendChild(fotoBtn); btns.appendChild(dBtn); btns.appendChild(xBtn);
-        rowEl.appendChild(btns);
-      } else {
-        rowEl.appendChild(fotoBtn);
-      }
+    card.innerHTML='<div class="row" style="align-items:flex-start"><div class="avatar">'+roleIcon(m.rol)+'</div><div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="margin-top:4px">'+rolesBadges+' '+dispBadge+'</div>'+(m.admin?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44;margin-top:4px">🔑 Admin</span>':'')+(m.username?'<div style="color:var(--muted);font-size:11px;margin-top:3px">👤 '+m.username+'</div>':'')+(m.bday?'<div style="color:var(--muted);font-size:11px;margin-top:2px">🎂 '+fmtBday(m.bday)+'</div>':'')+accesoHtml+'</div></div>';
+    if(CU&&CU.admin){
+      const btns=document.createElement('div'); btns.style.cssText='display:flex;flex-direction:column;gap:4px;flex-shrink:0';
+      const eBtn=document.createElement('button'); eBtn.className='btn btn-accent btn-sm'; eBtn.textContent='✏️ Editar';
+      eBtn.addEventListener('click',e=>{e.stopPropagation();editMusico(m.id);});
+      const dBtn=document.createElement('button'); dBtn.className='btn btn-ghost btn-sm'; dBtn.textContent=m.disponible?'🔴 Ocupado':'🟢 Disponible';
+      dBtn.addEventListener('click',e=>{e.stopPropagation();toggleDisp(m.id,m.disponible);});
+      const xBtn=document.createElement('button'); xBtn.className='btn btn-danger btn-sm'; xBtn.textContent='✕ Borrar';
+      xBtn.addEventListener('click',e=>{e.stopPropagation();deleteMusico(m.id);});
+      btns.appendChild(eBtn); btns.appendChild(dBtn); btns.appendChild(xBtn);
+      card.querySelector('.row').appendChild(btns);
     }
     return card;
   };
@@ -1370,11 +1290,11 @@ const renderResumenRoles = () => {
   ];
 
   const buildTableHeader = () => {
-    let h = '<thead><tr><th style="padding:9px 8px;text-align:left;position:sticky;left:0;background:#15141F;color:var(--gold);font-weight:700;font-size:10px;z-index:4;border-right:2px solid #2A2838;min-width:90px">Músico</th>';
+    let h = '<thead><tr><th style="padding:9px 8px;text-align:left;position:sticky;left:0;background:var(--sticky-bg);color:var(--gold);font-weight:700;font-size:10px;z-index:4;border-right:2px solid var(--border);min-width:90px">Músico</th>';
     evsDelMes.forEach(ev=>{
       const [yy,mm,dd] = (ev.fecha||'').split('-');
       const mesAbrev = MESES_ROLES[parseInt(mm)-1]?.slice(0,3)||'';
-      h += '<th style="padding:9px 8px;text-align:center;background:#15141F;color:var(--gold);font-weight:700;font-size:10px;min-width:70px;white-space:nowrap">'+(dd||'?')+' '+mesAbrev+'<br><span style="font-weight:400;color:var(--muted);font-size:9px">'+ev.titulo.slice(0,12)+(ev.titulo.length>12?'…':'')+'</span></th>';
+      h += '<th style="padding:9px 8px;text-align:center;background:var(--sticky-bg);color:var(--gold);font-weight:700;font-size:10px;min-width:70px;white-space:nowrap">'+(dd||'?')+' '+mesAbrev+'<br><span style="font-weight:400;color:var(--muted);font-size:9px">'+ev.titulo.slice(0,12)+(ev.titulo.length>12?'…':'')+'</span></th>';
     });
     h += '</tr></thead>';
     return h;
@@ -1546,7 +1466,6 @@ const setupGroupSearch = (searchId, dropdownId, listElId, arr, filterFn, simple)
 
   const showDropdown = () => {
     const q = searchInput.value.toLowerCase();
-    const evFecha = $('ev-fecha') ? $('ev-fecha').value : '';
     const ids = simple ? arr : arr.map(a=>a.musId);
     const candidates = musicos.filter(m=>(m.roles||[m.rol]).some(filterFn) && !ids.includes(m.id) && m.nombre.toLowerCase().includes(q));
     dropdown.innerHTML = '';
@@ -1557,15 +1476,8 @@ const setupGroupSearch = (searchId, dropdownId, listElId, arr, filterFn, simple)
         const item = document.createElement('div');
         item.className = 'search-dd-item';
         const yaAsignado = !simple ? checkYaAsignadoEnOtroGrupo(m.id) : null;
-        const tieneFechaBloqueada = !simple && evFecha && (m.fechasBloqueadas||[]).includes(evFecha);
-        item.innerHTML = '<span>'+roleIcon(m.rol)+'</span><span style="flex:1">'+m.nombre+'</span>'
-          +(yaAsignado?'<span style="font-size:10px;color:var(--warn)">⚠️ ya en '+yaAsignado+'</span>':'')
-          +(tieneFechaBloqueada?'<span style="font-size:10px;color:var(--danger)">🚫 No disponible</span>':'');
-        if(tieneFechaBloqueada){
-          item.style.opacity='0.5';
-          item.style.cursor='not-allowed';
-        } else {
-          item.addEventListener('click', ()=>{
+        item.innerHTML = '<span>'+roleIcon(m.rol)+'</span><span>'+m.nombre+'</span>'+(yaAsignado?'<span style="margin-left:auto;font-size:10px;color:var(--warn)">⚠️ ya en '+yaAsignado+'</span>':'');
+        item.addEventListener('click', ()=>{
           if(simple){
             arr.push(m.id);
           } else {
@@ -1577,7 +1489,6 @@ const setupGroupSearch = (searchId, dropdownId, listElId, arr, filterFn, simple)
           dropdown.style.display = 'none';
           renderGroupList(listElId, arr, simple);
         });
-        } // end else (not fecha bloqueada)  });
         dropdown.appendChild(item);
       });
     }
@@ -1809,9 +1720,7 @@ function buildEstructuraEditor(idx) {
 function renderEvOrden() {
   const el = $('ev-orden-list'); el.innerHTML='';
   if(!evOrden.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:12px">Sin items aún</div>';return;}
-  let totalMins = 0;
   evOrden.forEach((item,i)=>{
-    totalMins += parseInt(item.duracion||0);
     const div=document.createElement('div');
     div.style.cssText='background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:6px';
     const icons={'cancion':'🎵','oracion':'🙏','lectura':'📖','ofrendas':'💝','anuncio':'📢','otro':'✨'};
@@ -1820,25 +1729,13 @@ function renderEvOrden() {
       +'<span style="font-size:15px">'+icons[item.tipo]+'</span>'
       +'<div style="flex:1"><div style="font-size:13px;font-weight:600">'+item.titulo+'</div>'
       +(item.tono?'<div style="font-size:11px;color:var(--muted)">Tono: '+item.tono+'</div>':'')+'</div>';
-    // Duration input
-    const durWrap=document.createElement('div'); durWrap.style.cssText='display:flex;align-items:center;gap:2px;flex-shrink:0';
-    const durInp=document.createElement('input'); durInp.type='number'; durInp.min='0'; durInp.max='60';
-    durInp.value=item.duracion||''; durInp.placeholder='0';
-    durInp.style.cssText='width:36px;padding:3px 4px;font-size:11px;text-align:center;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text);margin:0';
-    durInp.addEventListener('input',()=>{ evOrden[i].duracion=parseInt(durInp.value)||0; renderEvOrdenTotal(); });
-    durWrap.innerHTML='<span style="font-size:10px;color:var(--muted)">⏱</span>';
-    durWrap.appendChild(durInp);
-    durWrap.innerHTML+='<span style="font-size:10px;color:var(--muted)">min</span>';
-    // Re-append durInp after innerHTML reset
-    const durSpanBefore = durWrap.querySelector('span');
-    durWrap.insertBefore(durInp, durWrap.children[1]);
     const upBtn=document.createElement('button'); upBtn.className='btn btn-ghost btn-sm'; upBtn.textContent='↑'; upBtn.style.padding='3px 7px';
     upBtn.addEventListener('click',()=>{if(i>0){[evOrden[i-1],evOrden[i]]=[evOrden[i],evOrden[i-1]];renderEvOrden();}});
     const downBtn=document.createElement('button'); downBtn.className='btn btn-ghost btn-sm'; downBtn.textContent='↓'; downBtn.style.padding='3px 7px';
     downBtn.addEventListener('click',()=>{if(i<evOrden.length-1){[evOrden[i+1],evOrden[i]]=[evOrden[i],evOrden[i+1]];renderEvOrden();}});
     const delBtn=document.createElement('button'); delBtn.className='btn btn-danger btn-sm'; delBtn.textContent='✕'; delBtn.style.padding='3px 7px';
     delBtn.addEventListener('click',()=>{evOrden.splice(i,1);$('estructura-panel').style.display='none';renderEvOrden();});
-    topRow.appendChild(durWrap); topRow.appendChild(upBtn); topRow.appendChild(downBtn); topRow.appendChild(delBtn);
+    topRow.appendChild(upBtn); topRow.appendChild(downBtn); topRow.appendChild(delBtn);
     div.appendChild(topRow);
     if(item.tipo==='cancion'){
       const estBtn=document.createElement('button');
@@ -1847,6 +1744,7 @@ function renderEvOrden() {
       const partes=item.estructura||[];
       estBtn.textContent=partes.length?'🎼 '+partes.map(p=>p.nombre+' ×'+p.veces).join(' → '):'+ Agregar estructura';
       estBtn.addEventListener('click',()=>{
+        // Toggle inline editor
         const existing = div.querySelector('.estructura-editor');
         if(existing){ existing.remove(); return; }
         const editor = buildEstructuraEditor(i);
@@ -1857,27 +1755,6 @@ function renderEvOrden() {
     }
     el.appendChild(div);
   });
-  renderEvOrdenTotal();
-}
-
-function renderEvOrdenTotal() {
-  let total = evOrden.reduce((sum,item)=>sum+(parseInt(item.duracion)||0),0);
-  let totalEl = $('ev-orden-total');
-  if(!totalEl){
-    totalEl = document.createElement('div');
-    totalEl.id = 'ev-orden-total';
-    const list = $('ev-orden-list');
-    if(list && list.parentNode) list.parentNode.insertBefore(totalEl, list.nextSibling);
-  }
-  if(total>0){
-    const horas = Math.floor(total/60);
-    const mins = total%60;
-    const durStr = horas>0 ? horas+'h '+(mins>0?mins+'min':'') : mins+'min';
-    totalEl.style.cssText='text-align:right;font-size:12px;font-weight:700;color:var(--gold);padding:6px 4px;margin-top:2px';
-    totalEl.textContent='⏱ Total: '+durStr;
-  } else {
-    totalEl.textContent='';
-  }
 }
 
 // ── EVENTO DETAIL ──
@@ -1915,7 +1792,7 @@ const buildEvDetail = (ev, backFn) => {
 
   // ── HEADER ──
   const hdrDiv=document.createElement('div');
-  hdrDiv.style.cssText='background:linear-gradient(135deg,#2A2350 0%,var(--bg) 100%);padding:16px;border-bottom:1px solid var(--border)';
+  hdrDiv.style.cssText='background:linear-gradient(135deg,var(--hero-grad) 0%,var(--bg) 100%);padding:16px;border-bottom:1px solid var(--border)';
   const backBtn=document.createElement('button'); backBtn.className='btn btn-ghost btn-sm'; backBtn.textContent='← Volver';
   backBtn.style.marginBottom='8px'; backBtn.addEventListener('click',backFn);
   const tipoBadge=document.createElement('div');
@@ -1967,14 +1844,14 @@ const buildEvDetail = (ev, backFn) => {
   wrap.appendChild(hdrDiv);
 
   // ── TABS ──
-  const TABS=[{id:'orden',label:'📋 Orden'},{id:'equipo',label:'👥 Equipo'},{id:'notas',label:'📝 Notas'}];
+  const TABS=[{id:'orden',icon:'📋',label:'Orden'},{id:'equipo',icon:'👥',label:'Equipo'},{id:'notas',icon:'📝',label:'Notas'}];
   const tabBar=document.createElement('div');
   tabBar.style.cssText='display:flex;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto';
   const tabContents={};
   TABS.forEach(t=>{
     const tabBtn=document.createElement('div');
-    tabBtn.style.cssText='flex-shrink:0;padding:12px 16px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap';
-    tabBtn.textContent=t.label;
+    tabBtn.style.cssText='flex-shrink:0;padding:13px 18px 11px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:6px;transition:color .15s,border-color .15s';
+    tabBtn.innerHTML='<span style="font-size:13px">'+t.icon+'</span><span>'+t.label+'</span>';
     tabBtn.dataset.tab=t.id;
     tabBar.appendChild(tabBtn);
     const panel=document.createElement('div');
@@ -1992,7 +1869,7 @@ const buildEvDetail = (ev, backFn) => {
     tabBar.querySelectorAll('div').forEach(b=>{
       const isActive=b.dataset.tab===tabId;
       b.style.color=isActive?'var(--gold)':'var(--muted)';
-      b.style.borderBottom=isActive?'2px solid var(--gold)':'2px solid transparent';
+      b.style.borderBottom=isActive?'3px solid var(--gold)':'3px solid transparent';
     });
     Object.values(tabContents).forEach(p=>p.style.display='none');
     tabContents[tabId].style.display='block';
@@ -2016,68 +1893,12 @@ const buildEvDetail = (ev, backFn) => {
         +'<div style="flex:1">'
           +'<div style="font-size:14px;font-weight:700">'+item.titulo+'</div>'
           +(item.tono?'<div style="font-size:11px;color:var(--muted);margin-top:2px">Tono: '+item.tono+'</div>':'')
-          +(item.duracion?'<div style="font-size:10px;color:var(--gold);margin-top:2px">⏱ '+item.duracion+' min</div>':'')
           +(estructura?'<div style="font-size:10px;color:var(--accent);margin-top:3px">'+estructura+'</div>':'')
           +(can&&can.linkYoutube?'<a href="'+can.linkYoutube+'" target="_blank" style="font-size:10px;color:var(--gold);margin-top:3px;display:block">▶ Ver en YouTube</a>':'')
         +'</div>';
       ordenPanel.appendChild(d);
     });
   }
-
-  // Total duración
-  const totalMins = (ev.orden||[]).reduce((s,i)=>s+(parseInt(i.duracion)||0),0);
-  if(totalMins>0){
-    const horas=Math.floor(totalMins/60); const mins=totalMins%60;
-    const durStr=horas>0?horas+'h '+(mins>0?mins+'min':''):mins+'min';
-    const totalEl=document.createElement('div');
-    totalEl.style.cssText='text-align:right;font-size:13px;font-weight:700;color:var(--gold);padding:10px 4px 4px;border-top:1px solid var(--border);margin-top:4px';
-    totalEl.textContent='⏱ Duración total: '+durStr;
-    ordenPanel.appendChild(totalEl);
-  }
-
-  // Notas generales al final del Orden
-  if(ev.notas){
-    const notaTitle=document.createElement('div');
-    notaTitle.style.cssText='font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px';
-    notaTitle.textContent='📝 Notas del servicio';
-    ordenPanel.appendChild(notaTitle);
-    const notaBox=document.createElement('div');
-    notaBox.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:13px;color:var(--text);line-height:1.6';
-    notaBox.textContent=ev.notas;
-    ordenPanel.appendChild(notaBox);
-  }
-
-  // Comentarios al final del Orden
-  const comsOrden=ev.comentarios||[];
-  const comTitleOrden=document.createElement('div');
-  comTitleOrden.style.cssText='font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px';
-  comTitleOrden.textContent='💬 Comentarios ('+comsOrden.length+')';
-  ordenPanel.appendChild(comTitleOrden);
-  comsOrden.forEach((c,i)=>{
-    const cd=document.createElement('div');
-    cd.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px';
-    cd.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;font-weight:600;color:var(--accent)">'+c.autor+'</span><span style="font-size:10px;color:var(--muted)">'+c.fecha+'</span></div><div style="font-size:13px;color:var(--text);margin-top:6px">'+c.texto+'</div>';
-    if(CU&&CU.admin){
-      const xBtn=document.createElement('button'); xBtn.style.cssText='border:none;background:transparent;color:var(--danger);cursor:pointer;font-size:12px;float:right';
-      xBtn.textContent='✕'; xBtn.addEventListener('click',()=>delComentario(ev.id,i));
-      cd.querySelector('div').appendChild(xBtn);
-    }
-    ordenPanel.appendChild(cd);
-  });
-  const comRowOrden=document.createElement('div'); comRowOrden.style.cssText='display:flex;gap:6px;margin-top:8px';
-  const comInpOrden=document.createElement('input'); comInpOrden.id='com-inp-orden-'+ev.id; comInpOrden.placeholder='Escribí un comentario...';
-  comInpOrden.style.cssText='flex:1;margin:0;padding:8px 10px;font-size:12px';
-  const comBtnOrden=document.createElement('button');
-  comBtnOrden.style.cssText='border:none;background:var(--accent);color:#fff;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap';
-  comBtnOrden.textContent='Enviar';
-  comBtnOrden.addEventListener('click',async()=>{
-    const inp=$('com-inp-orden-'+ev.id); const txt=inp?inp.value.trim():''; if(!txt) return;
-    const fecha=new Date().toLocaleDateString('es-CR');
-    const nuevos=[...(ev.comentarios||[]),{autor:CU.nombre,texto:txt,fecha}];
-    await updateDoc(doc(db,'eventos',ev.id),{comentarios:nuevos});
-    inp.value=''; toast('💬 Comentario enviado');
-  });
-  comRowOrden.appendChild(comInpOrden); comRowOrden.appendChild(comBtnOrden); ordenPanel.appendChild(comRowOrden);
 
   // ── TAB: EQUIPO ──
   const equipoPanel=tabContents['equipo'];
@@ -2109,27 +1930,13 @@ const buildEvDetail = (ev, backFn) => {
     g.items.forEach((item,i)=>{
       const row=document.createElement('div');
       row.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:'+(i<g.items.length-1?'1px solid var(--border)':'none');
-      const av=document.createElement('div'); av.style.cssText='width:32px;height:32px;border-radius:50%;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;';
-      if(item.musId){
-        const mData=musicos.find(x=>x.id===item.musId);
-        if(mData&&mData.fotoUrl){ av.innerHTML='<img src="'+mData.fotoUrl+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;object-position:center center" alt="'+mData.nombre+'"/>'; }
-        else { av.style.cssText+=';background:linear-gradient(135deg,var(--accent),#9590E0);font-size:14px;'; av.textContent=g.icon; }
-      } else { av.style.cssText+=';background:linear-gradient(135deg,var(--accent),#9590E0);font-size:14px;'; av.textContent=g.icon; }
+      const av=document.createElement('div'); av.className='avatar'; av.style.cssText='width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9590E0);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0';
+      av.textContent=g.icon;
       const info=document.createElement('div'); info.style.flex='1';
       info.innerHTML='<div style="font-size:13px;font-weight:700">'+item.nombre+'</div><div style="font-size:11px;color:var(--muted)">'+item.sub+'</div>';
       row.appendChild(av); row.appendChild(info);
-      // Asistencia + confirmación para músicos
+      // Asistencia para músicos
       if(item.musId && CU&&CU.admin){
-        const confirmaciones = ev.confirmaciones||{};
-        const confEstado = confirmaciones[item.musId];
-        const confBadge = confEstado==='confirmo'
-          ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#7EC8A022;color:var(--success);border:1px solid #7EC8A044">✅ Confirmó</span>'
-          : confEstado==='nopuedo'
-          ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#E06C7522;color:var(--danger);border:1px solid #E06C7544">❌ No puede</span>'
-          : '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--border);color:var(--muted)">⏳ Pendiente</span>';
-        const confEl = document.createElement('span');
-        confEl.innerHTML = confBadge;
-        row.appendChild(confEl);
         const isPulp = g.label==='Pulpería';
         const evIdKey = isPulp?ev.id+'_pulp':ev.id;
         const asistMap = isPulp?asistPulp:asist;
@@ -2321,17 +2128,6 @@ function renderCalList(date) {
       }).join('');
       presididorHtml += '<div style="display:flex;align-items:center;gap:6px;margin-top:5px"><span style="font-size:12px">📖</span><span style="font-size:10px;color:var(--muted);font-weight:700;width:52px;flex-shrink:0">Predicador</span><div>'+predNombres+'</div></div>';
     }
-    // Build canciones del orden
-    const cancionesOrden = (ev.orden||[]).filter(i=>i.tipo==='cancion'&&i.titulo);
-    const cancionesHtml = cancionesOrden.length
-      ? '<div style="margin-top:6px"><div style="display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap">'
-        +'<span style="font-size:12px">🎵</span>'
-        +'<span style="font-size:10px;color:var(--muted);font-weight:700;width:52px;flex-shrink:0">Canciones</span>'
-        +'<div style="display:flex;flex-wrap:wrap;gap:3px">'
-        +cancionesOrden.map((c,i)=>'<span style="display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:99px;background:#7B6FD422;color:var(--accent);margin:1px 2px">'+(i+1)+'. '+c.titulo+(c.tono?' ('+c.tono+')':'')+'</span>').join('')
-        +'</div></div></div>'
-      : '';
-
     const equipoHtml = gruposEquipo.filter(g=>g.arr.length).map(g=>{
       const nombres = g.arr.map(a=>{
         const musId = typeof a==='string' ? a : a.musId;
@@ -2348,7 +2144,7 @@ function renderCalList(date) {
         +'<span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;margin-top:5px;background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+'">'+ev.tipo+'</span></div>'
         +'<span style="color:var(--muted);font-size:18px">›</span>'
       +'</div>'
-      +((equipoHtml||presididorHtml||cancionesHtml) ? '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">'+presididorHtml+equipoHtml+cancionesHtml+'</div>' : '');
+      +((equipoHtml||presididorHtml) ? '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">'+presididorHtml+equipoHtml+'</div>' : '');
 
     div.querySelector('.cal-ev-header').addEventListener('click',()=>{
       // Hide calendar, show detail
@@ -2378,7 +2174,6 @@ function renderCalList(date) {
 function renderDashboard() {
   $('st-c').textContent=canciones.length; $('st-m').textContent=musicos.length; $('st-e').textContent=eventos.length;
   if(typeof renderMisEventosCard === 'function') renderMisEventosCard();
-  if(typeof renderBloquearCard === 'function') renderBloquearCard();
   const hoy=new Date().toISOString().slice(0,10);
   const prox=[...eventos].filter(e=>e.fecha>=hoy).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(0,4);
   const proxEl=$('proximos-list'); proxEl.innerHTML='';
@@ -2526,8 +2321,8 @@ const renderResumenCuotas = () => {
   const musList = musicos.filter(m=>m.username).sort((a,b)=>a.nombre.localeCompare(b.nombre));
   const MESES_ABREV = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-  let html = '<thead><tr><th style="padding:8px 10px;text-align:left;position:sticky;left:0;background:#15141F;color:#E8C96A;font-weight:700;z-index:4;border-right:2px solid #2A2838;min-width:120px">Músico</th>';
-  MESES_ABREV.forEach(m => html += '<th style="padding:8px 10px;text-align:center;background:#15141F;color:#E8C96A;font-weight:700;min-width:48px">'+m+'</th>');
+  let html = '<thead><tr><th style="padding:8px 10px;text-align:left;position:sticky;left:0;background:var(--sticky-bg);color:var(--gold);font-weight:700;z-index:4;border-right:2px solid var(--border);min-width:120px">Músico</th>';
+  MESES_ABREV.forEach(m => html += '<th style="padding:8px 10px;text-align:center;background:var(--sticky-bg);color:var(--gold);font-weight:700;min-width:48px">'+m+'</th>');
   html += '</tr></thead><tbody>';
 
   musList.forEach((m,i) => {
@@ -2688,63 +2483,30 @@ const renderMisEventosCard = () => {
 window.showMiRol = () => {
   const m = musicos.find(x=>x.username===CU.key);
   if(!m || !misEventosDelMes.length) return;
-  renderMiRolContent(m);
-  $('mi-rol-modal').style.display='flex';
-  history.pushState({tab:history.state?.tab||'inicio', view:'modal', modal:'mi-rol'}, '', location.pathname);
-};
 
-const renderMiRolContent = (m) => {
-  let cardsHtml = '';
-  misEventosDelMes.forEach((ev)=>{
+  let rowsHtml = '';
+  misEventosDelMes.forEach((ev,i)=>{
     const [yy,mm,dd] = (ev.fecha||'').split('-');
     const mesAbrev = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mm)-1]||'';
-    const confirmaciones = ev.confirmaciones||{};
-    const estado = confirmaciones[m.id] || 'pendiente';
-    const estadoBadge = estado==='confirmo'
-      ? '<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;background:#7EC8A022;color:var(--success);border:1px solid #7EC8A044;flex-shrink:0">✅ Confirmado</span>'
-      : estado==='nopuedo'
-      ? '<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;background:#E06C7522;color:var(--danger);border:1px solid #E06C7544;flex-shrink:0">❌ No puede</span>'
-      : '<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--border);color:var(--muted);flex-shrink:0">⏳ Pendiente</span>';
-
-    cardsHtml += '<div style="background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px">'
-      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
-        +'<div style="font-size:12px;font-weight:800;color:var(--gold);width:42px;flex-shrink:0">'+(dd||'?')+' '+mesAbrev+'</div>'
-        +'<div style="flex:1;min-width:0">'
-          +'<div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ev.titulo+'</div>'
-          +'<div style="font-size:11px;font-weight:700;color:var(--accent);margin-top:2px">'+getMiRolDeEvento(m,ev)+'</div>'
-          +(ev.horaIni?'<div style="font-size:11px;color:var(--muted);margin-top:1px">⏰ '+ev.horaIni+'</div>':'')
-        +'</div>'
-        +estadoBadge
-      +'</div>'
-      +'<div style="display:flex;gap:8px">'
-        +'<button data-evid="'+ev.id+'" data-musid="'+m.id+'" data-fecha="'+ev.fecha+'" data-accion="confirmo" style="flex:1;border:2px solid '+(estado==='confirmo'?'var(--success)':'#7EC8A044')+';background:'+(estado==='confirmo'?'var(--success)':'#7EC8A022')+';color:'+(estado==='confirmo'?'#fff':'var(--success)')+';border-radius:12px;padding:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">✅ Confirmo</button>'
-        +'<button data-evid="'+ev.id+'" data-musid="'+m.id+'" data-fecha="'+ev.fecha+'" data-accion="nopuedo" style="flex:1;border:2px solid '+(estado==='nopuedo'?'var(--danger)':'#E06C7544')+';background:'+(estado==='nopuedo'?'var(--danger)':'#E06C7522')+';color:'+(estado==='nopuedo'?'#fff':'var(--danger)')+';border-radius:12px;padding:10px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">❌ No puedo</button>'
-      +'</div>'
+    const isLast = i === misEventosDelMes.length-1;
+    rowsHtml += '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;'+(isLast?'':'border-bottom:1px solid var(--border);')+'cursor:pointer" data-evid="'+ev.id+'">'
+      +'<div style="font-size:12px;font-weight:800;color:var(--gold);width:42px;flex-shrink:0">'+(dd||'?')+' '+mesAbrev+'</div>'
+      +'<div style="font-size:13px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ev.titulo+'</div>'
+      +'<div style="font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0;white-space:nowrap">'+getMiRolDeEvento(m, ev)+'</div>'
     +'</div>';
   });
 
-  $('mi-rol-content').innerHTML = '<div style="font-size:12px;color:var(--muted);margin-bottom:14px">Confirmá tu asistencia a cada evento</div>' + cardsHtml;
+  $('mi-rol-content').innerHTML = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:4px 14px">'+rowsHtml+'</div>';
+  $('mi-rol-modal').style.display='flex';
+  history.pushState({tab:history.state?.tab||'inicio', view:'modal', modal:'mi-rol'}, '', location.pathname);
 
-  $('mi-rol-content').querySelectorAll('button[data-accion]').forEach(btn=>{
-    btn.addEventListener('click', async()=>{
-      const evId = btn.dataset.evid;
-      const musId = btn.dataset.musid;
-      const fecha = btn.dataset.fecha;
-      const accion = btn.dataset.accion;
-      const ev = eventos.find(e=>e.id===evId); if(!ev) return;
-      const confirmaciones = {...(ev.confirmaciones||{})};
-      confirmaciones[musId] = accion;
-      await updateDoc(doc(db,'eventos',evId),{confirmaciones});
-      // Si dice "no puedo", bloquear la fecha automáticamente
-      if(accion==='nopuedo'){
-        const mData = musicos.find(x=>x.id===musId);
-        if(mData){
-          const fechas=[...(mData.fechasBloqueadas||[])];
-          if(!fechas.includes(fecha)){ fechas.push(fecha); await updateDoc(doc(db,'musicos',musId),{fechasBloqueadas:fechas}); }
-        }
-      }
-      toast(accion==='confirmo'?'✅ Confirmado!':'❌ Fecha bloqueada automáticamente');
-      renderMiRolContent(musicos.find(x=>x.username===CU.key));
+  $('mi-rol-content').querySelectorAll('[data-evid]').forEach(line=>{
+    line.addEventListener('click', ()=>{
+      closeMiRol();
+      setTimeout(()=>{
+        goTab('eventos', false);
+        showEvDetail(line.dataset.evid, 'inicio');
+      }, 50);
     });
   });
 };
@@ -3201,220 +2963,42 @@ onSnapshot(collection(db,'eventos'),snap=>{
   renderEventos();renderDashboard();renderCalendar();
 });
 
-
-// ── BLOQUEAR FECHAS ──
-const renderBloquearCard = () => {
-  const cardEl = $('bloquear-fechas-card');
-  if(!cardEl) return;
-  if(!CU){ cardEl.style.display='none'; return; }
-  const m = musicos.find(x=>x.username===CU.key);
-  if(!m){ cardEl.style.display='none'; return; }
-
-  const fechasBloqueadas = m.fechasBloqueadas||[];
-  const hoy = new Date().toISOString().slice(0,10);
-  const activas = fechasBloqueadas.filter(f=>f>=hoy);
-
-  cardEl.style.display='block';
-  cardEl.innerHTML = '<div style="background:linear-gradient(135deg,#E06C75 0%,#B04050 100%);border-radius:18px;padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:12px;box-shadow:0 10px 26px -10px #E06C7555;cursor:pointer">'
-    +'<div style="font-size:22px">🚫</div>'
-    +'<div style="flex:1"><div style="font-size:14px;font-weight:800;color:#fff">Bloquear fechas</div>'
-    +'<div style="font-size:11.5px;color:#ffffffcc;margin-top:2px">Marcá los días que no podés servir</div></div>'
-    +(activas.length?'<span style="background:#fff;color:#B04050;font-size:10px;font-weight:800;padding:3px 9px;border-radius:99px">'+activas.length+' bloqueada'+(activas.length>1?'s':'')+'</span>':'<span style="color:#fff;font-size:18px">›</span>')
-    +'</div>';
-  cardEl.onclick = showBloquearFechas;
-};
-
-window.showBloquearFechas = () => {
-  const m = musicos.find(x=>x.username===CU.key);
-  if(!m) return;
-  renderBloquearList(m);
-  $('bloquear-fechas-modal').style.display='flex';
-  history.pushState({tab:'inicio',view:'modal',modal:'bloquear-fechas'},'',location.pathname);
-};
-
-const renderBloquearList = (m) => {
-  const listEl = $('bloquear-fechas-list'); if(!listEl) return;
-  const fechas = (m.fechasBloqueadas||[]).sort();
-  const diasSem = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
-  if(!fechas.length){
-    listEl.innerHTML='<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px;background:var(--surface);border-radius:12px">Sin fechas bloqueadas</div>';
-    return;
-  }
-  listEl.innerHTML = fechas.map((f,i)=>{
-    const [y,mo,d]=f.split('-');
-    const diaNom=diasSem[new Date(f+'T12:00:00').getDay()];
-    const mesNom=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mo)-1]||'';
-    return '<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid #E06C7533;border-radius:12px;padding:12px 14px;margin-bottom:8px">'
-      +'<div><div style="font-size:13px;font-weight:700;color:var(--danger)">📅 '+parseInt(d)+' '+mesNom+' '+y+'</div>'
-      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+diaNom+'</div></div>'
-      +'<button onclick="removeFechaBloqueada(\''+f+'\')" style="border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:16px;padding:4px">✕</button>'
-      +'</div>';
-  }).join('');
-};
-
-window.removeFechaBloqueada = async (fecha) => {
-  const m = musicos.find(x=>x.username===CU.key); if(!m) return;
-  const nuevas = (m.fechasBloqueadas||[]).filter(f=>f!==fecha);
-  await updateDoc(doc(db,'musicos',m.id),{fechasBloqueadas:nuevas});
-  toast('✅ Fecha desbloqueada');
-};
-
-function closeBloquerarFechas(skipHistory){
-  $('bloquear-fechas-modal').style.display='none';
-  if(!skipHistory) history.back();
-}
-$('btn-close-bloquear').addEventListener('click',()=>closeBloquerarFechas());
-$('btn-agregar-fecha-bloqueada').addEventListener('click', async()=>{
-  const inp=$('bloquear-fecha-input'); if(!inp||!inp.value) return;
-  const m=musicos.find(x=>x.username===CU.key); if(!m) return;
-  const fechas=[...(m.fechasBloqueadas||[])];
-  if(fechas.includes(inp.value)){toast('⚠️ Ya está bloqueada');return;}
-  fechas.push(inp.value);
-  await updateDoc(doc(db,'musicos',m.id),{fechasBloqueadas:fechas});
-  inp.value='';
-  toast('✅ Fecha bloqueada');
-  renderBloquearList(musicos.find(x=>x.username===CU.key));
-  renderBloquearCard();
-});
-
-// ── STAT MODALS ──
-window.showStatModal = (tipo) => {
-  const hoy = new Date().toISOString().slice(0,10);
-
-  if(tipo==='canciones'){
-    const sorted = [...canciones].sort((a,b)=>a.titulo.localeCompare(b.titulo));
-    const renderCanList = (q='') => {
-      const filtered = sorted.filter(c=>c.titulo.toLowerCase().includes(q)||((c.artista||'').toLowerCase().includes(q)));
-      let html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:4px 14px">';
-      if(!filtered.length){ html += '<div style="color:var(--muted);text-align:center;padding:16px;font-size:13px">Sin resultados</div>'; }
-      filtered.forEach((c,i)=>{
-        const isLast = i===filtered.length-1;
-        let badge = '';
-        if(c.nueva) badge='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#E8C96A22;color:var(--gold)">🆕</span>';
-        else if(c.aprender) badge='<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:#7EC8A022;color:var(--success)">📚</span>';
-        const btns = [
-          c.linkLetra ? '<a href="'+c.linkLetra+'" target="_blank" style="border:none;background:#7B6FD422;color:var(--accent);border-radius:7px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer;text-decoration:none">📄 Letra</a>' : '',
-          c.linkAcordes ? '<a href="'+c.linkAcordes+'" target="_blank" style="border:none;background:#7B6FD422;color:var(--accent);border-radius:7px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer;text-decoration:none">🎸 Acordes</a>' : '',
-          c.linkYoutube ? '<a href="'+c.linkYoutube+'" target="_blank" style="border:none;background:#E06C7522;color:#E06C75;border-radius:7px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer;text-decoration:none">▶️ YouTube</a>' : '',
-        ].filter(Boolean).join(' ');
-        html += '<div style="padding:10px 0;'+(isLast?'':'border-bottom:1px solid var(--border)')+'">'+
-          '<div style="display:flex;align-items:center;gap:10px">'+
-          '<div style="width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#7B6FD4,#5A4FB0);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🎵</div>'+
-          '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+c.titulo+'</div>'+
-          '<div style="font-size:11px;color:var(--muted)">'+(c.artista||'')+(c.tono?' · '+c.tono:'')+'</div></div>'+
-          badge+'</div>'+
-          (btns?'<div style="margin-top:6px;margin-left:44px;display:flex;gap:5px;flex-wrap:wrap">'+btns+'</div>':'')+
-          '</div>';
-      });
-      html += '</div>';
-      $('stat-canciones-list').innerHTML = html;
-    };
-    $('stat-canciones-content').innerHTML =
-      '<input id="stat-can-search" placeholder="🔍 Buscar canción..." style="width:100%;margin-bottom:12px;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;outline:none;font-family:inherit"/>'+
-      '<div id="stat-canciones-list"></div>';
-    renderCanList();
-    const searchInp = $('stat-can-search');
-    if(searchInp) searchInp.addEventListener('input', ()=>renderCanList(searchInp.value.toLowerCase().trim()));
-    $('stat-modal-canciones').style.display='flex';
-    history.pushState({tab:'inicio',view:'modal',modal:'stat-canciones'},'',location.pathname);
-  }
-
-    else if(tipo==='musicos'){
-    const sorted = [...musicos].sort((a,b)=>a.nombre.localeCompare(b.nombre));
-    let html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:4px 14px">';
-    if(!sorted.length){ html += '<div style="color:var(--muted);text-align:center;padding:16px;font-size:13px">Sin músicos</div>'; }
-    sorted.forEach((m,i)=>{
-      const isLast = i===sorted.length-1;
-      const dot = m.disponible
-        ? '<div style="width:7px;height:7px;border-radius:50%;background:var(--success);flex-shrink:0"></div>'
-        : '<div style="width:7px;height:7px;border-radius:50%;background:var(--border);flex-shrink:0"></div>';
-      html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;'+(isLast?'':'border-bottom:1px solid var(--border)')+'">'+
-        '<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9590E0);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">'+roleIcon(m.rol)+'</div>'+
-        '<div style="flex:1"><div style="font-size:13px;font-weight:700">'+m.nombre+'</div>'+
-        '<div style="font-size:11px;color:var(--muted)">'+(m.roles||[m.rol]).join(', ')+'</div></div>'+
-        dot+'</div>';
-    });
-    html += '</div>';
-    $('stat-musicos-content').innerHTML = html;
-    $('stat-modal-musicos').style.display='flex';
-    history.pushState({tab:'inicio',view:'modal',modal:'stat-musicos'},'',location.pathname);
-  }
-  else if(tipo==='eventos'){
-    const prox = [...eventos].filter(e=>e.fecha>=hoy).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
-    let html = '<div style="display:flex;flex-direction:column;gap:8px">';
-    if(!prox.length){ html += '<div style="color:var(--muted);text-align:center;padding:16px;font-size:13px">No hay eventos próximos</div>'; }
-    prox.forEach(ev=>{
-      const [y,mo,d]=(ev.fecha||'').split('-');
-      const mesAbrev=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mo)-1]||'';
-      html += '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;position:relative;overflow:hidden;cursor:pointer" onclick="closeStatModals();goTab(\'eventos\',true);setTimeout(()=>showEvDetail(\''+ev.id+'\',\'inicio\'),100)">'+
-        '<div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:'+tipoColor(ev.tipo)+'"></div>'+
-        '<div style="width:42px;height:48px;border-radius:10px;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">'+
-          '<div style="font-size:17px;font-weight:800;color:var(--gold);line-height:1">'+(d||'?')+'</div>'+
-          '<div style="font-size:8px;color:var(--muted);text-transform:uppercase;margin-top:2px">'+mesAbrev+'</div>'+
-        '</div>'+
-        '<div style="flex:1"><div style="font-size:14px;font-weight:700">'+ev.titulo+'</div>'+
-        (ev.horaIni?'<div style="font-size:11px;color:var(--muted);margin-top:2px">⏰ '+ev.horaIni+'</div>':'')+'</div>'+
-        '<span style="color:var(--muted);font-size:18px">›</span></div>';
-    });
-    html += '</div>';
-    $('stat-eventos-content').innerHTML = html;
-    $('stat-modal-eventos').style.display='flex';
-    history.pushState({tab:'inicio',view:'modal',modal:'stat-eventos'},'',location.pathname);
-  }
-};
-
-window.closeStatModals = (skipHistory) => {
-  ['canciones','musicos','eventos'].forEach(t=>{
-    const el=$('stat-modal-'+t); if(el) el.style.display='none';
-  });
-  if(!skipHistory) history.back();
-};
-
-// Stat card listeners
-const stCardC = $('st-card-c'); if(stCardC) stCardC.addEventListener('click',()=>showStatModal('canciones'));
-const stCardM = $('st-card-m'); if(stCardM) stCardM.addEventListener('click',()=>showStatModal('musicos'));
-const stCardE = $('st-card-e'); if(stCardE) stCardE.addEventListener('click',()=>showStatModal('eventos'));
-
-['canciones','musicos','eventos'].forEach(t=>{
-  const btn=$('close-stat-'+t);
-  if(btn) btn.addEventListener('click',()=>closeStatModals());
-});
-
-// Close on overlay click
-['stat-modal-canciones','stat-modal-musicos','stat-modal-eventos'].forEach(id=>{
-  const el=$(id); if(!el) return;
-  el.addEventListener('click',e=>{ if(e.target===el) closeStatModals(); });
-});
-
-// Theme toggle
-const themeBtn = document.getElementById('btn-theme');
-const themeBtnSidebar = document.getElementById('btn-theme-sidebar');
-const savedTheme = localStorage.getItem('min_theme');
-if(savedTheme==='light'){
-  document.body.classList.add('light-theme');
-  if(themeBtn) themeBtn.textContent='☀️';
-  if(themeBtnSidebar) themeBtnSidebar.textContent='☀️';
-}
-const toggleTheme = () => {
-  const isLight = document.body.classList.toggle('light-theme');
-  const icon = isLight ? '☀️' : '🌙';
-  if(themeBtn) themeBtn.textContent=icon;
-  if(themeBtnSidebar) themeBtnSidebar.textContent=icon;
-  localStorage.setItem('min_theme', isLight?'light':'dark');
-};
-if(themeBtn) themeBtn.addEventListener('click', toggleTheme);
-if(themeBtnSidebar) themeBtnSidebar.addEventListener('click', toggleTheme);
-
+</script>
+</div><!-- end app-wrapper -->
+<script>
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+// Sidebar user sync
 const sidebarExit = document.getElementById('sidebar-exit');
 if(sidebarExit) sidebarExit.addEventListener('click', () => {
   const btn = document.getElementById('hdr-user');
   if(btn) btn.click();
 });
-</script>
-</div><!-- end app-wrapper -->
-<script>
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 
+// ── THEME TOGGLE (claro/oscuro) ──
+function applyThemeUI(theme){
+  const isLight = theme==='light';
+  const mobileIcon = document.getElementById('theme-toggle');
+  const deskIcon = document.getElementById('theme-toggle-desktop-icon');
+  const deskLabel = document.getElementById('theme-toggle-desktop-label');
+  if(mobileIcon) mobileIcon.textContent = isLight?'☀️':'🌙';
+  if(deskIcon) deskIcon.textContent = isLight?'☀️':'🌙';
+  if(deskLabel) deskLabel.textContent = isLight?'Tema claro':'Tema oscuro';
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute('content', isLight?'#F3F2F7':'#0F0E1A');
+}
+function setTheme(theme){
+  if(theme==='light') document.documentElement.setAttribute('data-theme','light');
+  else document.documentElement.removeAttribute('data-theme');
+  try{ localStorage.setItem('min_theme', theme); }catch(e){}
+  applyThemeUI(theme);
+}
+function toggleTheme(){
+  const current = document.documentElement.getAttribute('data-theme')==='light' ? 'light':'dark';
+  setTheme(current==='light' ? 'dark' : 'light');
+}
+document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
+document.getElementById('theme-toggle-desktop')?.addEventListener('click', toggleTheme);
+applyThemeUI(document.documentElement.getAttribute('data-theme')==='light' ? 'light':'dark');
 </script>
 </body>
 </html>
