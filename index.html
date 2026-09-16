@@ -1085,11 +1085,20 @@ function renderMusicos() {
         const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*';
         inp.addEventListener('change',async()=>{
           const file=inp.files[0]; if(!file) return;
-          if(file.size>5*1024*1024){toast('⚠️ La imagen debe ser menor a 5MB');return;}
+          if(file.size>10*1024*1024){toast('⚠️ La imagen debe ser menor a 10MB');return;}
           try{
             toast('⬆️ Subiendo foto...');
-            const sRef=storageRef(storage,'fotos/'+m.id);
-            await uploadBytes(sRef,file);
+            // Convert to JPG using canvas (fixes HEIC and other formats)
+            const bitmap = await createImageBitmap(file);
+            const canvas = document.createElement('canvas');
+            const MAX = 400;
+            const scale = Math.min(MAX/bitmap.width, MAX/bitmap.height, 1);
+            canvas.width = bitmap.width * scale;
+            canvas.height = bitmap.height * scale;
+            canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+            const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.85));
+            const sRef=storageRef(storage,'fotos/'+m.id+'.jpg');
+            await uploadBytes(sRef, blob);
             const url=await getDownloadURL(sRef);
             await updateDoc(doc(db,'musicos',m.id),{fotoUrl:url}).catch(err=>toast('❌ '+err.message));
             toast('✅ Foto actualizada!');
