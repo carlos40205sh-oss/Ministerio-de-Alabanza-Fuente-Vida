@@ -386,6 +386,8 @@ input::placeholder{color:var(--muted);}
     </div>
     <label class="lbl">📄 Link letra (OneDrive PDF)</label><input id="can-link-letra" placeholder="https://..."/>
     <label class="lbl">🎼 Link acordes (OneDrive PDF)</label><input id="can-link-acordes" placeholder="https://..."/>
+    <label class="lbl">📝 Letra con acordes</label>
+    <textarea id="can-letra-acordes" placeholder="Pegá la letra con los acordes encima. Ejemplo:&#10;G        Em&#10;Ven Espíritu Santo ven&#10;C         D&#10;Llena este lugar" style="height:140px;resize:vertical;font-family:'Courier New',monospace;font-size:12px"></textarea>
     <label class="lbl">🎬 Link YouTube</label><input id="can-link-youtube" placeholder="https://youtube.com/..."/>
     <input id="can-tags" placeholder="Etiquetas: adoración, alabanza..."/>
     <label class="chk-lbl"><input type="checkbox" id="can-nueva"/> 🆕 Canción nueva</label>
@@ -616,6 +618,8 @@ input::placeholder{color:var(--muted);}
     <label class="lbl">Link letra</label><input id="can-edit-letra"/>
     <label class="lbl">Link acordes</label><input id="can-edit-acordes"/>
     <label class="lbl">🎬 YouTube</label><input id="can-edit-youtube"/>
+    <label class="lbl">📝 Letra con acordes</label>
+    <textarea id="can-edit-letra-acordes" placeholder="Pegá la letra con los acordes encima" style="height:140px;resize:vertical;font-family:'Courier New',monospace;font-size:12px"></textarea>
     <label class="lbl">Etiquetas</label><input id="can-edit-tags"/>
     <label class="chk-lbl"><input type="checkbox" id="can-edit-nueva"/> 🆕 Nueva</label>
     <label class="chk-lbl"><input type="checkbox" id="can-edit-aprender"/> 📚 Por aprender</label>
@@ -1022,8 +1026,8 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
 $('btn-add-can').addEventListener('click',()=>{const f=$('can-form');f.style.display=f.style.display==='none'?'block':'none';});
 $('btn-save-can').addEventListener('click', async () => {
   const t=$('can-titulo').value.trim(); if(!t) return;
-  await addDoc(collection(db,'canciones'),{titulo:t,artista:$('can-artista').value.trim(),tono:$('can-tono').value,bpm:Number($('can-bpm').value)||80,linkLetra:$('can-link-letra').value.trim(),linkAcordes:$('can-link-acordes').value.trim(),linkYoutube:$('can-link-youtube').value.trim(),tags:$('can-tags').value.split(',').map(x=>x.trim()).filter(Boolean),nueva:$('can-nueva').checked,aprender:$('can-aprender').checked,creadoEn:Date.now()});
-  ['can-titulo','can-artista','can-bpm','can-tags','can-link-letra','can-link-acordes','can-link-youtube'].forEach(id=>$(id).value='');
+  await addDoc(collection(db,'canciones'),{titulo:t,artista:$('can-artista').value.trim(),tono:$('can-tono').value,bpm:Number($('can-bpm').value)||80,linkLetra:$('can-link-letra').value.trim(),linkAcordes:$('can-link-acordes').value.trim(),linkYoutube:$('can-link-youtube').value.trim(),letraAcordes:$('can-letra-acordes').value.trim(),tags:$('can-tags').value.split(',').map(x=>x.trim()).filter(Boolean),nueva:$('can-nueva').checked,aprender:$('can-aprender').checked,creadoEn:Date.now()});
+  ['can-titulo','can-artista','can-bpm','can-tags','can-link-letra','can-link-acordes','can-link-youtube','can-letra-acordes'].forEach(id=>$(id).value='');
   $('can-nueva').checked=false; $('can-aprender').checked=false; $('can-form').style.display='none'; toast('✅ Canción guardada');
 });
 $('can-search').addEventListener('input', renderCanciones);
@@ -1034,7 +1038,7 @@ $('btn-sort-artist').addEventListener('click',()=>{sortMode='artist';$('btn-sort
 $('btn-close-can-edit').addEventListener('click',()=>$('can-edit-modal').style.display='none');
 $('btn-save-can-edit').addEventListener('click', async () => {
   const id=$('can-edit-id').value;
-  await updateDoc(doc(db,'canciones',id),{titulo:$('can-edit-titulo').value.trim(),artista:$('can-edit-artista').value.trim(),tono:$('can-edit-tono').value,bpm:Number($('can-edit-bpm').value)||80,linkLetra:$('can-edit-letra').value.trim(),linkAcordes:$('can-edit-acordes').value.trim(),linkYoutube:$('can-edit-youtube').value.trim(),tags:$('can-edit-tags').value.split(',').map(x=>x.trim()).filter(Boolean),nueva:$('can-edit-nueva').checked,aprender:$('can-edit-aprender').checked});
+  await updateDoc(doc(db,'canciones',id),{titulo:$('can-edit-titulo').value.trim(),artista:$('can-edit-artista').value.trim(),tono:$('can-edit-tono').value,bpm:Number($('can-edit-bpm').value)||80,linkLetra:$('can-edit-letra').value.trim(),linkAcordes:$('can-edit-acordes').value.trim(),linkYoutube:$('can-edit-youtube').value.trim(),letraAcordes:$('can-edit-letra-acordes').value.trim(),tags:$('can-edit-tags').value.split(',').map(x=>x.trim()).filter(Boolean),nueva:$('can-edit-nueva').checked,aprender:$('can-edit-aprender').checked});
   $('can-edit-modal').style.display='none'; toast('✅ Canción actualizada');
 });
 
@@ -1042,7 +1046,7 @@ const editCancion = id => {
   const c=canciones.find(x=>x.id===id); if(!c) return;
   $('can-edit-id').value=id; $('can-edit-titulo').value=c.titulo||''; $('can-edit-artista').value=c.artista||'';
   $('can-edit-tono').value=c.tono||'G'; $('can-edit-bpm').value=c.bpm||'';
-  $('can-edit-letra').value=c.linkLetra||''; $('can-edit-acordes').value=c.linkAcordes||''; $('can-edit-youtube').value=c.linkYoutube||'';
+  $('can-edit-letra').value=c.linkLetra||''; $('can-edit-acordes').value=c.linkAcordes||''; $('can-edit-youtube').value=c.linkYoutube||''; $('can-edit-letra-acordes').value=c.letraAcordes||'';
   $('can-edit-tags').value=(c.tags||[]).join(', '); $('can-edit-nueva').checked=c.nueva||false;
   $('can-edit-aprender').checked=c.aprender||false;
   $('can-edit-modal').style.display='flex';
@@ -2118,6 +2122,23 @@ const buildEvDetail = (ev, backFn) => {
           +(estructura?'<div style="font-size:10px;color:var(--accent);margin-top:3px">'+estructura+'</div>':'')
           +(can&&can.linkYoutube?'<a href="'+can.linkYoutube+'" target="_blank" style="font-size:10px;color:var(--gold);margin-top:3px;display:block">▶ Ver en YouTube</a>':'')
         +'</div>';
+      if(can&&can.letraAcordes){
+        const transBtn=document.createElement('button');
+        transBtn.style.cssText='border:none;background:#7B6FD422;color:var(--accent);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-top:6px;width:100%';
+        transBtn.textContent='🎵 Ver letra y transpositor';
+        let transOpen=false;
+        transBtn.addEventListener('click',()=>{
+          transOpen=!transOpen;
+          if(transOpen){
+            const transWrap=buildTranspositor(can);
+            if(transWrap){ transWrap.id='trans-wrap-'+i; d.appendChild(transWrap); transBtn.textContent='✕ Cerrar letra'; }
+          } else {
+            const tw=document.getElementById('trans-wrap-'+i); if(tw) tw.remove();
+            transBtn.textContent='🎵 Ver letra y transpositor';
+          }
+        });
+        d.appendChild(transBtn);
+      }
       ordenPanel.appendChild(d);
     });
   }
@@ -3256,6 +3277,11 @@ const msRender = () => {
       if(cancion.linkYoutube) linksDiv.innerHTML+='<a href="'+cancion.linkYoutube+'" target="_blank" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;text-decoration:none;border:1px solid #FF000044;color:#FF4444;background:#FF000011">🎬 YouTube</a>';
       el.appendChild(linksDiv);
     }
+    // Transpositor con letra
+    if(cancion&&cancion.letraAcordes){
+      const transWrap = buildTranspositor(cancion);
+      if(transWrap) el.appendChild(transWrap);
+    }
   } else {
     // Non-song item
     const icon = msIcons[item.tipo]||'✨';
@@ -3383,6 +3409,93 @@ $('btn-agregar-fecha-bloqueada').addEventListener('click', async()=>{
   renderBloquearList(musicos.find(x=>x.username===CU.key));
   renderBloquearCard();
 });
+
+// ── TRANSPOSITOR ──
+const CHROMATIC_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const CHROMATIC_FLAT  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+const NOTE_IDX = {'C':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'F':5,'F#':6,'Gb':6,'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11};
+
+const transposeChord = (chord, steps) => {
+  const isMinor = chord.endsWith('m') && chord.length > 1;
+  const root = isMinor ? chord.slice(0,-1) : chord;
+  if(NOTE_IDX[root] === undefined) return chord;
+  const newIdx = ((NOTE_IDX[root] + steps) % 12 + 12) % 12;
+  return CHROMATIC_SHARP[newIdx] + (isMinor ? 'm' : '');
+};
+
+const transposeLine = (line, steps) => {
+  if(steps === 0) return line;
+  return line.replace(/\b([A-G][b#]?m?)\b/g, match => {
+    if(NOTE_IDX[match.replace('m','')]!==undefined) return transposeChord(match, steps);
+    return match;
+  });
+};
+
+const buildTranspositor = (cancion) => {
+  if(!cancion.letraAcordes) return null;
+  const wrap = document.createElement('div');
+  let semitones = 0;
+  const tonoBase = cancion.tono || 'G';
+  const tonoIdx = NOTE_IDX[tonoBase.replace('m','')] ?? 7;
+
+  const updateTono = () => {
+    const newIdx = ((tonoIdx + semitones) % 12 + 12) % 12;
+    const newTono = CHROMATIC_SHARP[newIdx] + (tonoBase.endsWith('m') ? 'm' : '');
+    tonoActualEl.textContent = newTono;
+    semitonesEl.textContent = semitones === 0 ? 'Original' : (semitones > 0 ? '+' : '') + semitones + ' semitonos';
+    // Re-render letra
+    lyricsEl.innerHTML = renderLetra(cancion.letraAcordes, semitones);
+  };
+
+  // Transpositor UI
+  const transDiv = document.createElement('div');
+  transDiv.style.cssText = 'background:linear-gradient(135deg,#2A2350,var(--surface));border:1px solid var(--accent);border-radius:16px;padding:14px;margin-bottom:16px';
+  transDiv.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🎵 Transpositor de tono</div>'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'
+      +'<div style="font-size:12px;color:var(--muted);width:90px">Tono original</div>'
+      +'<div style="font-size:20px;font-weight:800;color:var(--gold)">'+tonoBase+'</div>'
+    +'</div>'
+    +'<div style="display:flex;align-items:center;gap:10px">'
+      +'<div style="font-size:12px;color:var(--muted);width:90px">Tono actual</div>'
+      +'<button id="trans-minus" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:18px;font-weight:700;cursor:pointer">−</button>'
+      +'<div style="flex:1;text-align:center">'
+        +'<div id="trans-tono-actual" style="font-size:20px;font-weight:800;color:var(--gold)">'+tonoBase+'</div>'
+        +'<div id="trans-semitones" style="font-size:11px;color:var(--muted)">Original</div>'
+      +'</div>'
+      +'<button id="trans-plus" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:18px;font-weight:700;cursor:pointer">+</button>'
+    +'</div>'
+    +'<div style="text-align:right;margin-top:10px"><span id="trans-reset" style="font-size:11px;color:var(--accent);cursor:pointer;text-decoration:underline">↺ Volver al original</span></div>';
+
+  wrap.appendChild(transDiv);
+
+  const tonoActualEl = transDiv.querySelector('#trans-tono-actual');
+  const semitonesEl = transDiv.querySelector('#trans-semitones');
+
+  transDiv.querySelector('#trans-minus').addEventListener('click',()=>{ semitones=((semitones-1)%12+12)%12; if(semitones>6) semitones-=12; updateTono(); });
+  transDiv.querySelector('#trans-plus').addEventListener('click',()=>{ semitones=((semitones+1)%12+12)%12; if(semitones>6) semitones-=12; updateTono(); });
+  transDiv.querySelector('#trans-reset').addEventListener('click',()=>{ semitones=0; updateTono(); });
+
+  // Letra
+  const lyricsEl = document.createElement('div');
+  lyricsEl.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;font-family:"Courier New",monospace;white-space:pre-wrap;font-size:13px;line-height:1.8';
+  lyricsEl.innerHTML = renderLetra(cancion.letraAcordes, 0);
+  wrap.appendChild(lyricsEl);
+
+  return wrap;
+};
+
+const renderLetra = (texto, steps) => {
+  // Detect chord lines (lines that are mostly chords)
+  const lines = texto.split('\n');
+  return lines.map(line => {
+    const trimmed = line.trim();
+    const isChordLine = trimmed && /^([A-G][b#]?m?\s*)+$/.test(trimmed.replace(/\s+/g,' '));
+    if(isChordLine || /\b[A-G][b#]?m?\b/.test(trimmed) && trimmed.replace(/[A-G][b#]?m?\s*/g,'').trim().length < trimmed.length * 0.4){
+      return '<span style="color:var(--accent);font-weight:700">'+transposeLine(line, steps)+'</span>';
+    }
+    return '<span style="color:var(--text)">'+line+'</span>';
+  }).join('\n');
+};
 
 // ── STAT MODALS ──
 window.showStatModal = (tipo) => {
