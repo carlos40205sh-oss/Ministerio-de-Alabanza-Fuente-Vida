@@ -3579,13 +3579,26 @@ const buildTranspositor = (cancion) => {
 };
 
 const renderLetra = (texto, steps) => {
-  // Detect chord lines (lines that are mostly chords)
+  if(!texto) return '';
   const lines = texto.split('\n');
   return lines.map(line => {
-    const trimmed = line.trim();
-    const isChordLine = trimmed && /^([A-G][b#]?m?\s*)+$/.test(trimmed.replace(/\s+/g,' '));
-    if(isChordLine || /\b[A-G][b#]?m?\b/.test(trimmed) && trimmed.replace(/[A-G][b#]?m?\s*/g,'').trim().length < trimmed.length * 0.4){
-      return '<span style="color:var(--accent);font-weight:700">'+transposeLine(line, steps)+'</span>';
+    // Section headers like [Estrofa] [Coro] [Bridge]
+    if(/^\[.+\]$/.test(line.trim())){
+      return '<span style="color:var(--gold);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px">'+line+'</span>';
+    }
+    // Empty line
+    if(!line.trim()) return '';
+    // Detect chord line: contains chord patterns and mostly chords/spaces
+    const chordPattern = /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add)?[0-9]?)\b/g;
+    const chords = line.match(chordPattern) || [];
+    const withoutChords = line.replace(chordPattern,'').replace(/\s/g,'');
+    const isChordLine = chords.length > 0 && withoutChords.length <= line.replace(/\s/g,'').length * 0.35;
+    if(isChordLine){
+      const transposed = steps === 0 ? line : line.replace(/\b([A-G][#b]?m?)\b/g, match => {
+        if(NOTE_IDX[match.replace('m','')]!==undefined) return transposeChord(match, steps);
+        return match;
+      });
+      return '<span style="color:var(--accent);font-weight:700;letter-spacing:1px">'+transposed+'</span>';
     }
     return '<span style="color:var(--text)">'+line+'</span>';
   }).join('\n');
