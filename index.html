@@ -91,6 +91,8 @@ input::placeholder{color:var(--muted);}
 .ms-progress-fill{height:100%;background:var(--gold);border-radius:99px;transition:width .3s;}
 #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--success);color:#0F0E1A;padding:8px 20px;border-radius:99px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
 .search-wrap{position:relative;margin-bottom:8px;}
+.letra-tool-btn{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;}
+.letra-tool-btn:active{background:var(--accent);color:#fff;}
 .search-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 30px 9px 12px;outline:none;}
 .search-input:focus{border-color:var(--accent);}
 .search-icon{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none;}
@@ -406,8 +408,10 @@ input::placeholder{color:var(--muted);}
     </div>
     <!-- Panel Letra -->
     <div id="can-panel-2" style="display:none">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5">Pegá los acordes en la línea de arriba y la letra abajo, igual que en Ultimate Guitar</div>
-      <textarea id="can-letra-acordes" placeholder="G        Em&#10;Ven Espíritu Santo ven&#10;C         D&#10;Llena este lugar" style="height:260px;resize:vertical;font-family:'Courier New',monospace;font-size:13px;line-height:1.8;padding:12px"></textarea>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.5">Pegá los acordes en la línea de arriba y la letra abajo, igual que en Ultimate Guitar</div>
+      <button id="btn-open-letra-editor" class="btn btn-ghost btn-full" style="padding:14px;font-size:13px;border:2px dashed var(--border)">🎵 Abrir editor de letra</button>
+      <div id="can-letra-preview" style="display:none;margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;font-family:'Courier New',monospace;font-size:11px;color:var(--muted);max-height:80px;overflow:hidden;white-space:pre-wrap"></div>
+      <textarea id="can-letra-acordes" style="display:none"></textarea>
     </div>
     <button class="btn btn-primary btn-full" id="btn-save-can" style="margin-top:14px">Guardar canción</button>
   </div>
@@ -654,8 +658,10 @@ input::placeholder{color:var(--muted);}
     </div>
     <!-- Panel Letra -->
     <div id="can-edit-panel-2" style="display:none">
-      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5">Pegá los acordes en la línea de arriba y la letra abajo</div>
-      <textarea id="can-edit-letra-acordes" placeholder="G        Em&#10;Ven Espíritu Santo ven" style="height:260px;resize:vertical;font-family:'Courier New',monospace;font-size:13px;line-height:1.8;padding:12px"></textarea>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.5">Pegá los acordes en la línea de arriba y la letra abajo</div>
+      <button id="btn-open-letra-editor-edit" class="btn btn-ghost btn-full" style="padding:14px;font-size:13px;border:2px dashed var(--border)">🎵 Abrir editor de letra</button>
+      <div id="can-edit-letra-preview" style="display:none;margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;font-family:'Courier New',monospace;font-size:11px;color:var(--muted);max-height:80px;overflow:hidden;white-space:pre-wrap"></div>
+      <textarea id="can-edit-letra-acordes" style="display:none"></textarea>
     </div>
     <button class="btn btn-primary btn-full" id="btn-save-can-edit" style="margin-top:14px">💾 Guardar</button>
   </div>
@@ -787,6 +793,30 @@ input::placeholder{color:var(--muted);}
   <div id="foto-lightbox-nombre" style="font-size:18px;font-weight:800;margin-top:20px;color:#fff"></div>
   <div id="foto-lightbox-rol" style="font-size:13px;color:var(--accent);margin-top:4px"></div>
   <button id="foto-lightbox-close" style="margin-top:24px;border:none;background:#ffffff22;color:#fff;border-radius:99px;padding:10px 24px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">✕ Cerrar</button>
+</div>
+
+<!-- EDITOR LETRA FULLSCREEN -->
+<div id="letra-editor-modal" style="position:fixed;inset:0;background:var(--bg);z-index:900;display:none;flex-direction:column">
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <button id="btn-letra-editor-back" style="border:none;background:var(--card);color:var(--muted);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer">← Volver</button>
+    <div id="letra-editor-title" style="flex:1;font-size:15px;font-weight:800;color:var(--gold)">🎵 Editar letra</div>
+    <button id="btn-letra-editor-save" style="border:none;background:linear-gradient(135deg,var(--accent),#4A3F9F);color:#fff;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer">✓ Guardar</button>
+  </div>
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:6px;flex-shrink:0;overflow-x:auto">
+    <button class="letra-tool-btn" data-insert="[Introducción]">+ Intro</button>
+    <button class="letra-tool-btn" data-insert="[Estrofa]">+ Estrofa</button>
+    <button class="letra-tool-btn" data-insert="[Coro]">+ Coro</button>
+    <button class="letra-tool-btn" data-insert="[Bridge]">+ Bridge</button>
+    <button class="letra-tool-btn" data-insert="[Final]">+ Final</button>
+    <div style="width:1px;height:24px;background:var(--border);flex-shrink:0;margin:0 4px"></div>
+    <button id="btn-letra-cols" style="border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">⊟ 1 col</button>
+    <button id="btn-letra-clear" style="border:1px solid var(--border);background:var(--card);color:var(--muted);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer">🗑️</button>
+  </div>
+  <textarea id="letra-editor-text" spellcheck="false" style="flex:1;background:transparent;border:none;color:var(--text);font-family:'Courier New',monospace;font-size:15px;line-height:2;padding:20px;resize:none;outline:none;overflow-y:auto"></textarea>
+  <div style="background:var(--surface);border-top:1px solid var(--border);padding:6px 16px;font-size:11px;color:var(--muted);display:flex;justify-content:space-between;flex-shrink:0">
+    <span id="letra-char-count">0 caracteres</span>
+    <span id="letra-line-count">0 líneas</span>
+  </div>
 </div>
 
 <!-- TRANSPOSITOR FULLSCREEN -->
@@ -1063,6 +1093,8 @@ window.addEventListener('popstate', e => {
   if(state.modal !== 'mi-rol') closeMiRol(true);
   if(state.modal !== 'bloquear-fechas') { const bf=$('bloquear-fechas-modal'); if(bf) bf.style.display='none'; }
   if(!state.modal || !state.modal.startsWith('stat-')) closeStatModals(true);
+  if(state.view !== 'letra-editor') { const le=$('letra-editor-modal'); if(le) le.style.display='none'; }
+  if(state.view !== 'trans-modal') { const tm=$('trans-modal'); if(tm) tm.style.display='none'; }
   if(state.view==='detail' || state.view==='form') {
     // Go back to list view of that tab
     goTab(state.tab||'eventos', false);
@@ -1117,6 +1149,11 @@ const editCancion = id => {
   $('can-edit-id').value=id; $('can-edit-titulo').value=c.titulo||''; $('can-edit-artista').value=c.artista||'';
   $('can-edit-tono').value=c.tono||'G'; $('can-edit-bpm').value=c.bpm||'';
   $('can-edit-letra').value=c.linkLetra||''; $('can-edit-acordes').value=c.linkAcordes||''; $('can-edit-youtube').value=c.linkYoutube||''; $('can-edit-letra-acordes').value=c.letraAcordes||'';
+  // Update letra preview
+  const editPreview = $('can-edit-letra-preview');
+  const editBtn = $('btn-open-letra-editor-edit');
+  if(editPreview){ editPreview.style.display=c.letraAcordes?'block':'none'; editPreview.textContent=(c.letraAcordes||'').slice(0,150); }
+  if(editBtn) editBtn.textContent = c.letraAcordes ? '🎵 Editar letra ('+(c.letraAcordes.split('\n').length)+' líneas)' : '🎵 Abrir editor de letra';
   $('can-edit-tags').value=(c.tags||[]).join(', '); $('can-edit-nueva').checked=c.nueva||false;
   $('can-edit-aprender').checked=c.aprender||false;
   $('can-edit-modal').style.display='flex';
@@ -3603,6 +3640,84 @@ const renderLetra = (texto, steps) => {
     return '<span style="color:var(--text)">'+line+'</span>';
   }).join('\n');
 };
+
+// ── EDITOR LETRA FULLSCREEN ──
+let letraEditorTarget = null; // 'new' or 'edit'
+let letraEditorTwoCol = false;
+
+const openLetraEditor = (target) => {
+  letraEditorTarget = target;
+  const ta = target === 'new' ? $('can-letra-acordes') : $('can-edit-letra-acordes');
+  const titleEl = target === 'new' ? $('can-titulo') : $('can-edit-titulo');
+  $('letra-editor-title').textContent = '🎵 ' + (titleEl?.value || 'Editar letra');
+  $('letra-editor-text').value = ta?.value || '';
+  letraEditorTwoCol = false;
+  $('letra-editor-text').style.columnCount = '1';
+  $('btn-letra-cols').textContent = '⊟ 1 col';
+  $('btn-letra-cols').style.background = '';
+  $('btn-letra-cols').style.color = '';
+  updateLetraStatus();
+  $('letra-editor-modal').style.display = 'flex';
+  history.pushState({view:'letra-editor'},'',location.pathname);
+};
+
+const saveLetraEditor = () => {
+  const val = $('letra-editor-text').value;
+  const ta = letraEditorTarget === 'new' ? $('can-letra-acordes') : $('can-edit-letra-acordes');
+  if(ta) ta.value = val;
+  // Show preview
+  const previewId = letraEditorTarget === 'new' ? 'can-letra-preview' : 'can-edit-letra-preview';
+  const btnId = letraEditorTarget === 'new' ? 'btn-open-letra-editor' : 'btn-open-letra-editor-edit';
+  const preview = $(previewId);
+  if(preview){
+    preview.style.display = val ? 'block' : 'none';
+    preview.textContent = val.slice(0,150) + (val.length > 150 ? '...' : '');
+  }
+  const btn = $(btnId);
+  if(btn) btn.textContent = val ? '🎵 Editar letra (' + val.split('\n').length + ' líneas)' : '🎵 Abrir editor de letra';
+  $('letra-editor-modal').style.display = 'none';
+  history.back();
+};
+
+const updateLetraStatus = () => {
+  const text = $('letra-editor-text').value;
+  $('letra-char-count').textContent = text.length + ' caracteres';
+  $('letra-line-count').textContent = text.split('\n').length + ' líneas';
+};
+
+$('btn-open-letra-editor').addEventListener('click', ()=>openLetraEditor('new'));
+$('btn-open-letra-editor-edit').addEventListener('click', ()=>openLetraEditor('edit'));
+$('btn-letra-editor-save').addEventListener('click', saveLetraEditor);
+$('btn-letra-editor-back').addEventListener('click', ()=>{ $('letra-editor-modal').style.display='none'; history.back(); });
+$('letra-editor-text').addEventListener('input', updateLetraStatus);
+
+document.querySelectorAll('.letra-tool-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const ta = $('letra-editor-text');
+    const pos = ta.selectionStart;
+    const before = ta.value.substring(0, pos);
+    const after = ta.value.substring(pos);
+    const prefix = before.length > 0 && !before.endsWith('\n\n') ? '\n\n' : '';
+    ta.value = before + prefix + btn.dataset.insert + '\n' + after;
+    ta.focus();
+    updateLetraStatus();
+  });
+});
+
+$('btn-letra-cols').addEventListener('click',()=>{
+  letraEditorTwoCol = !letraEditorTwoCol;
+  const ta = $('letra-editor-text');
+  ta.style.columnCount = letraEditorTwoCol ? '2' : '1';
+  ta.style.columnGap = letraEditorTwoCol ? '20px' : '';
+  ta.style.columnRule = letraEditorTwoCol ? '1px solid var(--border)' : '';
+  $('btn-letra-cols').textContent = letraEditorTwoCol ? '⊞ 2 col' : '⊟ 1 col';
+  $('btn-letra-cols').style.background = letraEditorTwoCol ? 'var(--accent)' : '';
+  $('btn-letra-cols').style.color = letraEditorTwoCol ? '#fff' : '';
+});
+
+$('btn-letra-clear').addEventListener('click',()=>{
+  if(confirm('¿Borrar todo el contenido?')){ $('letra-editor-text').value=''; updateLetraStatus(); }
+});
 
 // ── CANCION FORM TABS ──
 const switchCanTab = (tabs, panels, idx) => {
