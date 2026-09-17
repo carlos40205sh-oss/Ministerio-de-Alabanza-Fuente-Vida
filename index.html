@@ -738,6 +738,14 @@ input::placeholder{color:var(--muted);}
   </div>
 </div>
 
+<!-- FOTO LIGHTBOX -->
+<div id="foto-lightbox" style="position:fixed;inset:0;background:#000000ee;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:999">
+  <div id="foto-lightbox-img" style="width:min(85vw,340px);height:min(85vw,340px);border-radius:50%;background-size:cover;background-position:center;border:3px solid var(--accent);box-shadow:0 0 60px #7B6FD466"></div>
+  <div id="foto-lightbox-nombre" style="font-size:18px;font-weight:800;margin-top:20px;color:#fff"></div>
+  <div id="foto-lightbox-rol" style="font-size:13px;color:var(--accent);margin-top:4px"></div>
+  <button id="foto-lightbox-close" style="margin-top:24px;border:none;background:#ffffff22;color:#fff;border-radius:99px;padding:10px 24px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">✕ Cerrar</button>
+</div>
+
 <!-- MODO SERVICIO -->
 <div id="modo-servicio">
   <div class="ms-header">
@@ -885,6 +893,27 @@ const applyLogin = user => {
       }
     }
   };
+  // Lightbox para foto
+  const openFotoLightbox = (fotoUrl, nombre, roles) => {
+    const lb = $('foto-lightbox');
+    const img = $('foto-lightbox-img');
+    if(!lb || !img || !fotoUrl) return;
+    img.style.backgroundImage = 'url('+fotoUrl+')';
+    $('foto-lightbox-nombre').textContent = nombre||'';
+    $('foto-lightbox-rol').textContent = roles||'';
+    lb.style.display = 'flex';
+  };
+  $('foto-lightbox-close').addEventListener('click',()=>{ $('foto-lightbox').style.display='none'; });
+  $('foto-lightbox').addEventListener('click',e=>{ if(e.target===$('foto-lightbox')) $('foto-lightbox').style.display='none'; });
+
+  // Tocar avatar en hero abre lightbox
+  const heroAv = $('hero-avatar');
+  if(heroAv) heroAv.style.cursor='pointer';
+  if(heroAv) heroAv.addEventListener('click',()=>{
+    const miMus = musicos.find(x=>x.username&&x.username.toLowerCase()===CU.key.toLowerCase());
+    if(miMus&&miMus.fotoUrl) openFotoLightbox(miMus.fotoUrl, miMus.nombre, (miMus.roles||[miMus.rol]).map(r=>roleIcon(r)+' '+r).join(' · '));
+  });
+
   updateHeroAvatar();
   // Re-update when musicos data refreshes
   const _origRenderDash = typeof renderDashboard === 'function' ? renderDashboard : null;
@@ -1179,6 +1208,11 @@ function renderMusicos() {
       } else {
         rowEl.appendChild(fotoBtn);
       }
+    }
+    // Tocar avatar abre lightbox si tiene foto
+    if(m.fotoUrl){
+      const avEl = card.querySelector('div[style*="border-radius:50%"]');
+      if(avEl){ avEl.style.cursor='pointer'; avEl.addEventListener('click',e=>{ e.stopPropagation(); if(typeof openFotoLightbox==='function') openFotoLightbox(m.fotoUrl, m.nombre, (m.roles||[m.rol]).map(r=>roleIcon(r)+' '+r).join(' · ')); }); }
     }
     return card;
   };
