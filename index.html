@@ -377,22 +377,39 @@ input::placeholder{color:var(--muted);}
     <button class="btn btn-primary btn-sm" id="btn-add-can" style="display:none">+ Agregar</button>
   </div>
   <div id="can-form" style="display:none" class="form-sec">
-    <h4>Nueva canción</h4>
-    <input id="can-titulo" placeholder="Título"/>
-    <input id="can-artista" placeholder="Artista / Ministerio"/>
-    <div class="grid2">
-      <select id="can-tono"><option>C</option><option>C#</option><option>D</option><option>D#</option><option>E</option><option>F</option><option>F#</option><option  selected>G</option><option>G#</option><option>A</option><option>A#</option><option>B</option><option>Cm</option><option>C#m</option><option>Dm</option><option>D#m</option><option>Em</option><option>Fm</option><option>F#m</option><option>Gm</option><option>G#m</option><option>Am</option><option>A#m</option><option>Bm</option></select>
-      <input id="can-bpm" type="number" placeholder="BPM"/>
+    <h4 id="can-form-title">Nueva canción</h4>
+    <!-- Pestañas -->
+    <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:14px">
+      <div class="can-form-tab" data-tab="0" style="flex:1;padding:10px 8px;font-size:12px;font-weight:600;color:var(--gold);cursor:pointer;text-align:center;border-bottom:2px solid var(--gold)">📋 Info</div>
+      <div class="can-form-tab" data-tab="1" style="flex:1;padding:10px 8px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;text-align:center;border-bottom:2px solid transparent">🔗 Links</div>
+      <div class="can-form-tab" data-tab="2" style="flex:1;padding:10px 8px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;text-align:center;border-bottom:2px solid transparent">🎵 Letra</div>
     </div>
-    <label class="lbl">📄 Link letra (OneDrive PDF)</label><input id="can-link-letra" placeholder="https://..."/>
-    <label class="lbl">🎼 Link acordes (OneDrive PDF)</label><input id="can-link-acordes" placeholder="https://..."/>
-    <label class="lbl">📝 Letra con acordes</label>
-    <textarea id="can-letra-acordes" placeholder="Pegá la letra con los acordes encima. Ejemplo:&#10;G        Em&#10;Ven Espíritu Santo ven&#10;C         D&#10;Llena este lugar" style="height:200px;resize:vertical;font-family:'Courier New',monospace;font-size:13px;line-height:1.6;padding:12px"></textarea>
-    <label class="lbl">🎬 Link YouTube</label><input id="can-link-youtube" placeholder="https://youtube.com/..."/>
-    <input id="can-tags" placeholder="Etiquetas: adoración, alabanza..."/>
-    <label class="chk-lbl"><input type="checkbox" id="can-nueva"/> 🆕 Canción nueva</label>
-    <label class="chk-lbl"><input type="checkbox" id="can-aprender"/> 📚 Por aprender</label>
-    <button class="btn btn-primary btn-full" id="btn-save-can">Guardar canción</button>
+    <!-- Panel Info -->
+    <div id="can-panel-0">
+      <input id="can-titulo" placeholder="Título de la canción"/>
+      <input id="can-artista" placeholder="Artista / Ministerio" style="margin-top:8px"/>
+      <div class="grid2" style="margin-top:8px">
+        <select id="can-tono"><option>C</option><option>C#</option><option>D</option><option>D#</option><option>E</option><option>F</option><option>F#</option><option selected>G</option><option>G#</option><option>A</option><option>A#</option><option>B</option><option>Cm</option><option>C#m</option><option>Dm</option><option>D#m</option><option>Em</option><option>Fm</option><option>F#m</option><option>Gm</option><option>G#m</option><option>Am</option><option>A#m</option><option>Bm</option></select>
+        <input id="can-bpm" type="number" placeholder="BPM"/>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px 14px;margin-top:12px">
+        <label class="chk-lbl"><input type="checkbox" id="can-nueva"/> 🆕 Canción nueva</label>
+        <label class="chk-lbl"><input type="checkbox" id="can-aprender"/> 📚 Por aprender</label>
+      </div>
+      <input id="can-tags" placeholder="Etiquetas: adoración, alabanza..." style="margin-top:8px"/>
+    </div>
+    <!-- Panel Links -->
+    <div id="can-panel-1" style="display:none">
+      <label class="lbl">📄 Letra (PDF)</label><input id="can-link-letra" placeholder="https://..."/>
+      <label class="lbl">🎼 Acordes (PDF)</label><input id="can-link-acordes" placeholder="https://..."/>
+      <label class="lbl">▶️ YouTube</label><input id="can-link-youtube" placeholder="https://youtube.com/..."/>
+    </div>
+    <!-- Panel Letra -->
+    <div id="can-panel-2" style="display:none">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5">Pegá los acordes en la línea de arriba y la letra abajo, igual que en Ultimate Guitar</div>
+      <textarea id="can-letra-acordes" placeholder="G        Em&#10;Ven Espíritu Santo ven&#10;C         D&#10;Llena este lugar" style="height:260px;resize:vertical;font-family:'Courier New',monospace;font-size:13px;line-height:1.8;padding:12px"></textarea>
+    </div>
+    <button class="btn btn-primary btn-full" id="btn-save-can" style="margin-top:14px">Guardar canción</button>
   </div>
   <input id="can-search" placeholder="🔍 Buscar por título, artista o etiqueta..."/>
   <div style="display:flex;gap:8px;margin-bottom:12px">
@@ -609,18 +626,40 @@ input::placeholder{color:var(--muted);}
       <button class="btn btn-ghost btn-sm" id="btn-close-can-edit">✕</button>
     </div>
     <input type="hidden" id="can-edit-id"/>
-    <label class="lbl">Título</label><input id="can-edit-titulo"/>
-    <label class="lbl">Artista</label><input id="can-edit-artista"/>
-    <div class="grid2">
-      <div><label class="lbl">Tono</label><select id="can-edit-tono"><option>C</option><option>C#</option><option>D</option><option>D#</option><option>E</option><option>F</option><option>F#</option><option>G</option><option>G#</option><option>A</option><option>A#</option><option>B</option><option>Cm</option><option>C#m</option><option>Dm</option><option>D#m</option><option>Em</option><option>Fm</option><option>F#m</option><option>Gm</option><option>G#m</option><option>Am</option><option>A#m</option><option>Bm</option></select></div>
-      <div><label class="lbl">BPM</label><input id="can-edit-bpm" type="number"/></div>
+    <!-- Pestañas edit -->
+    <div style="display:flex;border-bottom:1px solid var(--border);margin-bottom:14px">
+      <div class="can-edit-tab" data-tab="0" style="flex:1;padding:10px 8px;font-size:12px;font-weight:600;color:var(--gold);cursor:pointer;text-align:center;border-bottom:2px solid var(--gold)">📋 Info</div>
+      <div class="can-edit-tab" data-tab="1" style="flex:1;padding:10px 8px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;text-align:center;border-bottom:2px solid transparent">🔗 Links</div>
+      <div class="can-edit-tab" data-tab="2" style="flex:1;padding:10px 8px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;text-align:center;border-bottom:2px solid transparent">🎵 Letra</div>
     </div>
-    <label class="lbl">Link letra</label><input id="can-edit-letra"/>
-    <label class="lbl">Link acordes</label><input id="can-edit-acordes"/>
-    <label class="lbl">🎬 YouTube</label><input id="can-edit-youtube"/>
-    <label class="lbl">📝 Letra con acordes</label>
-    <textarea id="can-edit-letra-acordes" placeholder="Pegá la letra con los acordes encima" style="height:200px;resize:vertical;font-family:'Courier New',monospace;font-size:13px;line-height:1.6;padding:12px"></textarea>
-    <label class="lbl">Etiquetas</label><input id="can-edit-tags"/>
+    <!-- Panel Info -->
+    <div id="can-edit-panel-0">
+      <label class="lbl">Título</label><input id="can-edit-titulo"/>
+      <label class="lbl">Artista</label><input id="can-edit-artista"/>
+      <div class="grid2">
+        <div><label class="lbl">Tono</label><select id="can-edit-tono"><option>C</option><option>C#</option><option>D</option><option>D#</option><option>E</option><option>F</option><option>F#</option><option>G</option><option>G#</option><option>A</option><option>A#</option><option>B</option><option>Cm</option><option>C#m</option><option>Dm</option><option>D#m</option><option>Em</option><option>Fm</option><option>F#m</option><option>Gm</option><option>G#m</option><option>Am</option><option>A#m</option><option>Bm</option></select></div>
+        <div><label class="lbl">BPM</label><input id="can-edit-bpm" type="number"/></div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:4px 14px;margin-top:12px">
+        <label class="chk-lbl"><input type="checkbox" id="can-edit-nueva"/> 🆕 Canción nueva</label>
+        <label class="chk-lbl"><input type="checkbox" id="can-edit-aprender"/> 📚 Por aprender</label>
+      </div>
+      <label class="lbl">Etiquetas</label><input id="can-edit-tags"/>
+    </div>
+    <!-- Panel Links -->
+    <div id="can-edit-panel-1" style="display:none">
+      <label class="lbl">📄 Letra (PDF)</label><input id="can-edit-letra"/>
+      <label class="lbl">🎼 Acordes (PDF)</label><input id="can-edit-acordes"/>
+      <label class="lbl">▶️ YouTube</label><input id="can-edit-youtube"/>
+    </div>
+    <!-- Panel Letra -->
+    <div id="can-edit-panel-2" style="display:none">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5">Pegá los acordes en la línea de arriba y la letra abajo</div>
+      <textarea id="can-edit-letra-acordes" placeholder="G        Em&#10;Ven Espíritu Santo ven" style="height:260px;resize:vertical;font-family:'Courier New',monospace;font-size:13px;line-height:1.8;padding:12px"></textarea>
+    </div>
+    <button class="btn btn-primary btn-full" id="btn-save-can-edit" style="margin-top:14px">💾 Guardar</button>
+  </div>
+</div>
     <label class="chk-lbl"><input type="checkbox" id="can-edit-nueva"/> 🆕 Nueva</label>
     <label class="chk-lbl"><input type="checkbox" id="can-edit-aprender"/> 📚 Por aprender</label>
     <button class="btn btn-primary btn-full" id="btn-save-can-edit">💾 Guardar</button>
@@ -748,6 +787,37 @@ input::placeholder{color:var(--muted);}
   <div id="foto-lightbox-nombre" style="font-size:18px;font-weight:800;margin-top:20px;color:#fff"></div>
   <div id="foto-lightbox-rol" style="font-size:13px;color:var(--accent);margin-top:4px"></div>
   <button id="foto-lightbox-close" style="margin-top:24px;border:none;background:#ffffff22;color:#fff;border-radius:99px;padding:10px 24px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer">✕ Cerrar</button>
+</div>
+
+<!-- TRANSPOSITOR FULLSCREEN -->
+<div id="trans-modal" style="position:fixed;inset:0;background:var(--bg);z-index:800;display:none;flex-direction:column">
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <button id="btn-close-trans" style="border:none;background:var(--card);color:var(--muted);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer">← Volver</button>
+    <div style="flex:1">
+      <div id="trans-song-title" style="font-size:15px;font-weight:800"></div>
+      <div id="trans-song-sub" style="font-size:11px;color:var(--muted);margin-top:2px"></div>
+    </div>
+  </div>
+  <!-- Controles sticky -->
+  <div style="background:linear-gradient(135deg,#2A2350,var(--surface));border-bottom:1px solid var(--accent);padding:14px 16px;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div id="trans-orig-label" style="font-size:12px;color:var(--muted)">Original: <span style="color:var(--gold);font-weight:700" id="trans-orig-tono">G</span></div>
+      <div style="font-size:16px;color:var(--muted)">→</div>
+      <div style="display:flex;align-items:center;gap:10px;flex:1;justify-content:flex-end">
+        <button id="trans-minus-fs" style="width:44px;height:44px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:24px;font-weight:700;cursor:pointer">−</button>
+        <div style="text-align:center;min-width:52px">
+          <div id="trans-tono-fs" style="font-size:28px;font-weight:800;color:var(--gold)">G</div>
+          <div id="trans-semis-fs" style="font-size:10px;color:var(--muted)">Original</div>
+        </div>
+        <button id="trans-plus-fs" style="width:44px;height:44px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:24px;font-weight:700;cursor:pointer">+</button>
+      </div>
+    </div>
+    <div style="text-align:right;margin-top:8px"><span id="trans-reset-fs" style="font-size:11px;color:var(--accent);cursor:pointer;text-decoration:underline">↺ Volver al original</span></div>
+  </div>
+  <!-- Letra scrolleable -->
+  <div style="flex:1;overflow-y:auto;padding:16px">
+    <div id="trans-letra-content" style="font-family:'Courier New',monospace;font-size:14px;line-height:2;white-space:pre-wrap"></div>
+  </div>
 </div>
 
 <!-- MODO SERVICIO -->
@@ -2115,29 +2185,16 @@ const buildEvDetail = (ev, backFn) => {
       const estructura=(item.estructura||[]).map(p=>p.nombre+' ×'+p.veces).join(' → ');
       d.innerHTML='<span style="font-size:13px;font-weight:800;color:var(--gold);width:20px;flex-shrink:0">'+(i+1)+'</span>'
         +'<span style="font-size:18px;flex-shrink:0">'+(icons[item.tipo]||'✨')+'</span>'
-        +'<div style="flex:1">'
+        +'<div style="flex:1;cursor:'+(can&&can.letraAcordes?'pointer':'default')+'">'
           +'<div style="font-size:14px;font-weight:700">'+item.titulo+'</div>'
           +(item.tono?'<div style="font-size:11px;color:var(--muted);margin-top:2px">Tono: '+item.tono+'</div>':'')
           +(item.duracion?'<div style="font-size:10px;color:var(--gold);margin-top:2px">⏱ '+item.duracion+' min</div>':'')
           +(estructura?'<div style="font-size:10px;color:var(--accent);margin-top:3px">'+estructura+'</div>':'')
+          +(can&&can.letraAcordes?'<div style="font-size:10px;color:var(--accent);margin-top:4px;font-weight:700">🎵 Tocar para ver letra y transponer</div>':'')
           +(can&&can.linkYoutube?'<a href="'+can.linkYoutube+'" target="_blank" style="font-size:10px;color:var(--gold);margin-top:3px;display:block">▶ Ver en YouTube</a>':'')
         +'</div>';
       if(can&&can.letraAcordes){
-        const transBtn=document.createElement('button');
-        transBtn.style.cssText='border:none;background:#7B6FD422;color:var(--accent);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;margin-top:6px;width:100%';
-        transBtn.textContent='🎵 Ver letra y transpositor';
-        let transOpen=false;
-        transBtn.addEventListener('click',()=>{
-          transOpen=!transOpen;
-          if(transOpen){
-            const transWrap=buildTranspositor(can);
-            if(transWrap){ transWrap.id='trans-wrap-'+i; d.appendChild(transWrap); transBtn.textContent='✕ Cerrar letra'; }
-          } else {
-            const tw=document.getElementById('trans-wrap-'+i); if(tw) tw.remove();
-            transBtn.textContent='🎵 Ver letra y transpositor';
-          }
-        });
-        d.appendChild(transBtn);
+        d.querySelector('div[style*="cursor"]').addEventListener('click',()=>openTranspositor({...can,...item}));
       }
       ordenPanel.appendChild(d);
     });
@@ -3533,6 +3590,60 @@ const renderLetra = (texto, steps) => {
     return '<span style="color:var(--text)">'+line+'</span>';
   }).join('\n');
 };
+
+// ── CANCION FORM TABS ──
+const switchCanTab = (tabs, panels, idx) => {
+  tabs.forEach((t,i)=>{
+    t.style.color = i===idx ? 'var(--gold)' : 'var(--muted)';
+    t.style.borderBottom = i===idx ? '2px solid var(--gold)' : '2px solid transparent';
+  });
+  panels.forEach((p,i)=>p.style.display = i===idx ? 'block' : 'none');
+};
+document.querySelectorAll('.can-form-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    const idx = parseInt(tab.dataset.tab);
+    switchCanTab([...document.querySelectorAll('.can-form-tab')],[...['can-panel-0','can-panel-1','can-panel-2'].map(id=>$(id))],idx);
+  });
+});
+document.querySelectorAll('.can-edit-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    const idx = parseInt(tab.dataset.tab);
+    switchCanTab([...document.querySelectorAll('.can-edit-tab')],[...['can-edit-panel-0','can-edit-panel-1','can-edit-panel-2'].map(id=>$(id))],idx);
+  });
+});
+
+// ── TRANSPOSITOR FULLSCREEN ──
+let transCancion = null;
+let transSemitones = 0;
+
+const openTranspositor = (cancion) => {
+  transCancion = cancion;
+  transSemitones = 0;
+  $('trans-song-title').textContent = cancion.titulo;
+  $('trans-song-sub').textContent = (cancion.artista||'')+(cancion.bpm?' · BPM: '+cancion.bpm:'');
+  $('trans-orig-tono').textContent = cancion.tono||'G';
+  updateTransFullscreen();
+  $('trans-modal').style.display = 'flex';
+  history.pushState({view:'trans-modal'},'',location.pathname);
+};
+
+const updateTransFullscreen = () => {
+  if(!transCancion) return;
+  const tonoBase = transCancion.tono||'G';
+  const tonoIdx = NOTE_IDX[tonoBase.replace('m','')] ?? 7;
+  const newIdx = ((tonoIdx + transSemitones) % 12 + 12) % 12;
+  const newTono = CHROMATIC_SHARP[newIdx] + (tonoBase.endsWith('m') ? 'm' : '');
+  $('trans-tono-fs').textContent = newTono;
+  $('trans-semis-fs').textContent = transSemitones === 0 ? 'Original' : (transSemitones > 0 ? '+' : '') + transSemitones + ' semitonos';
+  $('trans-letra-content').innerHTML = renderLetra(transCancion.letraAcordes||'', transSemitones);
+};
+
+$('trans-minus-fs').addEventListener('click',()=>{ transSemitones=((transSemitones-1)%12+12)%12; if(transSemitones>6)transSemitones-=12; updateTransFullscreen(); });
+$('trans-plus-fs').addEventListener('click',()=>{ transSemitones=((transSemitones+1)%12+12)%12; if(transSemitones>6)transSemitones-=12; updateTransFullscreen(); });
+$('trans-reset-fs').addEventListener('click',()=>{ transSemitones=0; updateTransFullscreen(); });
+$('btn-close-trans').addEventListener('click',()=>{ $('trans-modal').style.display='none'; history.back(); });
+
+window.openTranspositor = openTranspositor;
 
 // ── STAT MODALS ──
 window.showStatModal = (tipo) => {
