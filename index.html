@@ -3438,46 +3438,83 @@ const buildTranspositor = (cancion) => {
   const tonoBase = cancion.tono || 'G';
   const tonoIdx = NOTE_IDX[tonoBase.replace('m','')] ?? 7;
 
+  // Transpositor UI
+  const transDiv = document.createElement('div');
+  transDiv.style.cssText = 'background:linear-gradient(135deg,#2A2350,var(--surface));border:1px solid var(--accent);border-radius:16px;padding:14px;margin-bottom:16px';
+
+  const tonoActualEl = document.createElement('div');
+  tonoActualEl.style.cssText = 'font-size:20px;font-weight:800;color:var(--gold);text-align:center';
+  tonoActualEl.textContent = tonoBase;
+
+  const semitonesEl = document.createElement('div');
+  semitonesEl.style.cssText = 'font-size:11px;color:var(--muted);text-align:center;margin-top:2px';
+  semitonesEl.textContent = 'Original';
+
+  const lyricsEl = document.createElement('div');
+  lyricsEl.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;font-family:"Courier New",monospace;white-space:pre-wrap;font-size:13px;line-height:1.8;margin-top:12px;overflow-x:auto';
+
   const updateTono = () => {
     const newIdx = ((tonoIdx + semitones) % 12 + 12) % 12;
     const newTono = CHROMATIC_SHARP[newIdx] + (tonoBase.endsWith('m') ? 'm' : '');
     tonoActualEl.textContent = newTono;
     semitonesEl.textContent = semitones === 0 ? 'Original' : (semitones > 0 ? '+' : '') + semitones + ' semitonos';
-    // Re-render letra
     lyricsEl.innerHTML = renderLetra(cancion.letraAcordes, semitones);
   };
 
-  // Transpositor UI
-  const transDiv = document.createElement('div');
-  transDiv.style.cssText = 'background:linear-gradient(135deg,#2A2350,var(--surface));border:1px solid var(--accent);border-radius:16px;padding:14px;margin-bottom:16px';
-  transDiv.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">🎵 Transpositor de tono</div>'
-    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'
-      +'<div style="font-size:12px;color:var(--muted);width:90px">Tono original</div>'
-      +'<div style="font-size:20px;font-weight:800;color:var(--gold)">'+tonoBase+'</div>'
-    +'</div>'
-    +'<div style="display:flex;align-items:center;gap:10px">'
-      +'<div style="font-size:12px;color:var(--muted);width:90px">Tono actual</div>'
-      +'<button id="trans-minus" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:18px;font-weight:700;cursor:pointer">−</button>'
-      +'<div style="flex:1;text-align:center">'
-        +'<div id="trans-tono-actual" style="font-size:20px;font-weight:800;color:var(--gold)">'+tonoBase+'</div>'
-        +'<div id="trans-semitones" style="font-size:11px;color:var(--muted)">Original</div>'
-      +'</div>'
-      +'<button id="trans-plus" style="width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:18px;font-weight:700;cursor:pointer">+</button>'
-    +'</div>'
-    +'<div style="text-align:right;margin-top:10px"><span id="trans-reset" style="font-size:11px;color:var(--accent);cursor:pointer;text-decoration:underline">↺ Volver al original</span></div>';
+  // Header
+  const header = document.createElement('div');
+  header.style.cssText = 'font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px';
+  header.textContent = '🎵 Transpositor de tono';
+
+  // Tono original
+  const origRow = document.createElement('div');
+  origRow.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:10px';
+  origRow.innerHTML = '<div style="font-size:12px;color:var(--muted);width:90px">Tono original</div><div style="font-size:20px;font-weight:800;color:var(--gold)">'+tonoBase+'</div>';
+
+  // Tono actual con botones
+  const currentRow = document.createElement('div');
+  currentRow.style.cssText = 'display:flex;align-items:center;gap:10px';
+
+  const label = document.createElement('div');
+  label.style.cssText = 'font-size:12px;color:var(--muted);width:90px';
+  label.textContent = 'Tono actual';
+
+  const minusBtn = document.createElement('button');
+  minusBtn.style.cssText = 'width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:20px;font-weight:700;cursor:pointer;flex-shrink:0';
+  minusBtn.textContent = '−';
+  minusBtn.addEventListener('click',()=>{ semitones=((semitones-1)%12+12)%12; if(semitones>6) semitones-=12; updateTono(); });
+
+  const plusBtn = document.createElement('button');
+  plusBtn.style.cssText = 'width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:20px;font-weight:700;cursor:pointer;flex-shrink:0';
+  plusBtn.textContent = '+';
+  plusBtn.addEventListener('click',()=>{ semitones=((semitones+1)%12+12)%12; if(semitones>6) semitones-=12; updateTono(); });
+
+  const centerDiv = document.createElement('div');
+  centerDiv.style.cssText = 'flex:1;text-align:center';
+  centerDiv.appendChild(tonoActualEl);
+  centerDiv.appendChild(semitonesEl);
+
+  currentRow.appendChild(label);
+  currentRow.appendChild(minusBtn);
+  currentRow.appendChild(centerDiv);
+  currentRow.appendChild(plusBtn);
+
+  const resetRow = document.createElement('div');
+  resetRow.style.cssText = 'text-align:right;margin-top:10px';
+  const resetBtn = document.createElement('span');
+  resetBtn.style.cssText = 'font-size:11px;color:var(--accent);cursor:pointer;text-decoration:underline';
+  resetBtn.textContent = '↺ Volver al original';
+  resetBtn.addEventListener('click',()=>{ semitones=0; updateTono(); });
+  resetRow.appendChild(resetBtn);
+
+  transDiv.appendChild(header);
+  transDiv.appendChild(origRow);
+  transDiv.appendChild(currentRow);
+  transDiv.appendChild(resetRow);
 
   wrap.appendChild(transDiv);
 
-  const tonoActualEl = transDiv.querySelector('#trans-tono-actual');
-  const semitonesEl = transDiv.querySelector('#trans-semitones');
-
-  transDiv.querySelector('#trans-minus').addEventListener('click',()=>{ semitones=((semitones-1)%12+12)%12; if(semitones>6) semitones-=12; updateTono(); });
-  transDiv.querySelector('#trans-plus').addEventListener('click',()=>{ semitones=((semitones+1)%12+12)%12; if(semitones>6) semitones-=12; updateTono(); });
-  transDiv.querySelector('#trans-reset').addEventListener('click',()=>{ semitones=0; updateTono(); });
-
-  // Letra
-  const lyricsEl = document.createElement('div');
-  lyricsEl.style.cssText = 'background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px;font-family:"Courier New",monospace;white-space:pre-wrap;font-size:13px;line-height:1.8';
+  // Letra inicial
   lyricsEl.innerHTML = renderLetra(cancion.letraAcordes, 0);
   wrap.appendChild(lyricsEl);
 
