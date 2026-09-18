@@ -827,6 +827,7 @@ input::placeholder{color:var(--muted);}
       <div id="trans-song-title" style="font-size:15px;font-weight:800"></div>
       <div id="trans-song-sub" style="font-size:11px;color:var(--muted);margin-top:2px"></div>
     </div>
+    <button id="btn-edit-from-trans" style="border:none;background:var(--card);color:var(--accent);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border)">✏️ Editar</button>
   </div>
   <!-- Controles sticky -->
   <div style="background:linear-gradient(135deg,#2A2350,var(--surface));border-bottom:1px solid var(--accent);padding:14px 16px;flex-shrink:0">
@@ -3662,11 +3663,21 @@ const openLetraEditor = (target) => {
   history.pushState({view:'letra-editor'},'',location.pathname);
 };
 
-const saveLetraEditor = () => {
+const saveLetraEditor = async () => {
   const val = $('letra-editor-text').value;
+  if(letraEditorTarget === 'trans'){
+    if(transCancion && transCancion.id){
+      await updateDoc(doc(db,'canciones',transCancion.id),{letraAcordes:val});
+      transCancion.letraAcordes = val;
+      updateTransFullscreen();
+      toast('✅ Letra guardada!');
+    }
+    $('letra-editor-modal').style.display='none';
+    history.back();
+    return;
+  }
   const ta = letraEditorTarget === 'new' ? $('can-letra-acordes') : $('can-edit-letra-acordes');
   if(ta) ta.value = val;
-  // Show preview
   const previewId = letraEditorTarget === 'new' ? 'can-letra-preview' : 'can-edit-letra-preview';
   const btnId = letraEditorTarget === 'new' ? 'btn-open-letra-editor' : 'btn-open-letra-editor-edit';
   const preview = $(previewId);
@@ -3771,6 +3782,19 @@ $('trans-minus-fs').addEventListener('click',()=>{ transSemitones=((transSemiton
 $('trans-plus-fs').addEventListener('click',()=>{ transSemitones=((transSemitones+1)%12+12)%12; if(transSemitones>6)transSemitones-=12; updateTransFullscreen(); });
 $('trans-reset-fs').addEventListener('click',()=>{ transSemitones=0; updateTransFullscreen(); });
 $('btn-close-trans').addEventListener('click',()=>{ $('trans-modal').style.display='none'; history.back(); });
+$('btn-edit-from-trans').addEventListener('click',()=>{
+  if(!transCancion) return;
+  // Open letra editor with current cancion
+  $('letra-editor-title').textContent = '🎵 ' + (transCancion.titulo||'Editar letra');
+  $('letra-editor-text').value = transCancion.letraAcordes||'';
+  letraEditorTarget = 'trans'; // special mode
+  letraEditorTwoCol = false;
+  $('letra-editor-text').style.columnCount = '1';
+  $('btn-letra-cols').textContent = '⊟ 1 col';
+  updateLetraStatus();
+  $('letra-editor-modal').style.display = 'flex';
+  history.pushState({view:'letra-editor'},'',location.pathname);
+});
 
 window.openTranspositor = openTranspositor;
 
