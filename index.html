@@ -308,7 +308,12 @@ input::placeholder{color:var(--muted);}
         <!-- Sub-panel 0: Liderazgo -->
         <div id="ev-sub-0">
           <h4 style="margin-bottom:8px">🎤 Presididor</h4>
-          <select id="ev-presididor" style="margin-bottom:14px"><option value="">-- Seleccionar --</option></select>
+          <input type="hidden" id="ev-presididor"/>
+          <div id="ev-presididor-display" onclick="openPresididorPicker()" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;cursor:pointer;margin-bottom:14px">
+            <span id="ev-presididor-avatar" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9590E0);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🎤</span>
+            <span id="ev-presididor-nombre" style="flex:1;font-size:13px;font-weight:600;color:var(--muted)">-- Seleccionar presididor --</span>
+            <span style="color:var(--muted);font-size:16px">›</span>
+          </div>
           <h4 style="margin-bottom:8px">📖 Predicador(es)</h4>
           <div class="search-wrap">
             <input id="ev-pred-search" class="search-input" placeholder="Buscar predicador..." autocomplete="off"/>
@@ -858,6 +863,18 @@ input::placeholder{color:var(--muted);}
   <div style="flex:1;overflow-y:auto;padding:16px">
     <div id="trans-letra-content" style="font-family:'Courier New',monospace;font-size:14px;line-height:2;white-space:pre-wrap"></div>
   </div>
+</div>
+
+<!-- PRESIDIDOR PICKER -->
+<div id="presididor-picker-modal" style="position:fixed;inset:0;background:var(--bg);z-index:700;display:none;flex-direction:column">
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <button id="btn-close-pres-picker" style="border:none;background:var(--card);color:var(--muted);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer">← Volver</button>
+    <div style="flex:1;font-size:15px;font-weight:800">🎤 Presididor</div>
+  </div>
+  <div style="padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0">
+    <input id="pres-picker-search" placeholder="🔍 Buscar..." style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-family:inherit;font-size:13px;outline:none"/>
+  </div>
+  <div id="pres-picker-list" style="flex:1;overflow-y:auto"></div>
 </div>
 
 <!-- MULTISELECT FULLSCREEN -->
@@ -1479,10 +1496,15 @@ function renderCantantes() {
 // ── DIRECTOR SELECT ──
 const populatePresididorSelect = (sel, selectedVal) => {
   if(!sel) return;
-  let html='<option value="">-- Seleccionar presididor --</option>';
-  if(musicos.length) html+='<optgroup label="Músicos">'+musicos.map(m=>'<option value="m_'+m.id+'"'+((selectedVal==='m_'+m.id)?' selected':'')+'>'+m.nombre+' ('+m.rol+')</option>').join('')+'</optgroup>';
-  if(cantantes.length) html+='<optgroup label="Cantantes">'+cantantes.map(c=>'<option value="c_'+c.id+'"'+((selectedVal==='c_'+c.id)?' selected':'')+'>'+c.nombre+'</option>').join('')+'</optgroup>';
-  sel.innerHTML=html;
+  sel.value = selectedVal||'';
+  // Update picker UI display
+  const p = resolvePresididor(selectedVal);
+  if(p && selectedVal){
+    const avatar = p.fotoUrl ? 'img:'+p.fotoUrl : (selectedVal.startsWith('c_')?'🎤':roleIcon(p.rol));
+    setPresididor(selectedVal, avatar, p.nombre);
+  } else {
+    setPresididor('','🎤','-- Seleccionar presididor --');
+  }
 };
 const resolvePresididor = val => { if(!val) return null; if(val.startsWith('c_')) return cantantes.find(x=>x.id===val.slice(2)); if(val.startsWith('m_')) return musicos.find(x=>x.id===val.slice(2)); return musicos.find(x=>x.id===val); };
 const presididorRolStr = val => { if(!val) return ''; if(val.startsWith('c_')){const c=cantantes.find(x=>x.id===val.slice(2));return c?(c.notas||'Cantante'):'';} const m=musicos.find(x=>x.id===(val.startsWith('m_')?val.slice(2):val));return m?(m.rol||''):''; };
@@ -4207,6 +4229,88 @@ document.querySelectorAll('.mas-item[data-tab]').forEach(item=>{
     goTab(item.dataset.tab);
   });
 });
+
+// ── PRESIDIDOR PICKER ──
+const renderPresididorList = (q='') => {
+  const list = $('pres-picker-list'); list.innerHTML='';
+
+  // Opción ninguno
+  const noneRow = document.createElement('div');
+  noneRow.style.cssText='display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border)';
+  noneRow.innerHTML='<div style="width:40px;height:40px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">—</div>'
+    +'<div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--muted)">Sin presididor</div></div>';
+  noneRow.addEventListener('click',()=>setPresididor('','','Sin presididor'));
+  list.appendChild(noneRow);
+
+  // Músicos con rol Lider
+  const lideres = musicos.filter(m=>(m.roles||[m.rol]).includes('Lider')&&(!q||m.nombre.toLowerCase().includes(q)));
+  if(lideres.length){
+    const lbl=document.createElement('div');
+    lbl.style.cssText='padding:8px 16px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--card)';
+    lbl.textContent='🎸 Músicos';
+    list.appendChild(lbl);
+    lideres.forEach(m=>{
+      const row=document.createElement('div');
+      const isSel = $('ev-presididor').value === 'm_'+m.id;
+      row.style.cssText='display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);'+(isSel?'background:#7B6FD411':'');
+      const avatarHtml = m.fotoUrl
+        ? '<div style="width:40px;height:40px;border-radius:50%;background:url('+m.fotoUrl+') center/cover;flex-shrink:0;border:2px solid '+(isSel?'var(--accent)':'var(--border)')+'"></div>'
+        : '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9590E0);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+roleIcon(m.rol)+'</div>';
+      row.innerHTML=avatarHtml
+        +'<div style="flex:1"><div style="font-size:14px;font-weight:700">'+m.nombre+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+(m.roles||[m.rol]).join(' · ')+'</div></div>'
+        +(isSel?'<span style="color:var(--accent);font-size:18px">✓</span>':'');
+      row.addEventListener('click',()=>setPresididor('m_'+m.id, m.fotoUrl?'img:'+m.fotoUrl:roleIcon(m.rol), m.nombre));
+      list.appendChild(row);
+    });
+  }
+
+  // Cantantes externos
+  const cants = cantantes.filter(c=>!q||c.nombre.toLowerCase().includes(q));
+  if(cants.length){
+    const lbl=document.createElement('div');
+    lbl.style.cssText='padding:8px 16px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--card)';
+    lbl.textContent='🎤 Cantantes';
+    list.appendChild(lbl);
+    cants.forEach(c=>{
+      const row=document.createElement('div');
+      const isSel = $('ev-presididor').value === 'c_'+c.id;
+      row.style.cssText='display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);'+(isSel?'background:#7B6FD411':'');
+      row.innerHTML='<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--gold),#C4A24A);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🎤</div>'
+        +'<div style="flex:1"><div style="font-size:14px;font-weight:700">'+c.nombre+'</div>'
+        +'<div style="font-size:11px;color:var(--muted);margin-top:2px">Cantante externo</div></div>'
+        +(isSel?'<span style="color:var(--accent);font-size:18px">✓</span>':'');
+      row.addEventListener('click',()=>setPresididor('c_'+c.id,'🎤',c.nombre));
+      list.appendChild(row);
+    });
+  }
+};
+
+const setPresididor = (val, avatar, nombre) => {
+  $('ev-presididor').value = val;
+  const display = $('ev-presididor-display');
+  const avatarEl = $('ev-presididor-avatar');
+  const nombreEl = $('ev-presididor-nombre');
+  if(avatar && avatar.startsWith('img:')){
+    avatarEl.style.backgroundImage='url('+avatar.slice(4)+')';
+    avatarEl.style.backgroundSize='cover'; avatarEl.style.backgroundPosition='center';
+    avatarEl.textContent='';
+  } else {
+    avatarEl.style.backgroundImage=''; avatarEl.textContent=avatar||'🎤';
+  }
+  nombreEl.textContent = nombre||'-- Seleccionar presididor --';
+  nombreEl.style.color = val ? 'var(--text)' : 'var(--muted)';
+  $('presididor-picker-modal').style.display='none';
+};
+
+const openPresididorPicker = () => {
+  renderPresididorList();
+  $('pres-picker-search').value='';
+  $('presididor-picker-modal').style.display='flex';
+};
+
+$('pres-picker-search').addEventListener('input',()=>renderPresididorList($('pres-picker-search').value.toLowerCase()));
+$('btn-close-pres-picker').addEventListener('click',()=>$('presididor-picker-modal').style.display='none');
 
 // ── EVENTO FORM MULTISELECT ──
 const EV_GRUPOS_CONFIG = {
