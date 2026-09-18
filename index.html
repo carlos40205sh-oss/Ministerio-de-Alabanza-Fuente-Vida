@@ -3909,9 +3909,18 @@ const renderAsigRapida = () => {
       const editChip=document.createElement('span');
       editChip.style.cssText='font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--bg);color:var(--muted);border:1px dashed var(--border);cursor:pointer';
       editChip.textContent='+ Editar';
-      editChip.addEventListener('click',()=>{
-        goTab('eventos',true);
-        setTimeout(()=>{ showEvForm(ev.id); setTimeout(()=>{ switchEvTab(1); switchEvSubTab(g.tipo==='presididor'||g.tipo==='voces'?0:g.tipo==='musicos'||g.tipo==='voces'?1:2); },200); },100);
+      editChip.addEventListener('click', e=>{
+        e.stopPropagation();
+        const subIdx = (g.tipo==='presididor'||g.tipo==='voces') ? 0 : (g.tipo==='musicos') ? 1 : 2;
+        $('asig-rapida-modal').style.display='none';
+        goTab('eventos', true);
+        setTimeout(()=>{
+          showEvForm(ev.id);
+          setTimeout(()=>{
+            switchEvTab(1);
+            setTimeout(()=>switchEvSubTab(subIdx), 100);
+          }, 300);
+        }, 100);
       });
       chipsDiv.appendChild(editChip);
       row.appendChild(chipsDiv);
