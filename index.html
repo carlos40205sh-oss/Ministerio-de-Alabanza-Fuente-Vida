@@ -880,6 +880,18 @@ input::placeholder{color:var(--muted);}
   </div>
 </div>
 
+<!-- MINI MODAL ASIGNACIÓN RÁPIDA -->
+<div id="asig-mini-modal" style="position:fixed;inset:0;background:#000000aa;z-index:600;display:none;align-items:flex-end;justify-content:center">
+  <div style="background:var(--surface);border-radius:24px 24px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;max-height:70vh;overflow-y:auto">
+    <div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 16px"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div id="asig-mini-title" style="font-size:16px;font-weight:800"></div>
+      <button id="btn-close-asig-mini" style="border:none;background:var(--card);color:var(--muted);border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer">✕</button>
+    </div>
+    <div id="asig-mini-content"></div>
+  </div>
+</div>
+
 <!-- ASIGNACIÓN RÁPIDA -->
 <div id="asig-rapida-modal" style="position:fixed;inset:0;background:var(--bg);z-index:500;display:none;flex-direction:column">
   <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0">
@@ -3911,16 +3923,7 @@ const renderAsigRapida = () => {
       editChip.textContent='+ Editar';
       editChip.addEventListener('click', e=>{
         e.stopPropagation();
-        const subIdx = (g.tipo==='presididor'||g.tipo==='voces') ? 0 : (g.tipo==='musicos') ? 1 : 2;
-        $('asig-rapida-modal').style.display='none';
-        goTab('eventos', true);
-        setTimeout(()=>{
-          showEvForm(ev.id);
-          setTimeout(()=>{
-            switchEvTab(1);
-            setTimeout(()=>switchEvSubTab(subIdx), 100);
-          }, 300);
-        }, 100);
+        openAsigMini(ev, g);
       });
       chipsDiv.appendChild(editChip);
       row.appendChild(chipsDiv);
@@ -3941,6 +3944,130 @@ $('btn-asig-rapida').addEventListener('click',()=>{
 $('btn-close-asig-rapida').addEventListener('click',()=>{ $('asig-rapida-modal').style.display='none'; history.back(); });
 $('btn-asig-prev').addEventListener('click',()=>{ asigMes--; if(asigMes<0){asigMes=11;asigAnio--;} renderAsigRapida(); });
 $('btn-asig-next').addEventListener('click',()=>{ asigMes++; if(asigMes>11){asigMes=0;asigAnio++;} renderAsigRapida(); });
+
+// ── MINI MODAL ASIGNACIÓN RÁPIDA ──
+const openAsigMini = (ev, grupo) => {
+  $('asig-mini-title').textContent = grupo.icon + ' ' + grupo.label;
+  const content = $('asig-mini-content');
+  content.innerHTML = '';
+
+  const icons = {presididor:'🎤',musicos:'🎸',voces:'🎙️',sonido:'🔊',multi:'📡',pulperia:'🛒'};
+
+  // Función para guardar cambios
+  const saveAndRefresh = async (data) => {
+    await updateDoc(doc(db,'eventos',ev.id), data);
+    toast('✅ Guardado!');
+    $('asig-mini-modal').style.display='none';
+    renderAsigRapida();
+  };
+
+  if(grupo.tipo === 'presididor'){
+    // Select de presididor
+    const lbl = document.createElement('div');
+    lbl.style.cssText='font-size:12px;color:var(--muted);margin-bottom:8px';
+    lbl.textContent='Seleccioná el presididor:';
+    content.appendChild(lbl);
+    const sel = document.createElement('select');
+    sel.style.cssText='width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px;margin-bottom:14px';
+    sel.innerHTML='<option value="">-- Sin presididor --</option>';
+    [...musicos,...cantantes.map(c=>({...c,id:'c_'+c.id,_cant:true}))].sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(p=>{
+      const opt=document.createElement('option');
+      opt.value=p._cant?'c_'+p.id.replace('c_',''):'m_'+p.id;
+      opt.textContent=p.nombre+(p._cant?' (cantante)':'');
+      if(ev.director===opt.value) opt.selected=true;
+      sel.appendChild(opt);
+    });
+    content.appendChild(sel);
+    const saveBtn=document.createElement('button');
+    saveBtn.className='btn btn-primary btn-full';
+    saveBtn.textContent='✓ Guardar';
+    saveBtn.addEventListener('click',()=>saveAndRefresh({director:sel.value}));
+    content.appendChild(saveBtn);
+
+  } else {
+    // Buscador para grupos con múltiples personas
+    const getArr = () => {
+      if(grupo.tipo==='musicos') return ev.asignados||[];
+      if(grupo.tipo==='voces') return ev.vozAsignados||[];
+      if(grupo.tipo==='sonido') return ev.sonidoAsignados||[];
+      if(grupo.tipo==='multi') return ev.multiAsignados||[];
+      if(grupo.tipo==='pulperia') return ev.pulperia||[];
+      return [];
+    };
+    const getKey = () => {
+      if(grupo.tipo==='musicos') return 'asignados';
+      if(grupo.tipo==='voces') return 'vozAsignados';
+      if(grupo.tipo==='sonido') return 'sonidoAsignados';
+      if(grupo.tipo==='multi') return 'multiAsignados';
+      if(grupo.tipo==='pulperia') return 'pulperia';
+    };
+    const isSimple = grupo.tipo==='pulperia';
+    let arr = JSON.parse(JSON.stringify(getArr()));
+
+    const renderMiniList = () => {
+      listDiv.innerHTML='';
+      if(!arr.length){ listDiv.innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:10px">Nadie asignado</div>'; return; }
+      arr.forEach((a,i)=>{
+        const musId = isSimple ? a : a.musId;
+        const m=musicos.find(x=>x.id===musId); if(!m) return;
+        const row=document.createElement('div');
+        row.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)';
+        row.innerHTML='<span style="font-size:13px;flex:1;font-weight:600">'+m.nombre+'</span>';
+        const rm=document.createElement('button');
+        rm.style.cssText='border:none;background:#E06C7522;color:var(--danger);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer';
+        rm.textContent='✕ Quitar';
+        rm.addEventListener('click',()=>{ arr.splice(i,1); renderMiniList(); });
+        row.appendChild(rm); listDiv.appendChild(row);
+      });
+    };
+
+    // Buscador
+    const searchWrap=document.createElement('div'); searchWrap.style.cssText='position:relative;margin-bottom:8px';
+    const searchInp=document.createElement('input'); searchInp.placeholder='Buscar músico...';
+    searchInp.style.cssText='width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px;outline:none';
+    const dropdown=document.createElement('div');
+    dropdown.style.cssText='position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:10px;z-index:10;display:none;max-height:160px;overflow-y:auto';
+    searchWrap.appendChild(searchInp); searchWrap.appendChild(dropdown);
+    content.appendChild(searchWrap);
+
+    searchInp.addEventListener('input',()=>{
+      const q=searchInp.value.toLowerCase();
+      const assigned = arr.map(a=>isSimple?a:a.musId);
+      const candidates=musicos.filter(m=>!assigned.includes(m.id)&&m.nombre.toLowerCase().includes(q)&&!(m.fechasBloqueadas||[]).includes(ev.fecha));
+      dropdown.innerHTML='';
+      if(!candidates.length){ dropdown.innerHTML='<div style="padding:10px;font-size:12px;color:var(--muted)">Sin resultados</div>'; }
+      candidates.forEach(m=>{
+        const item=document.createElement('div');
+        item.style.cssText='padding:10px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)';
+        item.innerHTML='<span>'+roleIcon(m.rol)+'</span><span>'+m.nombre+'</span>';
+        item.addEventListener('mousedown',e=>{ e.preventDefault();
+          arr.push(isSimple?m.id:{musId:m.id,rol:m.rol});
+          searchInp.value=''; dropdown.style.display='none'; renderMiniList();
+        });
+        dropdown.appendChild(item);
+      });
+      dropdown.style.display='block';
+    });
+    searchInp.addEventListener('blur',()=>setTimeout(()=>dropdown.style.display='none',200));
+
+    // Lista actual
+    const listDiv=document.createElement('div'); listDiv.style.cssText='margin-bottom:14px';
+    content.appendChild(listDiv);
+    renderMiniList();
+
+    // Guardar
+    const saveBtn=document.createElement('button');
+    saveBtn.className='btn btn-primary btn-full';
+    saveBtn.textContent='✓ Guardar';
+    saveBtn.addEventListener('click',()=>saveAndRefresh({[getKey()]:arr}));
+    content.appendChild(saveBtn);
+  }
+
+  $('asig-mini-modal').style.display='flex';
+};
+
+$('btn-close-asig-mini').addEventListener('click',()=>$('asig-mini-modal').style.display='none');
+$('asig-mini-modal').addEventListener('click',e=>{ if(e.target===$('asig-mini-modal')) $('asig-mini-modal').style.display='none'; });
 
 // ── MÁS MENU ──
 $('btn-nav-mas').addEventListener('click',()=>{
