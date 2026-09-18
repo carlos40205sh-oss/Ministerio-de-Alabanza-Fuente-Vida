@@ -3510,18 +3510,26 @@ const CHROMATIC_FLAT  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
 const NOTE_IDX = {'C':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'F':5,'F#':6,'Gb':6,'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11};
 
 const transposeChord = (chord, steps) => {
-  const isMinor = chord.endsWith('m') && chord.length > 1;
-  const root = isMinor ? chord.slice(0,-1) : chord;
+  // Handle slash chords like D/F#
+  if(chord.includes('/')){
+    const parts = chord.split('/');
+    return transposeChord(parts[0], steps) + '/' + transposeChord(parts[1], steps);
+  }
+  // Extract root note (1-2 chars) and suffix (m, maj7, 7, sus4, dim, aug, etc)
+  const match = chord.match(/^([A-G][#b]?)(.*)?$/);
+  if(!match) return chord;
+  const root = match[1];
+  const suffix = match[2] || '';
   if(NOTE_IDX[root] === undefined) return chord;
   const newIdx = ((NOTE_IDX[root] + steps) % 12 + 12) % 12;
-  return CHROMATIC_SHARP[newIdx] + (isMinor ? 'm' : '');
+  return CHROMATIC_SHARP[newIdx] + suffix;
 };
 
 const transposeLine = (line, steps) => {
   if(steps === 0) return line;
-  return line.replace(/\b([A-G][b#]?m?)\b/g, match => {
-    if(NOTE_IDX[match.replace('m','')]!==undefined) return transposeChord(match, steps);
-    return match;
+  // Match chord patterns including slash chords and extensions
+  return line.replace(/\b([A-G][#b]?(?:maj|min|m|dim|aug|sus)?[0-9]?(?:\/[A-G][#b]?)?)\b/g, match => {
+    return transposeChord(match, steps);
   });
 };
 
@@ -3619,23 +3627,16 @@ const renderLetra = (texto, steps) => {
   if(!texto) return '';
   const lines = texto.split('\n');
   return lines.map(line => {
-    // Section headers like [Estrofa] [Coro] [Bridge]
     if(/^\[.+\]$/.test(line.trim())){
       return '<span style="color:var(--gold);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px">'+line+'</span>';
     }
-    // Empty line
     if(!line.trim()) return '';
-    // Detect chord line: contains chord patterns and mostly chords/spaces
-    const chordPattern = /\b([A-G][#b]?(?:m|maj|min|dim|aug|sus|add)?[0-9]?)\b/g;
+    const chordPattern = /\b([A-G][#b]?(?:maj|min|m|dim|aug|sus|add)?[0-9]*(?:\/[A-G][#b]?)?)\b/g;
     const chords = line.match(chordPattern) || [];
-    const withoutChords = line.replace(chordPattern,'').replace(/\s/g,'');
+    const withoutChords = line.replace(chordPattern,'').replace(/[\s\/]/g,'');
     const isChordLine = chords.length > 0 && withoutChords.length <= line.replace(/\s/g,'').length * 0.35;
     if(isChordLine){
-      const transposed = steps === 0 ? line : line.replace(/\b([A-G][#b]?m?)\b/g, match => {
-        if(NOTE_IDX[match.replace('m','')]!==undefined) return transposeChord(match, steps);
-        return match;
-      });
-      return '<span style="color:var(--accent);font-weight:700;letter-spacing:1px">'+transposed+'</span>';
+      return '<span style="color:var(--accent);font-weight:700;letter-spacing:1px">'+transposeLine(line, steps)+'</span>';
     }
     return '<span style="color:var(--text)">'+line+'</span>';
   }).join('\n');
