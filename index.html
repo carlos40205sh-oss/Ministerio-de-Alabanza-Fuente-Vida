@@ -3668,7 +3668,6 @@ const saveLetraEditor = async () => {
       toast('✅ Letra guardada!');
     }
     $('letra-editor-modal').style.display='none';
-    history.back();
     return;
   }
   const ta = letraEditorTarget === 'new' ? $('can-letra-acordes') : $('can-edit-letra-acordes');
@@ -3759,7 +3758,6 @@ const openTranspositor = (cancion) => {
   $('trans-orig-tono').textContent = cancion.tono||'G';
   updateTransFullscreen();
   $('trans-modal').style.display = 'flex';
-  history.pushState({view:'trans-modal'},'',location.pathname);
 };
 
 const updateTransFullscreen = () => {
@@ -3776,7 +3774,10 @@ const updateTransFullscreen = () => {
 $('trans-minus-fs').addEventListener('click',()=>{ transSemitones=((transSemitones-1)%12+12)%12; if(transSemitones>6)transSemitones-=12; updateTransFullscreen(); });
 $('trans-plus-fs').addEventListener('click',()=>{ transSemitones=((transSemitones+1)%12+12)%12; if(transSemitones>6)transSemitones-=12; updateTransFullscreen(); });
 $('trans-reset-fs').addEventListener('click',()=>{ transSemitones=0; updateTransFullscreen(); });
-$('btn-close-trans').addEventListener('click',()=>{ $('trans-modal').style.display='none'; history.back(); });
+$('btn-close-trans').addEventListener('click',()=>{
+  $('trans-modal').style.display='none';
+  // Don't use history.back() — just hide the modal, stay in event detail
+});
 $('btn-edit-from-trans').addEventListener('click',()=>{
   if(!transCancion) return;
   // Open letra editor with current cancion
