@@ -320,42 +320,22 @@ input::placeholder{color:var(--muted);}
         <!-- Sub-panel 1: Músicos -->
         <div id="ev-sub-1" style="display:none">
           <h4 style="margin-bottom:8px">🎸 Músicos</h4>
-          <div class="search-wrap">
-            <input id="ev-mus-search" class="search-input" placeholder="Buscar músico..." autocomplete="off"/>
-            <span class="search-icon">🔍</span>
-            <div id="ev-mus-dropdown" class="search-dropdown" style="display:none"></div>
-          </div>
+          <button class="btn btn-ghost btn-full ev-multiselect-btn" data-grupo="musicos" style="margin-bottom:8px">+ Seleccionar músicos</button>
           <div id="ev-assigned-list" style="margin-bottom:14px"></div>
           <h4 style="margin-bottom:8px">🎙️ Voces</h4>
-          <div class="search-wrap">
-            <input id="ev-voz-search" class="search-input" placeholder="Buscar voz..." autocomplete="off"/>
-            <span class="search-icon">🔍</span>
-            <div id="ev-voz-dropdown" class="search-dropdown" style="display:none"></div>
-          </div>
+          <button class="btn btn-ghost btn-full ev-multiselect-btn" data-grupo="voces" style="margin-bottom:8px">+ Seleccionar voces</button>
           <div id="ev-voz-list"></div>
         </div>
         <!-- Sub-panel 2: Técnico -->
         <div id="ev-sub-2" style="display:none">
           <h4 style="margin-bottom:8px">🔊 Sonido</h4>
-          <div class="search-wrap">
-            <input id="ev-sonido-search" class="search-input" placeholder="Buscar sonidista..." autocomplete="off"/>
-            <span class="search-icon">🔍</span>
-            <div id="ev-sonido-dropdown" class="search-dropdown" style="display:none"></div>
-          </div>
+          <button class="btn btn-ghost btn-full ev-multiselect-btn" data-grupo="sonido" style="margin-bottom:8px">+ Seleccionar sonido</button>
           <div id="ev-sonido-list" style="margin-bottom:14px"></div>
           <h4 style="margin-bottom:8px">📡 Multimedia</h4>
-          <div class="search-wrap">
-            <input id="ev-multi-search" class="search-input" placeholder="Buscar..." autocomplete="off"/>
-            <span class="search-icon">🔍</span>
-            <div id="ev-multi-dropdown" class="search-dropdown" style="display:none"></div>
-          </div>
+          <button class="btn btn-ghost btn-full ev-multiselect-btn" data-grupo="multi" style="margin-bottom:8px">+ Seleccionar multimedia</button>
           <div id="ev-multi-list" style="margin-bottom:14px"></div>
           <h4 style="margin-bottom:8px">🛒 Pulpería</h4>
-          <div class="search-wrap">
-            <input id="ev-pulperia-search" class="search-input" placeholder="Buscar músico..." autocomplete="off"/>
-            <span class="search-icon">🔍</span>
-            <div id="ev-pulperia-dropdown" class="search-dropdown" style="display:none"></div>
-          </div>
+          <button class="btn btn-ghost btn-full ev-multiselect-btn" data-grupo="pulperia" style="margin-bottom:8px">+ Seleccionar pulpería</button>
           <div id="ev-pulperia-list"></div>
         </div>
       </div>
@@ -1574,7 +1554,12 @@ const showEvForm = evId => {
   $('ev-form-title').textContent=ev?'Editar evento':'Nuevo evento';
   $('ev-extra').style.display=(ev&&ev.tipo==='Ayuno')?'none':'block';
   populatePresididorSelect($('ev-presididor'),ev?ev.director:'');
-  renderEvMusTags(); renderEvVozTags(); renderEvSonidoTags(); renderEvMultiTags(); renderEvPulperiaTags(); renderEvPredTags(); renderEvCanTags(); renderEvOrden();
+  renderEvGroupListById('ev-assigned-list', evAssigned, false);
+  renderEvGroupListById('ev-voz-list', evVoz, false);
+  renderEvGroupListById('ev-sonido-list', evSonido, false);
+  renderEvGroupListById('ev-multi-list', evMulti, false);
+  renderEvGroupListById('ev-pulperia-list', evPulperia, true);
+  renderEvPredTags(); renderEvCanTags(); renderEvOrden();
   $('ev-list-view').style.display='none'; $('ev-form-view').style.display='block'; $('ev-detail-view').style.display='none';
   switchEvTab(0); switchEvSubTab(0);
   history.pushState({tab:'eventos', view:'form'}, '', location.pathname);
@@ -4155,6 +4140,65 @@ document.querySelectorAll('.mas-item[data-tab]').forEach(item=>{
     $('mas-overlay').style.display='none';
     goTab(item.dataset.tab);
   });
+});
+
+// ── EVENTO FORM MULTISELECT ──
+const EV_GRUPOS_CONFIG = {
+  musicos:  {icon:'🎸', label:'Músicos',    roles:['Guitarra','Bajo','Teclado/Piano','Batería','Saxofón'], arr:()=>evAssigned, key:'assigned', listId:'ev-assigned-list', simple:false},
+  voces:    {icon:'🎙️', label:'Voces',      roles:['Voz'],                                                arr:()=>evVoz,      key:'voz',      listId:'ev-voz-list',      simple:false},
+  sonido:   {icon:'🔊', label:'Sonido',     roles:['Sonidista'],                                          arr:()=>evSonido,   key:'sonido',   listId:'ev-sonido-list',   simple:false},
+  multi:    {icon:'📡', label:'Multimedia', roles:['Presentación','Transmisión'],                         arr:()=>evMulti,    key:'multi',    listId:'ev-multi-list',    simple:false},
+  pulperia: {icon:'🛒', label:'Pulpería',   roles:null,                                                   arr:()=>evPulperia, key:'pulperia', listId:'ev-pulperia-list', simple:true},
+};
+
+const renderEvGroupListById = (listId, arr, simple) => {
+  const el=$(listId); if(!el) return; el.innerHTML='';
+  if(!arr.length){ el.innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:8px">Nadie asignado</div>'; return; }
+  arr.forEach((a,i)=>{
+    const musId=simple?a:a.musId;
+    const m=musicos.find(x=>x.id===musId); if(!m) return;
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)';
+    row.innerHTML='<span style="font-size:13px;flex:1;font-weight:600">'+roleIcon(m.rol)+' '+m.nombre+'</span>';
+    const rm=document.createElement('button');
+    rm.style.cssText='border:none;background:#E06C7522;color:var(--danger);border-radius:8px;padding:4px 8px;font-size:11px;cursor:pointer';
+    rm.textContent='✕';
+    rm.addEventListener('click',()=>{ arr.splice(i,1); renderEvGroupListById(listId,arr,simple); });
+    row.appendChild(rm); el.appendChild(row);
+  });
+};
+
+const openEvMultiselect = (grupoTipo) => {
+  const cfg = EV_GRUPOS_CONFIG[grupoTipo]; if(!cfg) return;
+  const currentArr = cfg.arr();
+  const selectedIds = currentArr.map(a=>cfg.simple?a:a.musId).filter(Boolean);
+  const candidates = musicos.filter(m=>{
+    if(cfg.roles && !(m.roles||[m.rol]).some(r=>cfg.roles.includes(r))) return false;
+    return true;
+  });
+  openMultiselect({
+    title: cfg.icon+' '+cfg.label,
+    sub: $('ev-titulo')?.value||'Nuevo evento',
+    candidates,
+    selectedIds,
+    isSimple: cfg.simple,
+    onSave: async (newIds) => {
+      // Update the array in place
+      currentArr.length = 0;
+      newIds.forEach(id=>{
+        if(cfg.simple){ currentArr.push(id); }
+        else {
+          const m=musicos.find(x=>x.id===id);
+          currentArr.push({musId:id, rol:m?m.rol:''});
+        }
+      });
+      renderEvGroupListById(cfg.listId, currentArr, cfg.simple);
+    }
+  });
+};
+
+document.querySelectorAll('.ev-multiselect-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>openEvMultiselect(btn.dataset.grupo));
 });
 
 // ── EVENTO FORM TABS ──
