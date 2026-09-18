@@ -880,6 +880,26 @@ input::placeholder{color:var(--muted);}
   </div>
 </div>
 
+<!-- MULTISELECT FULLSCREEN -->
+<div id="multiselect-modal" style="position:fixed;inset:0;background:var(--bg);z-index:700;display:none;flex-direction:column">
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <button id="btn-close-multiselect" style="border:none;background:var(--card);color:var(--muted);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer">← Volver</button>
+    <div style="flex:1">
+      <div id="multiselect-title" style="font-size:15px;font-weight:800"></div>
+      <div id="multiselect-sub" style="font-size:11px;color:var(--muted);margin-top:1px"></div>
+    </div>
+    <button id="btn-save-multiselect" style="border:none;background:linear-gradient(135deg,var(--accent),#4A3F9F);color:#fff;border-radius:8px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer">✓ Guardar</button>
+  </div>
+  <div style="padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0">
+    <input id="multiselect-search" placeholder="🔍 Buscar..." style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-family:inherit;font-size:13px;outline:none"/>
+  </div>
+  <div id="multiselect-chips" style="padding:10px 16px;background:var(--card);border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap;min-height:44px;align-items:center;flex-shrink:0">
+    <span style="font-size:12px;color:var(--muted)">Tocá músicos para seleccionarlos</span>
+  </div>
+  <div id="multiselect-list" style="flex:1;overflow-y:auto"></div>
+  <div id="multiselect-count" style="display:none;position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;padding:10px 24px;border-radius:99px;font-size:13px;font-weight:700;box-shadow:0 4px 20px #7B6FD466;white-space:nowrap"></div>
+</div>
+
 <!-- MINI MODAL ASIGNACIÓN RÁPIDA -->
 <div id="asig-mini-modal" style="position:fixed;inset:0;background:#000000aa;z-index:600;display:none;align-items:flex-end;justify-content:center">
   <div style="background:var(--surface);border-radius:24px 24px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;max-height:70vh;overflow-y:auto">
@@ -3945,6 +3965,71 @@ $('btn-close-asig-rapida').addEventListener('click',()=>{ $('asig-rapida-modal')
 $('btn-asig-prev').addEventListener('click',()=>{ asigMes--; if(asigMes<0){asigMes=11;asigAnio--;} renderAsigRapida(); });
 $('btn-asig-next').addEventListener('click',()=>{ asigMes++; if(asigMes>11){asigMes=0;asigAnio++;} renderAsigRapida(); });
 
+// ── MULTISELECT FULLSCREEN ──
+let multiselectState = { selected: new Set(), candidates: [], isSimple: false, onSave: null };
+
+const openMultiselect = ({title, sub, candidates, selectedIds, isSimple, onSave}) => {
+  multiselectState = { selected: new Set(selectedIds), candidates, isSimple, onSave };
+  $('multiselect-title').textContent = title;
+  $('multiselect-sub').textContent = sub;
+  $('multiselect-search').value = '';
+  renderMultiselectList('');
+  renderMultiselectChips();
+  $('multiselect-modal').style.display = 'flex';
+};
+
+const renderMultiselectList = (q) => {
+  const listEl = $('multiselect-list'); listEl.innerHTML = '';
+  const filtered = multiselectState.candidates.filter(m=>!q||m.nombre.toLowerCase().includes(q));
+  filtered.forEach(m=>{
+    const isSelected = multiselectState.selected.has(m.id);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);'+(isSelected?'background:#7B6FD411':'');
+    const avatarEl = m.fotoUrl
+      ? '<div style="width:40px;height:40px;border-radius:50%;background:url('+m.fotoUrl+') center/cover;flex-shrink:0;border:2px solid '+(isSelected?'var(--accent)':'var(--border)')+'"></div>'
+      : '<div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9590E0);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">'+roleIcon(m.rol)+'</div>';
+    row.innerHTML = avatarEl
+      +'<div style="flex:1"><div style="font-size:14px;font-weight:700">'+m.nombre+'</div>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:2px">'+(m.roles||[m.rol]).join(' · ')+'</div></div>'
+      +'<div style="width:26px;height:26px;border-radius:50%;border:2px solid '+(isSelected?'var(--accent)':'var(--border)')+';background:'+(isSelected?'var(--accent)':'transparent')+';display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0">'+(isSelected?'✓':'')+'</div>';
+    row.addEventListener('click',()=>{
+      if(multiselectState.selected.has(m.id)) multiselectState.selected.delete(m.id);
+      else multiselectState.selected.add(m.id);
+      renderMultiselectList($('multiselect-search').value.toLowerCase());
+      renderMultiselectChips();
+    });
+    listEl.appendChild(row);
+  });
+  if(!filtered.length) listEl.innerHTML='<div style="text-align:center;color:var(--muted);padding:32px;font-size:13px">Sin resultados</div>';
+};
+
+const renderMultiselectChips = () => {
+  const chipsEl = $('multiselect-chips');
+  const countEl = $('multiselect-count');
+  const sel = [...multiselectState.selected];
+  if(!sel.length){
+    chipsEl.innerHTML='<span style="font-size:12px;color:var(--muted)">Tocá músicos para seleccionarlos</span>';
+    countEl.style.display='none';
+    return;
+  }
+  chipsEl.innerHTML = sel.map(id=>{
+    const m=multiselectState.candidates.find(x=>x.id===id);
+    return m?'<span style="display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:99px;background:var(--accent);color:#fff;font-size:12px;font-weight:600">'+m.nombre+' <span style="cursor:pointer;opacity:.8" data-rm="'+id+'">✕</span></span>':'';
+  }).join('');
+  chipsEl.querySelectorAll('[data-rm]').forEach(btn=>{
+    btn.addEventListener('click',e=>{ e.stopPropagation(); multiselectState.selected.delete(btn.dataset.rm); renderMultiselectList($('multiselect-search').value.toLowerCase()); renderMultiselectChips(); });
+  });
+  countEl.textContent = sel.length+' seleccionado'+(sel.length>1?'s':'');
+  countEl.style.display='block';
+};
+
+$('multiselect-search').addEventListener('input',()=>renderMultiselectList($('multiselect-search').value.toLowerCase()));
+$('btn-close-multiselect').addEventListener('click',()=>$('multiselect-modal').style.display='none');
+$('btn-save-multiselect').addEventListener('click',async()=>{
+  if(multiselectState.onSave) await multiselectState.onSave([...multiselectState.selected]);
+  $('multiselect-modal').style.display='none';
+});
+
 // ── MINI MODAL ASIGNACIÓN RÁPIDA ──
 const openAsigMini = (ev, grupo) => {
   $('asig-mini-title').textContent = grupo.icon + ' ' + grupo.label;
@@ -3991,15 +4076,7 @@ const openAsigMini = (ev, grupo) => {
     content.appendChild(saveBtn);
 
   } else {
-    // Buscador para grupos con múltiples personas
-    const getArr = () => {
-      if(grupo.tipo==='musicos') return ev.asignados||[];
-      if(grupo.tipo==='voces') return ev.vozAsignados||[];
-      if(grupo.tipo==='sonido') return ev.sonidoAsignados||[];
-      if(grupo.tipo==='multi') return ev.multiAsignados||[];
-      if(grupo.tipo==='pulperia') return ev.pulperia||[];
-      return [];
-    };
+    // Usar multiselect fullscreen
     const getKey = () => {
       if(grupo.tipo==='musicos') return 'asignados';
       if(grupo.tipo==='voces') return 'vozAsignados';
@@ -4008,79 +4085,56 @@ const openAsigMini = (ev, grupo) => {
       if(grupo.tipo==='pulperia') return 'pulperia';
     };
     const isSimple = grupo.tipo==='pulperia';
-    let arr = JSON.parse(JSON.stringify(getArr()));
-
-    const renderMiniList = () => {
-      listDiv.innerHTML='';
-      if(!arr.length){ listDiv.innerHTML='<div style="color:var(--muted);font-size:12px;text-align:center;padding:10px">Nadie asignado</div>'; return; }
-      arr.forEach((a,i)=>{
-        const musId = isSimple ? a : a.musId;
-        const m=musicos.find(x=>x.id===musId); if(!m) return;
-        const row=document.createElement('div');
-        row.style.cssText='display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)';
-        row.innerHTML='<span style="font-size:13px;flex:1;font-weight:600">'+m.nombre+'</span>';
-        const rm=document.createElement('button');
-        rm.style.cssText='border:none;background:#E06C7522;color:var(--danger);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer';
-        rm.textContent='✕ Quitar';
-        rm.addEventListener('click',()=>{ arr.splice(i,1); renderMiniList(); });
-        row.appendChild(rm); listDiv.appendChild(row);
-      });
+    const getArr = () => {
+      if(grupo.tipo==='musicos') return ev.asignados||[];
+      if(grupo.tipo==='voces') return ev.vozAsignados||[];
+      if(grupo.tipo==='sonido') return ev.sonidoAsignados||[];
+      if(grupo.tipo==='multi') return ev.multiAsignados||[];
+      if(grupo.tipo==='pulperia') return ev.pulperia||[];
+      return [];
     };
 
-    // Buscador
-    const searchWrap=document.createElement('div'); searchWrap.style.cssText='position:relative;margin-bottom:8px';
-    const searchInp=document.createElement('input'); searchInp.placeholder='Buscar músico...';
-    searchInp.style.cssText='width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px;outline:none';
-    const dropdown=document.createElement('div');
-    dropdown.style.cssText='position:absolute;top:100%;left:0;right:0;background:var(--card);border:1px solid var(--border);border-radius:10px;z-index:10;display:none;max-height:160px;overflow-y:auto';
-    searchWrap.appendChild(searchInp); searchWrap.appendChild(dropdown);
-    content.appendChild(searchWrap);
-
     const ROLES_POR_GRUPO = {
-      presididor:['Lider'], musicos:['Guitarra','Bajo','Teclado/Piano','Batería','Saxofón'],
-      voces:['Voz'], sonido:['Sonidista'], multi:['Presentación','Transmisión'], pulperia:null,
+      musicos:['Guitarra','Bajo','Teclado/Piano','Batería','Saxofón'],
+      voces:['Voz'], sonido:['Sonidista'],
+      multi:['Presentación','Transmisión'], pulperia:null,
     };
     const rolesPermitidos = ROLES_POR_GRUPO[grupo.tipo];
 
-    const showCandidates = () => {
-      const q = searchInp.value.toLowerCase();
-      const assigned = arr.map(a=>isSimple?a:a.musId);
-      const candidates = musicos.filter(m=>{
-        if(assigned.includes(m.id)) return false;
-        if((m.fechasBloqueadas||[]).includes(ev.fecha)) return false;
-        if(rolesPermitidos && !(m.roles||[m.rol]).some(r=>rolesPermitidos.includes(r))) return false;
-        if(q && !m.nombre.toLowerCase().includes(q)) return false;
-        return true;
-      });
-      dropdown.innerHTML='';
-      if(!candidates.length){ dropdown.innerHTML='<div style="padding:10px;font-size:12px;color:var(--muted)">Sin resultados</div>'; }
-      candidates.forEach(m=>{
-        const item=document.createElement('div');
-        item.style.cssText='padding:10px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)';
-        item.innerHTML='<span>'+roleIcon(m.rol)+'</span><span style="flex:1">'+m.nombre+'</span><span style="font-size:10px;color:var(--muted)">'+(m.roles||[m.rol]).join(', ')+'</span>';
-        item.addEventListener('mousedown',e=>{ e.preventDefault();
-          arr.push(isSimple?m.id:{musId:m.id,rol:m.rol});
-          searchInp.value=''; dropdown.style.display='none'; renderMiniList();
-        });
-        dropdown.appendChild(item);
-      });
-      dropdown.style.display='block';
-    };
-    searchInp.addEventListener('input', showCandidates);
-    searchInp.addEventListener('focus', showCandidates);
-    searchInp.addEventListener('blur',()=>setTimeout(()=>dropdown.style.display='none',200));
+    const candidates = musicos.filter(m=>{
+      if((m.fechasBloqueadas||[]).includes(ev.fecha)) return false;
+      if(rolesPermitidos && !(m.roles||[m.rol]).some(r=>rolesPermitidos.includes(r))) return false;
+      return true;
+    });
 
-    // Lista actual
-    const listDiv=document.createElement('div'); listDiv.style.cssText='margin-bottom:14px';
-    content.appendChild(listDiv);
-    renderMiniList();
+    const currentArr = getArr();
+    const selectedIds = currentArr.map(a=>isSimple?a:a.musId).filter(Boolean);
 
-    // Guardar
-    const saveBtn=document.createElement('button');
-    saveBtn.className='btn btn-primary btn-full';
-    saveBtn.textContent='✓ Guardar';
-    saveBtn.addEventListener('click',()=>saveAndRefresh({[getKey()]:arr}));
-    content.appendChild(saveBtn);
+    $('asig-mini-modal').style.display='none';
+
+    openMultiselect({
+      title: grupo.icon+' '+grupo.label,
+      sub: ev.titulo+' · '+((ev.fecha||'').split('-').reverse().slice(0,2).join('/')),
+      candidates,
+      selectedIds,
+      isSimple,
+      onSave: async (newIds) => {
+        let newArr;
+        if(isSimple){
+          newArr = newIds;
+        } else {
+          newArr = newIds.map(id=>{
+            const existing = currentArr.find(a=>a.musId===id);
+            if(existing) return existing;
+            const m=musicos.find(x=>x.id===id);
+            return {musId:id, rol:m?m.rol:''};
+          });
+        }
+        await updateDoc(doc(db,'eventos',ev.id),{[getKey()]:newArr});
+        toast('✅ Guardado!');
+        renderAsigRapida();
+      }
+    });
   }
 
   $('asig-mini-modal').style.display='flex';
