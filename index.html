@@ -3970,13 +3970,19 @@ const openAsigMini = (ev, grupo) => {
     const sel = document.createElement('select');
     sel.style.cssText='width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px;margin-bottom:14px';
     sel.innerHTML='<option value="">-- Sin presididor --</option>';
-    [...musicos,...cantantes.map(c=>({...c,id:'c_'+c.id,_cant:true}))].sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(p=>{
-      const opt=document.createElement('option');
-      opt.value=p._cant?'c_'+p.id.replace('c_',''):'m_'+p.id;
-      opt.textContent=p.nombre+(p._cant?' (cantante)':'');
-      if(ev.director===opt.value) opt.selected=true;
-      sel.appendChild(opt);
-    });
+    // Músicos con rol Lider
+    const lideresGrp = musicos.filter(m=>(m.roles||[m.rol]).includes('Lider')).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+    if(lideresGrp.length){
+      const grp=document.createElement('optgroup'); grp.label='🎸 Músicos';
+      lideresGrp.forEach(m=>{ const opt=document.createElement('option'); opt.value='m_'+m.id; opt.textContent=m.nombre; if(ev.director==='m_'+m.id||ev.director===m.id) opt.selected=true; grp.appendChild(opt); });
+      sel.appendChild(grp);
+    }
+    // Cantantes externos
+    if(cantantes.length){
+      const grpC=document.createElement('optgroup'); grpC.label='🎤 Cantantes';
+      cantantes.sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(c=>{ const opt=document.createElement('option'); opt.value='c_'+c.id; opt.textContent=c.nombre; if(ev.director==='c_'+c.id) opt.selected=true; grpC.appendChild(opt); });
+      sel.appendChild(grpC);
+    }
     content.appendChild(sel);
     const saveBtn=document.createElement('button');
     saveBtn.className='btn btn-primary btn-full';
@@ -4030,16 +4036,28 @@ const openAsigMini = (ev, grupo) => {
     searchWrap.appendChild(searchInp); searchWrap.appendChild(dropdown);
     content.appendChild(searchWrap);
 
-    searchInp.addEventListener('input',()=>{
-      const q=searchInp.value.toLowerCase();
+    const ROLES_POR_GRUPO = {
+      presididor:['Lider'], musicos:['Guitarra','Bajo','Teclado/Piano','Batería','Saxofón'],
+      voces:['Voz'], sonido:['Sonidista'], multi:['Presentación','Transmisión'], pulperia:null,
+    };
+    const rolesPermitidos = ROLES_POR_GRUPO[grupo.tipo];
+
+    const showCandidates = () => {
+      const q = searchInp.value.toLowerCase();
       const assigned = arr.map(a=>isSimple?a:a.musId);
-      const candidates=musicos.filter(m=>!assigned.includes(m.id)&&m.nombre.toLowerCase().includes(q)&&!(m.fechasBloqueadas||[]).includes(ev.fecha));
+      const candidates = musicos.filter(m=>{
+        if(assigned.includes(m.id)) return false;
+        if((m.fechasBloqueadas||[]).includes(ev.fecha)) return false;
+        if(rolesPermitidos && !(m.roles||[m.rol]).some(r=>rolesPermitidos.includes(r))) return false;
+        if(q && !m.nombre.toLowerCase().includes(q)) return false;
+        return true;
+      });
       dropdown.innerHTML='';
       if(!candidates.length){ dropdown.innerHTML='<div style="padding:10px;font-size:12px;color:var(--muted)">Sin resultados</div>'; }
       candidates.forEach(m=>{
         const item=document.createElement('div');
         item.style.cssText='padding:10px 12px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)';
-        item.innerHTML='<span>'+roleIcon(m.rol)+'</span><span>'+m.nombre+'</span>';
+        item.innerHTML='<span>'+roleIcon(m.rol)+'</span><span style="flex:1">'+m.nombre+'</span><span style="font-size:10px;color:var(--muted)">'+(m.roles||[m.rol]).join(', ')+'</span>';
         item.addEventListener('mousedown',e=>{ e.preventDefault();
           arr.push(isSimple?m.id:{musId:m.id,rol:m.rol});
           searchInp.value=''; dropdown.style.display='none'; renderMiniList();
@@ -4047,7 +4065,9 @@ const openAsigMini = (ev, grupo) => {
         dropdown.appendChild(item);
       });
       dropdown.style.display='block';
-    });
+    };
+    searchInp.addEventListener('input', showCandidates);
+    searchInp.addEventListener('focus', showCandidates);
     searchInp.addEventListener('blur',()=>setTimeout(()=>dropdown.style.display='none',200));
 
     // Lista actual
