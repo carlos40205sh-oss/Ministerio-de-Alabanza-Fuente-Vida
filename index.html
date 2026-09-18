@@ -93,6 +93,9 @@ input::placeholder{color:var(--muted);}
 .search-wrap{position:relative;margin-bottom:8px;}
 .letra-tool-btn{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;font-family:inherit;}
 .letra-tool-btn:active{background:var(--accent);color:#fff;}
+.mas-item{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;background:var(--card);border-radius:14px;cursor:pointer;border:1px solid var(--border);}
+.mas-item:active{opacity:.7;}
+.mas-item.mas-admin{border-color:#7B6FD433;background:#7B6FD411;}
 .search-input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 30px 9px 12px;outline:none;}
 .search-input:focus{border-color:var(--accent);}
 .search-icon{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none;}
@@ -541,12 +544,28 @@ input::placeholder{color:var(--muted);}
   <button class="nav-btn" data-tab="calendario"><span class="icon">📅</span><span class="label">Calendario</span></button>
   <button class="nav-btn" data-tab="eventos"><span class="icon">🗓</span><span class="label">Eventos</span></button>
   <button class="nav-btn" data-tab="canciones"><span class="icon">🎵</span><span class="label">Canciones</span></button>
-  <button class="nav-btn" data-tab="ayuno"><span class="icon">🙏</span><span class="label">Ayuno</span></button>
-  <button class="nav-btn" data-tab="anuncios"><span class="icon">📢</span><span class="label">Anuncios</span></button>
-  <button class="nav-btn nav-admin" data-tab="musicos"><span class="icon">🎸</span><span class="label">Músicos</span></button>
-  <button class="nav-btn nav-admin" data-tab="cantantes"><span class="icon">🎤</span><span class="label">Cantantes</span></button>
-  <button class="nav-btn nav-cuotas" data-tab="cuotas"><span class="icon">💰</span><span class="label">Cuotas</span></button>
+  <button class="nav-btn" id="btn-nav-mas"><span class="icon">⋯</span><span class="label">Más</span></button>
 </nav>
+
+<!-- MÁS MENU -->
+<div id="mas-overlay" style="position:fixed;inset:0;background:#000000aa;z-index:400;display:none;align-items:flex-end;justify-content:center">
+  <div style="background:var(--surface);border-radius:24px 24px 0 0;padding:20px 16px 32px;width:100%;max-width:480px">
+    <div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 20px"></div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px">General</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">
+      <div class="mas-item" data-tab="ayuno"><span style="font-size:22px">🙏</span><span style="font-size:10px;font-weight:600;color:var(--muted);text-align:center">Ayuno</span></div>
+      <div class="mas-item" data-tab="anuncios"><span style="font-size:22px">📢</span><span style="font-size:10px;font-weight:600;color:var(--muted);text-align:center">Anuncios</span></div>
+    </div>
+    <div id="mas-admin-section" style="display:none">
+      <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:6px">🔑 Administración</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+        <div class="mas-item mas-admin" data-tab="musicos"><span style="font-size:22px">🎸</span><span style="font-size:10px;font-weight:600;color:var(--accent);text-align:center">Músicos</span></div>
+        <div class="mas-item mas-admin" data-tab="cantantes"><span style="font-size:22px">🎙️</span><span style="font-size:10px;font-weight:600;color:var(--accent);text-align:center">Cantantes</span></div>
+        <div class="mas-item mas-admin" data-tab="cuotas"><span style="font-size:22px">💰</span><span style="font-size:10px;font-weight:600;color:var(--accent);text-align:center">Cuotas</span></div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- CUOTAS -->
 <div id="sec-cuotas" class="section content">
@@ -3732,6 +3751,20 @@ $('btn-letra-cols').addEventListener('click',()=>{
 
 $('btn-letra-clear').addEventListener('click',()=>{
   if(confirm('¿Borrar todo el contenido?')){ $('letra-editor-text').value=''; updateLetraStatus(); }
+});
+
+// ── MÁS MENU ──
+$('btn-nav-mas').addEventListener('click',()=>{
+  const masAdmin = $('mas-admin-section');
+  if(masAdmin) masAdmin.style.display = (CU&&CU.admin) ? 'block' : 'none';
+  $('mas-overlay').style.display = 'flex';
+});
+$('mas-overlay').addEventListener('click',e=>{ if(e.target===$('mas-overlay')) $('mas-overlay').style.display='none'; });
+document.querySelectorAll('.mas-item[data-tab]').forEach(item=>{
+  item.addEventListener('click',()=>{
+    $('mas-overlay').style.display='none';
+    goTab(item.dataset.tab);
+  });
 });
 
 // ── EVENTO FORM TABS ──
