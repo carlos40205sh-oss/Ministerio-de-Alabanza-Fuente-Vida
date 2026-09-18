@@ -3951,17 +3951,16 @@ $('btn-asig-prev').addEventListener('click',()=>{ asigMes--; if(asigMes<0){asigM
 $('btn-asig-next').addEventListener('click',()=>{ asigMes++; if(asigMes>11){asigMes=0;asigAnio++;} renderAsigRapida(); });
 
 // ── MULTISELECT FULLSCREEN ──
-let multiselectState = { selected: new Set(), candidates: [], isSimple: false, onSave: null };
+let multiselectState = { selected: new Set(), candidates: [], isSimple: false, onSave: null, rolesPermitidos: null };
 
-const openMultiselect = ({title, sub, candidates, selectedIds, isSimple, onSave}) => {
-  multiselectState = { selected: new Set(selectedIds), candidates, isSimple, onSave };
+const openMultiselect = ({title, sub, candidates, selectedIds, isSimple, onSave, rolesPermitidos}) => {
+  multiselectState = { selected: new Set(selectedIds), candidates, isSimple, onSave, rolesPermitidos: rolesPermitidos||null };
   $('multiselect-title').textContent = title;
   $('multiselect-sub').textContent = sub;
   $('multiselect-search').value = '';
   renderMultiselectList('');
   renderMultiselectChips();
   $('multiselect-modal').style.display = 'flex';
-  history.pushState({view:'multiselect'},'',location.pathname);
 };
 
 const renderMultiselectList = (q) => {
@@ -4006,11 +4005,77 @@ const renderMultiselectChips = () => {
 };
 
 $('multiselect-search').addEventListener('input',()=>renderMultiselectList($('multiselect-search').value.toLowerCase()));
-$('btn-close-multiselect').addEventListener('click',()=>{ $('multiselect-modal').style.display='none'; history.back(); });
-$('btn-save-multiselect').addEventListener('click',async()=>{
-  if(multiselectState.onSave) await multiselectState.onSave([...multiselectState.selected]);
+$('btn-close-multiselect').addEventListener('click',()=>{
   $('multiselect-modal').style.display='none';
-  history.back();
+  // Don't use history.back() — stay in current view (event form or asig rapida)
+});
+$('btn-save-multiselect').addEventListener('click',async()=>{
+  if(!multiselectState.onSave){ $('multiselect-modal').style.display='none'; history.back(); return; }
+  
+  // Check if any selected musician has multiple roles — ask which one
+  const selected = [...multiselectState.selected];
+  const needsRoleSelect = !multiselectState.isSimple && selected.some(id=>{
+    const m = musicos.find(x=>x.id===id);
+    const rolesValidos = multiselectState.rolesPermitidos;
+    const rolesDelMus = (m?.roles||[m?.rol]).filter(r=>!rolesValidos||rolesValidos.includes(r));
+    return rolesDelMus.length > 1;
+  });
+
+  if(needsRoleSelect){
+    // Show role selector for multi-role musicians
+    const roleSelections = {};
+    // Pre-fill single-role musicians
+    selected.forEach(id=>{
+      const m=musicos.find(x=>x.id===id); if(!m) return;
+      const rolesValidos = multiselectState.rolesPermitidos;
+      const rolesDelMus = (m.roles||[m.rol]).filter(r=>!rolesValidos||rolesValidos.includes(r));
+      if(rolesDelMus.length===1) roleSelections[id]=rolesDelMus[0];
+    });
+
+    // Build role selector UI
+    const overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;background:#000000aa;z-index:900;display:flex;align-items:flex-end;justify-content:center';
+    const sheet=document.createElement('div');
+    sheet.style.cssText='background:var(--surface);border-radius:24px 24px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;max-height:70vh;overflow-y:auto';
+    sheet.innerHTML='<div style="width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 16px"></div>'
+      +'<div style="font-size:16px;font-weight:800;margin-bottom:4px">🎸 ¿Con qué instrumento?</div>'
+      +'<div style="font-size:12px;color:var(--muted);margin-bottom:16px">Elegí el rol de cada músico para este evento</div>';
+
+    selected.forEach(id=>{
+      const m=musicos.find(x=>x.id===id); if(!m) return;
+      const rolesValidos = multiselectState.rolesPermitidos;
+      const rolesDelMus = (m.roles||[m.rol]).filter(r=>!rolesValidos||rolesValidos.includes(r));
+      if(rolesDelMus.length<=1){ roleSelections[id]=rolesDelMus[0]||m.rol; return; }
+      const row=document.createElement('div');
+      row.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px';
+      row.innerHTML='<div style="font-size:13px;font-weight:700;margin-bottom:8px">'+roleIcon(m.rol)+' '+m.nombre+'</div>';
+      const sel=document.createElement('select');
+      sel.style.cssText='width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px';
+      rolesDelMus.forEach(r=>{ const opt=document.createElement('option'); opt.value=r; opt.textContent=r; sel.appendChild(opt); });
+      sel.addEventListener('change',()=>roleSelections[id]=sel.value);
+      roleSelections[id]=rolesDelMus[0];
+      row.appendChild(sel);
+      sheet.appendChild(row);
+    });
+
+    const saveRolesBtn=document.createElement('button');
+    saveRolesBtn.className='btn btn-primary btn-full';
+    saveRolesBtn.style.marginTop='14px';
+    saveRolesBtn.textContent='✓ Confirmar y guardar';
+    saveRolesBtn.addEventListener('click',async()=>{
+      document.body.removeChild(overlay);
+      const finalArr = selected.map(id=>({musId:id, rol:roleSelections[id]||musicos.find(x=>x.id===id)?.rol||''}));
+      await multiselectState.onSave(selected, finalArr);
+      $('multiselect-modal').style.display='none';
+    });
+    sheet.appendChild(saveRolesBtn);
+    overlay.appendChild(sheet);
+    overlay.addEventListener('click',e=>{ if(e.target===overlay) document.body.removeChild(overlay); });
+    document.body.appendChild(overlay);
+  } else {
+    await multiselectState.onSave(selected);
+    $('multiselect-modal').style.display='none';
+  }
 });
 
 // ── MINI MODAL ASIGNACIÓN RÁPIDA ──
@@ -4101,10 +4166,13 @@ const openAsigMini = (ev, grupo) => {
       candidates,
       selectedIds,
       isSimple,
-      onSave: async (newIds) => {
+      rolesPermitidos: ROLES_POR_GRUPO[grupo.tipo],
+      onSave: async (newIds, finalArr) => {
         let newArr;
         if(isSimple){
           newArr = newIds;
+        } else if(finalArr) {
+          newArr = finalArr;
         } else {
           newArr = newIds.map(id=>{
             const existing = currentArr.find(a=>a.musId===id);
@@ -4180,16 +4248,19 @@ const openEvMultiselect = (grupoTipo) => {
     candidates,
     selectedIds,
     isSimple: cfg.simple,
-    onSave: async (newIds) => {
-      // Update the array in place
+    rolesPermitidos: cfg.roles,
+    onSave: async (newIds, finalArr) => {
       currentArr.length = 0;
-      newIds.forEach(id=>{
-        if(cfg.simple){ currentArr.push(id); }
-        else {
+      if(cfg.simple){
+        newIds.forEach(id=>currentArr.push(id));
+      } else if(finalArr){
+        finalArr.forEach(a=>currentArr.push(a));
+      } else {
+        newIds.forEach(id=>{
           const m=musicos.find(x=>x.id===id);
           currentArr.push({musId:id, rol:m?m.rol:''});
-        }
-      });
+        });
+      }
       renderEvGroupListById(cfg.listId, currentArr, cfg.simple);
     }
   });
