@@ -262,6 +262,7 @@ input::placeholder{color:var(--muted);}
       <div style="display:flex;gap:6px">
         <button class="btn btn-ghost btn-sm" id="btn-resumen-roles">📊 Roles</button>
         <button class="btn btn-ghost btn-sm" id="btn-export-pdf">📄 PDF</button>
+        <button class="btn btn-ghost btn-sm" id="btn-asig-rapida">⚡ Rápido</button>
         <button class="btn btn-primary btn-sm" id="btn-new-ev" style="display:none">+ Nuevo</button>
       </div>
     </div>
@@ -879,6 +880,20 @@ input::placeholder{color:var(--muted);}
   </div>
 </div>
 
+<!-- ASIGNACIÓN RÁPIDA -->
+<div id="asig-rapida-modal" style="position:fixed;inset:0;background:var(--bg);z-index:500;display:none;flex-direction:column">
+  <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0">
+    <button id="btn-close-asig-rapida" style="border:none;background:var(--card);color:var(--muted);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer">← Volver</button>
+    <div style="flex:1;font-size:15px;font-weight:800">⚡ Asignación rápida</div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <button id="btn-asig-prev" style="border:none;background:var(--card);color:var(--muted);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:14px">‹</button>
+      <div id="asig-mes-label" style="font-size:13px;font-weight:700;color:var(--gold);min-width:70px;text-align:center"></div>
+      <button id="btn-asig-next" style="border:none;background:var(--card);color:var(--muted);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:14px">›</button>
+    </div>
+  </div>
+  <div id="asig-rapida-content" style="flex:1;overflow-y:auto;padding:10px 0 20px"></div>
+</div>
+
 <!-- MODO SERVICIO -->
 <div id="modo-servicio">
   <div class="ms-header">
@@ -1124,6 +1139,7 @@ window.addEventListener('popstate', e => {
   if(!state.modal || !state.modal.startsWith('stat-')) closeStatModals(true);
   if(state.view !== 'letra-editor') { const le=$('letra-editor-modal'); if(le) le.style.display='none'; }
   if(state.view !== 'trans-modal') { const tm=$('trans-modal'); if(tm) tm.style.display='none'; }
+  if(state.view !== 'asig-rapida') { const ar=$('asig-rapida-modal'); if(ar) ar.style.display='none'; }
   if(state.view==='detail' || state.view==='form') {
     // Go back to list view of that tab
     goTab(state.tab||'eventos', false);
@@ -3788,6 +3804,134 @@ $('btn-letra-cols').addEventListener('click',()=>{
 $('btn-letra-clear').addEventListener('click',()=>{
   if(confirm('¿Borrar todo el contenido?')){ $('letra-editor-text').value=''; updateLetraStatus(); }
 });
+
+// ── ASIGNACIÓN RÁPIDA ──
+let asigMes = new Date().getMonth();
+let asigAnio = new Date().getFullYear();
+
+const MESES_AR = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DIAS_SEM_AR = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const MESES_ABR_AR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+const renderAsigRapida = () => {
+  $('asig-mes-label').textContent = MESES_AR[asigMes].slice(0,3)+' '+asigAnio;
+  const mesStr = asigAnio+'-'+String(asigMes+1).padStart(2,'0');
+  const evsMes = [...eventos].filter(e=>(e.fecha||'').startsWith(mesStr)).sort((a,b)=>(a.fecha||'').localeCompare(b.fecha||''));
+  const content = $('asig-rapida-content');
+  content.innerHTML = '';
+
+  if(!evsMes.length){
+    content.innerHTML='<div style="text-align:center;color:var(--muted);padding:40px;font-size:13px">No hay eventos este mes</div>';
+    return;
+  }
+
+  const grupos = [
+    {icon:'🎤', label:'Presididor', tipo:'presididor'},
+    {icon:'🎸', label:'Música', tipo:'musicos'},
+    {icon:'🎙️', label:'Voces', tipo:'voces'},
+    {icon:'🔊', label:'Sonido', tipo:'sonido'},
+    {icon:'📡', label:'Multi', tipo:'multi'},
+    {icon:'🛒', label:'Pulpería', tipo:'pulperia'},
+  ];
+
+  evsMes.forEach(ev=>{
+    const [y,mo,d]=(ev.fecha||'').split('-');
+    const diaNom=DIAS_SEM_AR[new Date(ev.fecha+'T12:00:00').getDay()];
+    const mesAbr=MESES_ABR_AR[parseInt(mo)-1]||'';
+
+    const card=document.createElement('div');
+    card.style.cssText='margin:0 16px 12px;background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden';
+
+    // Header
+    const hdr=document.createElement('div');
+    hdr.style.cssText='padding:12px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);cursor:pointer';
+    hdr.innerHTML='<div style="background:var(--bg);border-radius:10px;padding:6px 10px;text-align:center;flex-shrink:0">'
+      +'<div style="font-size:18px;font-weight:800;color:var(--gold);line-height:1">'+parseInt(d)+'</div>'
+      +'<div style="font-size:9px;color:var(--muted);text-transform:uppercase">'+mesAbr+'</div>'
+      +'</div>'
+      +'<div style="flex:1">'
+        +'<div style="font-size:14px;font-weight:700">'+ev.titulo+'</div>'
+        +'<div style="font-size:11px;color:var(--muted)">'+diaNom+(ev.horaIni?' · ⏰'+ev.horaIni:'')+'</div>'
+      +'</div>'
+      +'<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+'">'+ev.tipo+'</span>';
+    hdr.addEventListener('click',()=>{ goTab('eventos',true); setTimeout(()=>showEvDetail(ev.id,'eventos'),100); });
+    card.appendChild(hdr);
+
+    // Grupos
+    const gruposDiv=document.createElement('div');
+    gruposDiv.style.cssText='padding:6px 14px';
+
+    grupos.forEach((g,gi)=>{
+      let asignados=[];
+      if(g.tipo==='presididor'){
+        if(ev.director){
+          const isCant=ev.director.startsWith('c_');
+          const realId=ev.director.startsWith('c_')||ev.director.startsWith('m_')?ev.director.slice(2):ev.director;
+          const p=isCant?cantantes.find(x=>x.id===realId):musicos.find(x=>x.id===realId);
+          if(p) asignados=[{id:ev.director,nombre:p.nombre}];
+        }
+      } else if(g.tipo==='musicos'){
+        asignados=(ev.asignados||[]).map(a=>{const m=musicos.find(x=>x.id===a.musId);return m?{id:a.musId,nombre:m.nombre}:null;}).filter(Boolean);
+      } else if(g.tipo==='voces'){
+        asignados=(ev.vozAsignados||[]).map(a=>{const m=musicos.find(x=>x.id==(a.musId||a));return m?{id:m.id,nombre:m.nombre}:null;}).filter(Boolean);
+      } else if(g.tipo==='sonido'){
+        asignados=(ev.sonidoAsignados||[]).map(a=>{const m=musicos.find(x=>x.id==(a.musId||a));return m?{id:m.id,nombre:m.nombre}:null;}).filter(Boolean);
+      } else if(g.tipo==='multi'){
+        asignados=(ev.multiAsignados||[]).map(a=>{const m=musicos.find(x=>x.id==(a.musId||a));return m?{id:m.id,nombre:m.nombre}:null;}).filter(Boolean);
+      } else if(g.tipo==='pulperia'){
+        asignados=(ev.pulperia||[]).map(id=>{const m=musicos.find(x=>x.id===id);return m?{id:m.id,nombre:m.nombre}:null;}).filter(Boolean);
+      }
+
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:8px;padding:7px 0;'+(gi<grupos.length-1?'border-bottom:1px solid var(--border)':'');
+      row.innerHTML='<span style="font-size:14px;width:20px;text-align:center;flex-shrink:0">'+g.icon+'</span>'
+        +'<span style="font-size:11px;font-weight:700;color:var(--muted);width:58px;flex-shrink:0">'+g.label+'</span>';
+
+      const chipsDiv=document.createElement('div');
+      chipsDiv.style.cssText='display:flex;flex-wrap:wrap;gap:4px;flex:1';
+
+      asignados.forEach(a=>{
+        const bloq=(musicos.find(x=>x.id===a.id)?.fechasBloqueadas||[]).includes(ev.fecha);
+        const chip=document.createElement('span');
+        chip.style.cssText='font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;'+(bloq?'background:#E06C7518;color:var(--danger);text-decoration:line-through;opacity:.7':'background:#7B6FD422;color:var(--accent)');
+        chip.textContent=a.nombre+(bloq?' 🚫':'');
+        chipsDiv.appendChild(chip);
+      });
+
+      if(!asignados.length){
+        const warn=document.createElement('span');
+        warn.style.cssText='font-size:10px;color:var(--warn);font-weight:600';
+        warn.textContent='⚠️ Sin asignar';
+        chipsDiv.appendChild(warn);
+      }
+
+      // Botón editar rápido
+      const editChip=document.createElement('span');
+      editChip.style.cssText='font-size:11px;font-weight:600;padding:2px 8px;border-radius:99px;background:var(--bg);color:var(--muted);border:1px dashed var(--border);cursor:pointer';
+      editChip.textContent='+ Editar';
+      editChip.addEventListener('click',()=>{
+        goTab('eventos',true);
+        setTimeout(()=>{ showEvForm(ev.id); setTimeout(()=>{ switchEvTab(1); switchEvSubTab(g.tipo==='presididor'||g.tipo==='voces'?0:g.tipo==='musicos'||g.tipo==='voces'?1:2); },200); },100);
+      });
+      chipsDiv.appendChild(editChip);
+      row.appendChild(chipsDiv);
+      gruposDiv.appendChild(row);
+    });
+
+    card.appendChild(gruposDiv);
+    content.appendChild(card);
+  });
+};
+
+$('btn-asig-rapida').addEventListener('click',()=>{
+  asigMes=new Date().getMonth(); asigAnio=new Date().getFullYear();
+  renderAsigRapida();
+  $('asig-rapida-modal').style.display='flex';
+  history.pushState({view:'asig-rapida'},'',location.pathname);
+});
+$('btn-close-asig-rapida').addEventListener('click',()=>{ $('asig-rapida-modal').style.display='none'; history.back(); });
+$('btn-asig-prev').addEventListener('click',()=>{ asigMes--; if(asigMes<0){asigMes=11;asigAnio--;} renderAsigRapida(); });
+$('btn-asig-next').addEventListener('click',()=>{ asigMes++; if(asigMes>11){asigMes=0;asigAnio++;} renderAsigRapida(); });
 
 // ── MÁS MENU ──
 $('btn-nav-mas').addEventListener('click',()=>{
