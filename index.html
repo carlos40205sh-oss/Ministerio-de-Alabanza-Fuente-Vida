@@ -1296,7 +1296,43 @@ function renderMusicos() {
     const avatarHtml = m.fotoUrl
       ? '<div style="width:40px;height:40px;border-radius:50%;background-image:url(\''+m.fotoUrl+'\');background-size:cover;background-position:center;flex-shrink:0;border:2px solid var(--accent)"></div>'
       : '<div class="avatar">'+roleIcon(m.rol)+'</div>';
-    card.innerHTML='<div class="row" style="align-items:flex-start">'+avatarHtml+'<div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="margin-top:4px">'+rolesBadges+' '+dispBadge+'</div>'+(m.admin?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44;margin-top:4px">🔑 Admin</span>':'')+(m.username?'<div style="color:var(--muted);font-size:11px;margin-top:3px">👤 '+m.username+'</div>':'')+(m.bday?'<div style="color:var(--muted);font-size:11px;margin-top:2px">🎂 '+fmtBday(m.bday)+'</div>':'')+accesoHtml+'</div></div>';
+
+    // Fechas bloqueadas
+    const hoy = new Date().toISOString().slice(0,10);
+    const fechasBloq = (m.fechasBloqueadas||[]).filter(f=>f>=hoy).sort();
+    const diasSem = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const blockedBadge = (CU&&CU.admin&&fechasBloq.length)
+      ? '<span class="badge blocked-badge" style="background:#E06C7522;color:var(--danger);border:1px solid #E06C7533;cursor:pointer" data-mus-id="'+m.id+'">🚫 '+fechasBloq.length+' fecha'+(fechasBloq.length>1?'s':'')+'</span>'
+      : '';
+    const blockedDatesHtml = (CU&&CU.admin&&fechasBloq.length)
+      ? '<div id="blocked-'+m.id+'" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">'
+        +'<div style="font-size:10px;font-weight:700;color:var(--danger);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📅 No disponible en:</div>'
+        +'<div style="display:flex;flex-wrap:wrap;gap:5px">'
+        +fechasBloq.map(f=>{
+          const [y,mo,d]=f.split('-');
+          const diaNom=diasSem[new Date(f+'T12:00:00').getDay()];
+          const mesAbrev=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mo)-1]||'';
+          return '<span style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;background:#E06C7518;color:var(--danger);border:1px solid #E06C7533">'+diaNom+' '+parseInt(d)+' '+mesAbrev+'</span>';
+        }).join('')
+        +'</div></div>'
+      : '';
+
+    card.innerHTML='<div class="row" style="align-items:flex-start">'+avatarHtml+'<div style="flex:1"><div style="font-weight:600;font-size:14px">'+m.nombre+'</div><div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px">'+rolesBadges+' '+dispBadge+(m.admin?'<span class="badge" style="background:#E8C96A22;color:var(--gold);border:1px solid #E8C96A44">🔑 Admin</span>':'')+blockedBadge+'</div>'+(m.username?'<div style="color:var(--muted);font-size:11px;margin-top:3px">👤 '+m.username+'</div>':'')+(m.bday?'<div style="color:var(--muted);font-size:11px;margin-top:2px">🎂 '+fmtBday(m.bday)+'</div>':'')+accesoHtml+blockedDatesHtml+'</div></div>';
+
+    // Toggle fechas bloqueadas
+    const blockedBadgeEl = card.querySelector('.blocked-badge');
+    if(blockedBadgeEl){
+      blockedBadgeEl.addEventListener('click', e=>{
+        e.stopPropagation();
+        const datesDiv = card.querySelector('#blocked-'+m.id);
+        if(datesDiv){
+          const isOpen = datesDiv.style.display !== 'none';
+          datesDiv.style.display = isOpen ? 'none' : 'block';
+          blockedBadgeEl.style.background = isOpen ? '#E06C7522' : '#E06C7533';
+        }
+      });
+    }
+
     const rowEl = card.querySelector('.row');
     // Botón de foto para el propio músico
     const miMusico = CU && !CU.admin ? musicos.find(x=>x.username&&x.username.toLowerCase()===CU.key.toLowerCase()) : null;
