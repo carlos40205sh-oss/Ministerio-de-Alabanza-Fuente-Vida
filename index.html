@@ -2448,12 +2448,13 @@ const buildEvDetail = (ev, backFn) => {
   const confirmaciones=ev.confirmaciones||{};
 
   const GRUPOS_EQ=[
-    {key:'presididor', icon:'🎤', label:'Presididor', tipo:'presididor'},
-    {key:'musicos',    icon:'🎸', label:'Músicos',    tipo:'musicos'},
-    {key:'voces',      icon:'🎙️', label:'Voces',      tipo:'voces'},
-    {key:'sonido',     icon:'🔊', label:'Sonido',     tipo:'sonido'},
-    {key:'multi',      icon:'📡', label:'Multimedia', tipo:'multi'},
-    {key:'pulperia',   icon:'🛒', label:'Pulpería',   tipo:'pulperia'},
+    {key:'presididor',   icon:'🎤', label:'Presididor',   tipo:'presididor'},
+    {key:'predicadores', icon:'📖', label:'Predicadores', tipo:'predicadores'},
+    {key:'musicos',      icon:'🎸', label:'Músicos',      tipo:'musicos'},
+    {key:'voces',        icon:'🎙️', label:'Voces',        tipo:'voces'},
+    {key:'sonido',       icon:'🔊', label:'Sonido',       tipo:'sonido'},
+    {key:'multi',        icon:'📡', label:'Multimedia',   tipo:'multi'},
+    {key:'pulperia',     icon:'🛒', label:'Pulpería',     tipo:'pulperia'},
   ];
 
   const getGrupoItems = (g) => {
@@ -2461,6 +2462,11 @@ const buildEvDetail = (ev, backFn) => {
       const p=resolvePresididor(ev.director);
       return p?[{nombre:p.nombre,sub:presididorRolStr(ev.director),musId:ev.director&&ev.director.startsWith('m_')?ev.director.slice(2):null,fotoUrl:p.fotoUrl}]:[];
     }
+    if(g.tipo==='predicadores') return (ev.predicadores||[]).map(id=>{
+      const isCant=id.startsWith('c_'); const realId=id.slice(2);
+      const p=isCant?cantantes.find(x=>x.id===realId):musicos.find(x=>x.id===realId);
+      return p?{nombre:p.nombre,sub:isCant?'Cantante':'Músico',musId:isCant?null:realId,fotoUrl:p.fotoUrl,predId:id}:null;
+    }).filter(Boolean);
     if(g.tipo==='musicos') return (ev.asignados||[]).map(a=>{const m=musicos.find(x=>x.id===a.musId);return m?{nombre:m.nombre,sub:a.rol||m.rol,musId:m.id,fotoUrl:m.fotoUrl}:null;}).filter(Boolean);
     if(g.tipo==='voces') return (ev.vozAsignados||[]).map(a=>{const m=musicos.find(x=>x.id==(a.musId||a));return m?{nombre:m.nombre,sub:'Voz',musId:m.id,fotoUrl:m.fotoUrl}:null;}).filter(Boolean);
     if(g.tipo==='sonido') return (ev.sonidoAsignados||[]).map(a=>{const m=musicos.find(x=>x.id==(a.musId||a));return m?{nombre:m.nombre,sub:'Sonidista',musId:m.id,fotoUrl:m.fotoUrl}:null;}).filter(Boolean);
@@ -2529,6 +2535,7 @@ const buildEvDetail = (ev, backFn) => {
           rmBtn.textContent='✕';
           rmBtn.addEventListener('click',async()=>{
             if(g.tipo==='presididor'){ await updateDoc(doc(db,'eventos',ev.id),{director:''}); ev.director=''; }
+            else if(g.tipo==='predicadores'){ ev.predicadores=(ev.predicadores||[]).filter(id=>id!==item.predId); await updateDoc(doc(db,'eventos',ev.id),{predicadores:ev.predicadores}); }
             else if(g.tipo==='musicos'){ ev.asignados=(ev.asignados||[]).filter(a=>a.musId!==item.musId); await updateDoc(doc(db,'eventos',ev.id),{asignados:ev.asignados}); }
             else if(g.tipo==='voces'){ ev.vozAsignados=(ev.vozAsignados||[]).filter(a=>(a.musId||a)!==item.musId); await updateDoc(doc(db,'eventos',ev.id),{vozAsignados:ev.vozAsignados}); }
             else if(g.tipo==='sonido'){ ev.sonidoAsignados=(ev.sonidoAsignados||[]).filter(a=>(a.musId||a)!==item.musId); await updateDoc(doc(db,'eventos',ev.id),{sonidoAsignados:ev.sonidoAsignados}); }
@@ -2552,6 +2559,31 @@ const buildEvDetail = (ev, backFn) => {
               await updateDoc(doc(db,'eventos',ev.id),{director:val});
               ev.director=val; toast('✅ Presididor actualizado'); renderEquipo();
             };
+          } else if(g.tipo==='predicadores'){
+            // Multiselect con músicos+cantantes
+            const currentPreds = ev.predicadores||[];
+            const allPreds = [
+              ...musicos.filter(m=>(m.roles||[m.rol]).some(r=>['Lider','Voz'].includes(r))).map(m=>({...m,_tipo:'mus'})),
+              ...cantantes.map(c=>({...c,id:'c_'+c.id,_tipo:'cant',rol:'Cantante'}))
+            ];
+            const selectedIds = currentPreds.map(id=>id.startsWith('m_')?id.slice(2):id.startsWith('c_')?id:id);
+            openMultiselect({
+              title:'📖 Predicadores', sub:ev.titulo,
+              candidates: allPreds.map(p=>({...p, id:p._tipo==='cant'?p.id:p.id})),
+              selectedIds: currentPreds.map(id=>id.startsWith('m_')?id.slice(2):id.startsWith('c_')?id.slice(2)+'__cant':id),
+              isSimple:true, rolesPermitidos:null,
+              onSave: async(newIds)=>{
+                const newPreds = newIds.map(id=>{
+                  const m=musicos.find(x=>x.id===id);
+                  const c=cantantes.find(x=>x.id===id||'c_'+x.id===id);
+                  if(m) return 'm_'+m.id;
+                  if(c) return 'c_'+c.id;
+                  return id;
+                });
+                await updateDoc(doc(db,'eventos',ev.id),{predicadores:newPreds});
+                ev.predicadores=newPreds; toast('✅ Predicadores actualizados'); renderEquipo();
+              }
+            });
           } else {
             const ROLES_POR_GRUPO={musicos:['Guitarra','Bajo','Teclado/Piano','Batería','Saxofón'],voces:['Voz'],sonido:['Sonidista'],multi:['Presentación','Transmisión'],pulperia:null};
             const isSimple=g.tipo==='pulperia';
@@ -4346,11 +4378,11 @@ const renderPresididorList = (q='') => {
   list.appendChild(noneRow);
 
   // Músicos con rol Lider
-  const lideres = musicos.filter(m=>(m.roles||[m.rol]).includes('Lider')&&(!q||m.nombre.toLowerCase().includes(q)));
+  const lideres = musicos.filter(m=>(m.roles||[m.rol]).some(r=>['Lider','Voz'].includes(r))&&(!q||m.nombre.toLowerCase().includes(q)));
   if(lideres.length){
     const lbl=document.createElement('div');
     lbl.style.cssText='padding:8px 16px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--card)';
-    lbl.textContent='🎸 Músicos';
+    lbl.textContent='🎸 Músicos / Voces';
     list.appendChild(lbl);
     lideres.forEach(m=>{
       const row=document.createElement('div');
@@ -4391,7 +4423,6 @@ const renderPresididorList = (q='') => {
 
 const setPresididor = (val, avatar, nombre) => {
   $('ev-presididor').value = val;
-  const display = $('ev-presididor-display');
   const avatarEl = $('ev-presididor-avatar');
   const nombreEl = $('ev-presididor-nombre');
   if(avatar && avatar.startsWith('img:')){
@@ -4403,9 +4434,9 @@ const setPresididor = (val, avatar, nombre) => {
   }
   nombreEl.textContent = nombre||'-- Seleccionar presididor --';
   nombreEl.style.color = val ? 'var(--text)' : 'var(--muted)';
+  if(window._presididorCallback){ window._presididorCallback(val); window._presididorCallback=null; }
   $('presididor-picker-modal').style.display='none';
   history.back();
-  if(window._presididorCallback){ window._presididorCallback(val); window._presididorCallback=null; }
 };
 
 const openPresididorPicker = () => {
