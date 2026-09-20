@@ -1976,7 +1976,7 @@ function renderEvPredTags() {
   const showDropdown = () => {
     const q = searchInput.value.toLowerCase();
     const candidates = [
-      ...musicos.filter(m=>(m.roles||[m.rol]).includes('Lider') && !evPred.includes('m_'+m.id) && (!q||m.nombre.toLowerCase().includes(q))).map(m=>({id:'m_'+m.id, nombre:m.nombre, icon:roleIcon(m.rol)})),
+      ...musicos.filter(m=>(m.roles||[m.rol]).includes('Líder') && !evPred.includes('m_'+m.id) && (!q||m.nombre.toLowerCase().includes(q))).map(m=>({id:'m_'+m.id, nombre:m.nombre, icon:roleIcon(m.rol)})),
       ...(cantantes||[]).filter(c=>!evPred.includes('c_'+c.id) && (!q||c.nombre.toLowerCase().includes(q))).map(c=>({id:'c_'+c.id, nombre:c.nombre, icon:'🎤'})),
     ].sort((a,b)=>a.nombre.localeCompare(b.nombre));
     dropdown.innerHTML = '';
@@ -2561,7 +2561,7 @@ const buildEvDetail = (ev, backFn) => {
             };
           } else if(g.tipo==='predicadores'){
             const currentPreds = ev.predicadores||[];
-            const lideresMusicos = musicos.filter(m=>(m.roles||[m.rol]).includes('Lider'));
+            const lideresMusicos = musicos.filter(m=>(m.roles||[m.rol]).includes('Líder'));
             const allPreds = [
               ...lideresMusicos,
               ...cantantes.map(c=>({...c, id:'CANT_'+c.id, rol:'Cantante', roles:['Cantante'], _esCantante:true}))
@@ -4262,7 +4262,7 @@ const openAsigMini = (ev, grupo) => {
     sel.style.cssText='width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:13px;margin-bottom:14px';
     sel.innerHTML='<option value="">-- Sin presididor --</option>';
     // Músicos con rol Lider
-    const lideresGrp = musicos.filter(m=>(m.roles||[m.rol]).includes('Lider')).sort((a,b)=>a.nombre.localeCompare(b.nombre));
+    const lideresGrp = musicos.filter(m=>(m.roles||[m.rol]).includes('Líder')).sort((a,b)=>a.nombre.localeCompare(b.nombre));
     if(lideresGrp.length){
       const grp=document.createElement('optgroup'); grp.label='🎸 Músicos';
       lideresGrp.forEach(m=>{ const opt=document.createElement('option'); opt.value='m_'+m.id; opt.textContent=m.nombre; if(ev.director==='m_'+m.id||ev.director===m.id) opt.selected=true; grp.appendChild(opt); });
@@ -4380,7 +4380,7 @@ const renderPresididorList = (q='') => {
   list.appendChild(noneRow);
 
   // Músicos con rol Lider
-  const lideres = musicos.filter(m=>(m.roles||[m.rol]).includes('Lider')&&(!q||m.nombre.toLowerCase().includes(q)));
+  const lideres = musicos.filter(m=>(m.roles||[m.rol]).includes('Líder')&&(!q||m.nombre.toLowerCase().includes(q)));
   if(lideres.length){
     const lbl=document.createElement('div');
     lbl.style.cssText='padding:8px 16px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--card)';
