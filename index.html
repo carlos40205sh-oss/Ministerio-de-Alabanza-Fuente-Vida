@@ -2560,25 +2560,26 @@ const buildEvDetail = (ev, backFn) => {
               ev.director=val; toast('✅ Presididor actualizado'); renderEquipo();
             };
           } else if(g.tipo==='predicadores'){
-            // Multiselect con músicos+cantantes
             const currentPreds = ev.predicadores||[];
+            const lideresMusicos = musicos.filter(m=>(m.roles||[m.rol]).includes('Lider'));
             const allPreds = [
-              ...musicos.filter(m=>(m.roles||[m.rol]).some(r=>['Lider','Voz'].includes(r))).map(m=>({...m,_tipo:'mus'})),
-              ...cantantes.map(c=>({...c,id:'c_'+c.id,_tipo:'cant',rol:'Cantante'}))
+              ...lideresMusicos,
+              ...cantantes.map(c=>({...c, id:'CANT_'+c.id, rol:'Cantante', roles:['Cantante'], _esCantante:true}))
             ];
-            const selectedIds = currentPreds.map(id=>id.startsWith('m_')?id.slice(2):id.startsWith('c_')?id:id);
+            const selectedIds = currentPreds.map(id=>{
+              if(id.startsWith('m_')) return id.slice(2);
+              if(id.startsWith('c_')) return 'CANT_'+id.slice(2);
+              return id;
+            });
             openMultiselect({
               title:'📖 Predicadores', sub:ev.titulo,
-              candidates: allPreds.map(p=>({...p, id:p._tipo==='cant'?p.id:p.id})),
-              selectedIds: currentPreds.map(id=>id.startsWith('m_')?id.slice(2):id.startsWith('c_')?id.slice(2)+'__cant':id),
+              candidates: allPreds,
+              selectedIds,
               isSimple:true, rolesPermitidos:null,
               onSave: async(newIds)=>{
                 const newPreds = newIds.map(id=>{
-                  const m=musicos.find(x=>x.id===id);
-                  const c=cantantes.find(x=>x.id===id||'c_'+x.id===id);
-                  if(m) return 'm_'+m.id;
-                  if(c) return 'c_'+c.id;
-                  return id;
+                  if(id.startsWith('CANT_')) return 'c_'+id.slice(5);
+                  return 'm_'+id;
                 });
                 await updateDoc(doc(db,'eventos',ev.id),{predicadores:newPreds});
                 ev.predicadores=newPreds; toast('✅ Predicadores actualizados'); renderEquipo();
@@ -4378,7 +4379,7 @@ const renderPresididorList = (q='') => {
   list.appendChild(noneRow);
 
   // Músicos con rol Lider
-  const lideres = musicos.filter(m=>(m.roles||[m.rol]).some(r=>['Lider','Voz'].includes(r))&&(!q||m.nombre.toLowerCase().includes(q)));
+  const lideres = musicos.filter(m=>(m.roles||[m.rol]).includes('Lider')&&(!q||m.nombre.toLowerCase().includes(q)));
   if(lideres.length){
     const lbl=document.createElement('div');
     lbl.style.cssText='padding:8px 16px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;background:var(--card)';
@@ -4422,21 +4423,23 @@ const renderPresididorList = (q='') => {
 };
 
 const setPresididor = (val, avatar, nombre) => {
-  $('ev-presididor').value = val;
+  const el = $('ev-presididor'); if(el) el.value = val;
   const avatarEl = $('ev-presididor-avatar');
   const nombreEl = $('ev-presididor-nombre');
-  if(avatar && avatar.startsWith('img:')){
-    avatarEl.style.backgroundImage='url('+avatar.slice(4)+')';
-    avatarEl.style.backgroundSize='cover'; avatarEl.style.backgroundPosition='center';
-    avatarEl.textContent='';
-  } else {
-    avatarEl.style.backgroundImage=''; avatarEl.textContent=avatar||'🎤';
+  if(avatarEl){
+    if(avatar && avatar.startsWith('img:')){
+      avatarEl.style.backgroundImage='url('+avatar.slice(4)+')';
+      avatarEl.style.backgroundSize='cover'; avatarEl.style.backgroundPosition='center';
+      avatarEl.textContent='';
+    } else {
+      avatarEl.style.backgroundImage=''; avatarEl.textContent=avatar||'🎤';
+    }
   }
-  nombreEl.textContent = nombre||'-- Seleccionar presididor --';
-  nombreEl.style.color = val ? 'var(--text)' : 'var(--muted)';
+  if(nombreEl){ nombreEl.textContent=nombre||'-- Seleccionar presididor --'; nombreEl.style.color=val?'var(--text)':'var(--muted)'; }
   if(window._presididorCallback){ window._presididorCallback(val); window._presididorCallback=null; }
   $('presididor-picker-modal').style.display='none';
-  history.back();
+  // Only go back if picker was opened with pushState (not from event detail inline)
+  if(history.state&&history.state.view==='pres-picker') history.back();
 };
 
 const openPresididorPicker = () => {
