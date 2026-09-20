@@ -1169,6 +1169,7 @@ window.addEventListener('popstate', e => {
   if(state.view !== 'trans-modal') { const tm=$('trans-modal'); if(tm) tm.style.display='none'; }
   if(state.view !== 'asig-rapida') { const ar=$('asig-rapida-modal'); if(ar) ar.style.display='none'; }
   if(state.view !== 'multiselect') { const ms=$('multiselect-modal'); if(ms) ms.style.display='none'; }
+  if(state.view !== 'pres-picker') { const pp=$('presididor-picker-modal'); if(pp) pp.style.display='none'; }
   if(state.view==='detail' || state.view==='form') {
     goTab(state.tab||'eventos', false);
     if(state.view==='detail' && state.id){
@@ -4087,6 +4088,7 @@ const openMultiselect = ({title, sub, candidates, selectedIds, isSimple, onSave,
   renderMultiselectList('');
   renderMultiselectChips();
   $('multiselect-modal').style.display = 'flex';
+  history.pushState({view:'multiselect'},'',location.pathname);
 };
 
 const renderMultiselectList = (q) => {
@@ -4133,7 +4135,7 @@ const renderMultiselectChips = () => {
 $('multiselect-search').addEventListener('input',()=>renderMultiselectList($('multiselect-search').value.toLowerCase()));
 $('btn-close-multiselect').addEventListener('click',()=>{
   $('multiselect-modal').style.display='none';
-  // Don't use history.back() — stay in current view (event form or asig rapida)
+  history.back();
 });
 $('btn-save-multiselect').addEventListener('click',async()=>{
   if(!multiselectState.onSave){ $('multiselect-modal').style.display='none'; history.back(); return; }
@@ -4193,6 +4195,7 @@ $('btn-save-multiselect').addEventListener('click',async()=>{
       const finalArr = selected.map(id=>({musId:id, rol:roleSelections[id]||musicos.find(x=>x.id===id)?.rol||''}));
       await multiselectState.onSave(selected, finalArr);
       $('multiselect-modal').style.display='none';
+      history.back();
     });
     sheet.appendChild(saveRolesBtn);
     overlay.appendChild(sheet);
@@ -4201,6 +4204,7 @@ $('btn-save-multiselect').addEventListener('click',async()=>{
   } else {
     await multiselectState.onSave(selected);
     $('multiselect-modal').style.display='none';
+    history.back();
   }
 });
 
@@ -4405,16 +4409,18 @@ const setPresididor = (val, avatar, nombre) => {
   nombreEl.textContent = nombre||'-- Seleccionar presididor --';
   nombreEl.style.color = val ? 'var(--text)' : 'var(--muted)';
   $('presididor-picker-modal').style.display='none';
+  history.back();
 };
 
 const openPresididorPicker = () => {
   renderPresididorList();
   $('pres-picker-search').value='';
   $('presididor-picker-modal').style.display='flex';
+  history.pushState({view:'pres-picker'},'',location.pathname);
 };
 
 $('pres-picker-search').addEventListener('input',()=>renderPresididorList($('pres-picker-search').value.toLowerCase()));
-$('btn-close-pres-picker').addEventListener('click',()=>$('presididor-picker-modal').style.display='none');
+$('btn-close-pres-picker').addEventListener('click',()=>{ $('presididor-picker-modal').style.display='none'; history.back(); });
 
 // ── EVENTO FORM MULTISELECT ──
 const EV_GRUPOS_CONFIG = {
