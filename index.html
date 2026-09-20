@@ -4438,6 +4438,7 @@ const openTranspositor = (cancion) => {
   $('trans-orig-tono').textContent = cancion.tono||'G';
   updateTransFullscreen();
   $('trans-modal').style.display = 'flex';
+  history.pushState({view:'trans-modal'},'',location.pathname);
 };
 
 const updateTransFullscreen = () => {
@@ -4456,7 +4457,7 @@ $('trans-plus-fs').addEventListener('click',()=>{ transSemitones=((transSemitone
 $('trans-reset-fs').addEventListener('click',()=>{ transSemitones=0; updateTransFullscreen(); });
 $('btn-close-trans').addEventListener('click',()=>{
   $('trans-modal').style.display='none';
-  // Don't use history.back() — just hide the modal, stay in event detail
+  history.back();
 });
 $('btn-edit-from-trans').addEventListener('click',()=>{
   if(!transCancion) return;
