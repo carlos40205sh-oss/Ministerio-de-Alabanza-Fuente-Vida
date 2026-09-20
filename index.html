@@ -4165,7 +4165,7 @@ const renderMultiselectChips = () => {
 $('multiselect-search').addEventListener('input',()=>renderMultiselectList($('multiselect-search').value.toLowerCase()));
 $('btn-close-multiselect').addEventListener('click',()=>{
   $('multiselect-modal').style.display='none';
-  history.back();
+  if(history.state&&history.state.view==='multiselect') history.back();
 });
 $('btn-save-multiselect').addEventListener('click',async()=>{
   if(!multiselectState.onSave){ $('multiselect-modal').style.display='none'; return; }
@@ -4438,8 +4438,6 @@ const setPresididor = (val, avatar, nombre) => {
   if(nombreEl){ nombreEl.textContent=nombre||'-- Seleccionar presididor --'; nombreEl.style.color=val?'var(--text)':'var(--muted)'; }
   if(window._presididorCallback){ window._presididorCallback(val); window._presididorCallback=null; }
   $('presididor-picker-modal').style.display='none';
-  // Only go back if picker was opened with pushState (not from event detail inline)
-  if(history.state&&history.state.view==='pres-picker') history.back();
 };
 
 const openPresididorPicker = () => {
@@ -4450,7 +4448,7 @@ const openPresididorPicker = () => {
 };
 
 $('pres-picker-search').addEventListener('input',()=>renderPresididorList($('pres-picker-search').value.toLowerCase()));
-$('btn-close-pres-picker').addEventListener('click',()=>{ $('presididor-picker-modal').style.display='none'; history.back(); });
+$('btn-close-pres-picker').addEventListener('click',()=>{ $('presididor-picker-modal').style.display='none'; if(history.state&&history.state.view==='pres-picker') history.back(); });
 
 // ── EVENTO FORM MULTISELECT ──
 const EV_GRUPOS_CONFIG = {
