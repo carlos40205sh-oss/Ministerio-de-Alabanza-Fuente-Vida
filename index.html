@@ -309,7 +309,7 @@ input::placeholder{color:var(--muted);}
         <div id="ev-sub-0">
           <h4 style="margin-bottom:8px">🎤 Presididor</h4>
           <input type="hidden" id="ev-presididor"/>
-          <div id="ev-presididor-display" onclick="openPresididorPicker()" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;cursor:pointer;margin-bottom:14px">
+          <div id="ev-presididor-display" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;cursor:pointer;margin-bottom:14px">
             <span id="ev-presididor-avatar" style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#9590E0);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🎤</span>
             <span id="ev-presididor-nombre" style="flex:1;font-size:13px;font-weight:600;color:var(--muted)">-- Seleccionar presididor --</span>
             <span style="color:var(--muted);font-size:16px">›</span>
@@ -1976,8 +1976,8 @@ function renderEvPredTags() {
   const showDropdown = () => {
     const q = searchInput.value.toLowerCase();
     const candidates = [
-      ...musicos.filter(m=>!evPred.includes('m_'+m.id) && m.nombre.toLowerCase().includes(q)).map(m=>({id:'m_'+m.id, nombre:m.nombre, icon:roleIcon(m.rol)})),
-      ...(cantantes||[]).filter(c=>!evPred.includes('c_'+c.id) && c.nombre.toLowerCase().includes(q)).map(c=>({id:'c_'+c.id, nombre:c.nombre, icon:'🎤'})),
+      ...musicos.filter(m=>(m.roles||[m.rol]).includes('Lider') && !evPred.includes('m_'+m.id) && (!q||m.nombre.toLowerCase().includes(q))).map(m=>({id:'m_'+m.id, nombre:m.nombre, icon:roleIcon(m.rol)})),
+      ...(cantantes||[]).filter(c=>!evPred.includes('c_'+c.id) && (!q||c.nombre.toLowerCase().includes(q))).map(c=>({id:'c_'+c.id, nombre:c.nombre, icon:'🎤'})),
     ].sort((a,b)=>a.nombre.localeCompare(b.nombre));
     dropdown.innerHTML = '';
     if(!candidates.length){
@@ -4367,6 +4367,7 @@ document.querySelectorAll('.mas-item[data-tab]').forEach(item=>{
 });
 
 // ── PRESIDIDOR PICKER ──
+document.getElementById('ev-presididor-display').addEventListener('click', ()=>openPresididorPicker());
 const renderPresididorList = (q='') => {
   const list = $('pres-picker-list'); list.innerHTML='';
 
