@@ -1170,9 +1170,13 @@ window.addEventListener('popstate', e => {
   if(state.view !== 'asig-rapida') { const ar=$('asig-rapida-modal'); if(ar) ar.style.display='none'; }
   if(state.view !== 'multiselect') { const ms=$('multiselect-modal'); if(ms) ms.style.display='none'; }
   if(state.view==='detail' || state.view==='form') {
-    // Go back to list view of that tab
     goTab(state.tab||'eventos', false);
-    hideEvForm(true);
+    if(state.view==='detail' && state.id){
+      // Restore the detail view
+      showEvDetail(state.id, state.tab||'eventos', true);
+    } else {
+      hideEvForm(true);
+    }
     if(state.tab==='calendario') {
       $('cal-ev-detail').style.display='none';
       $('cal-ev-list').style.display='block';
@@ -2520,13 +2524,13 @@ const buildEvDetail = (ev, backFn) => {
 
   return wrap;
 };
-const showEvDetail = (id, fromTab) => {
+const showEvDetail = (id, fromTab, noHistory=false) => {
   const ev=eventos.find(e=>e.id===id); if(!ev) return;
   const detEl=$('ev-detail-view'); detEl.innerHTML='';
   const origin = fromTab || 'eventos';
   detEl.appendChild(buildEvDetail(ev,()=>history.back()));
   $('ev-list-view').style.display='none'; $('ev-form-view').style.display='none'; detEl.style.display='block';
-  history.pushState({tab:'eventos', view:'detail', id, origin}, '', location.pathname);
+  if(!noHistory) history.pushState({tab:'eventos', view:'detail', id, origin}, '', location.pathname);
 };
 
 function renderEventos() {
