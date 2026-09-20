@@ -2548,12 +2548,9 @@ const buildEvDetail = (ev, backFn) => {
         addBtn.addEventListener('click',()=>{
           if(g.tipo==='presididor'){
             openPresididorPicker();
-            // Override setPresididor to save to Firebase
-            const origSet=window.setPresididorOrig||setPresididor;
-            window.setPresididorOrig=origSet;
-            window.setPresididor=(val,avatar,nombre)=>{
-              origSet(val,avatar,nombre);
-              updateDoc(doc(db,'eventos',ev.id),{director:val}).then(()=>{ ev.director=val; toast('✅ Presididor actualizado'); renderEquipo(); });
+            window._presididorCallback = async (val) => {
+              await updateDoc(doc(db,'eventos',ev.id),{director:val});
+              ev.director=val; toast('✅ Presididor actualizado'); renderEquipo();
             };
           } else {
             const ROLES_POR_GRUPO={musicos:['Guitarra','Bajo','Teclado/Piano','Batería','Saxofón'],voces:['Voz'],sonido:['Sonidista'],multi:['Presentación','Transmisión'],pulperia:null};
@@ -4138,7 +4135,7 @@ $('btn-close-multiselect').addEventListener('click',()=>{
   history.back();
 });
 $('btn-save-multiselect').addEventListener('click',async()=>{
-  if(!multiselectState.onSave){ $('multiselect-modal').style.display='none'; history.back(); return; }
+  if(!multiselectState.onSave){ $('multiselect-modal').style.display='none'; return; }
   
   // Check if any selected musician has multiple roles — ask which one
   const selected = [...multiselectState.selected];
@@ -4195,7 +4192,6 @@ $('btn-save-multiselect').addEventListener('click',async()=>{
       const finalArr = selected.map(id=>({musId:id, rol:roleSelections[id]||musicos.find(x=>x.id===id)?.rol||''}));
       await multiselectState.onSave(selected, finalArr);
       $('multiselect-modal').style.display='none';
-      history.back();
     });
     sheet.appendChild(saveRolesBtn);
     overlay.appendChild(sheet);
@@ -4204,7 +4200,6 @@ $('btn-save-multiselect').addEventListener('click',async()=>{
   } else {
     await multiselectState.onSave(selected);
     $('multiselect-modal').style.display='none';
-    history.back();
   }
 });
 
@@ -4410,6 +4405,7 @@ const setPresididor = (val, avatar, nombre) => {
   nombreEl.style.color = val ? 'var(--text)' : 'var(--muted)';
   $('presididor-picker-modal').style.display='none';
   history.back();
+  if(window._presididorCallback){ window._presididorCallback(val); window._presididorCallback=null; }
 };
 
 const openPresididorPicker = () => {
