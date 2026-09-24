@@ -3654,8 +3654,7 @@ const msRender = () => {
     }
     // Transpositor con letra
     if(cancion&&cancion.letraAcordes){
-      const transWrap = buildTranspositor(cancion);
-      if(transWrap) el.appendChild(transWrap);
+      // Transpositor opens fullscreen via openTranspositor
     }
   } else {
     // Non-song item
