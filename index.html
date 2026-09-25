@@ -3704,7 +3704,8 @@ onSnapshot(collection(db,'musicos'),snap=>{musicos=snap.docs.map(d=>({id:d.id,..
 onSnapshot(collection(db,'eventos'),snap=>{
   const hoy=new Date().toISOString().slice(0,10);
   const ayer = new Date(); ayer.setDate(ayer.getDate()-1); const ayerStr = ayer.toISOString().slice(0,10);
-  eventos=snap.docs.map(d=>({id:d.id,...d.data()}));
+  const dosHaceStr = new Date(Date.now()-2*86400000).toISOString().slice(0,10);
+  eventos=snap.docs.map(d=>({id:d.id,...d.data()})).filter(ev=>{if(ev.fecha&&ev.fecha<dosHaceStr){deleteDoc(doc(db,'eventos',ev.id));return false;}return true;});
   renderEventos();renderDashboard();renderCalendar();
 });
 
