@@ -3779,10 +3779,15 @@ onSnapshot(collection(db,'cantantes'),snap=>{cantantes=snap.docs.map(d=>({id:d.i
 onSnapshot(collection(db,'canciones'),snap=>{canciones=snap.docs.map(d=>({id:d.id,...d.data()}));renderCanciones();renderDashboard();});
 onSnapshot(collection(db,'musicos'),snap=>{musicos=snap.docs.map(d=>({id:d.id,...d.data()}));allUsers=musicos;renderMusicos();renderDashboard();renderNotifSelector();if(!CU)autoLogin();});
 onSnapshot(collection(db,'eventos'),snap=>{
-  const hoy=new Date().toISOString().slice(0,10);
-  const ayer = new Date(); ayer.setDate(ayer.getDate()-1); const ayerStr = ayer.toISOString().slice(0,10);
-  const dosHaceStr = new Date(Date.now()-2*86400000).toISOString().slice(0,10);
-  eventos=snap.docs.map(d=>({id:d.id,...d.data()})).filter(ev=>{if(ev.fecha&&ev.fecha<dosHaceStr){deleteDoc(doc(db,'eventos',ev.id));return false;}return true;});
+  // Usar hora local CR (UTC-6) para no borrar eventos antes de tiempo
+  const ahoraCR = new Date(Date.now() - 6*60*60*1000);
+  const pad = n=>String(n).padStart(2,'0');
+  const fechaLocalStr = ahoraCR.getUTCFullYear()+'-'+pad(ahoraCR.getUTCMonth()+1)+'-'+pad(ahoraCR.getUTCDate());
+  // Borrar solo si han pasado 2 días completos después de la fecha del evento (en hora CR)
+  const [yy,mm,dd] = fechaLocalStr.split('-').map(Number);
+  const hace2 = new Date(Date.UTC(yy,mm-1,dd-2));
+  const hace2Str = hace2.getUTCFullYear()+'-'+pad(hace2.getUTCMonth()+1)+'-'+pad(hace2.getUTCDate());
+  eventos=snap.docs.map(d=>({id:d.id,...d.data()})).filter(ev=>{if(ev.fecha&&ev.fecha<hace2Str){deleteDoc(doc(db,'eventos',ev.id));return false;}return true;});
   renderEventos();renderDashboard();renderCalendar();
 });
 
