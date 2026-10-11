@@ -315,7 +315,7 @@ input::placeholder{color:var(--muted);}
       <div class="grid2">
         <div><label class="lbl">Fecha</label><input id="ev-fecha" type="date"/></div>
         <div><label class="lbl">Tipo</label>
-          <select id="ev-tipo"><option value="Servicio">Servicio</option><option value="Ensayo">Ensayo</option><option value="Ayuno">Ayuno</option></select>
+          <select id="ev-tipo"><option value="Servicio">Servicio</option><option value="Ensayo">Ensayo</option><option value="Ayuno">Ayuno</option><option value="Actividad">Actividad</option></select>
         </div>
       </div>
       <div class="grid2">
@@ -1025,8 +1025,8 @@ const fmt = d => { if(!d) return ''; const [y,m,day]=d.split('-'); return day+'/
 const fmtBday = d => { if(!d) return ''; const [y,m,day]=d.split('-'); return day+'/'+m; };
 const toast = m => { const t=$('toast'); t.textContent=m; t.style.opacity=1; setTimeout(()=>t.style.opacity=0,2500); };
 const roleIcon = r => ({'Líder':'🎤','Voz':'🎙️','Guitarra':'🎸','Bajo':'🎵','Teclado/Piano':'🎹','Batería':'🥁','Saxofón':'🎷','Presentación':'📽️','Transmisión':'📡','Sonidista':'🔊'}[r]||'🎶');
-const tipoColor = t => ({'Servicio':'var(--accent)','Ensayo':'var(--gold)','Ayuno':'var(--success)'}[t]||'var(--muted)');
-const tipoBg = t => ({'Servicio':'#7B6FD422','Ensayo':'#E8C96A22','Ayuno':'#7EC8A022'}[t]||'');
+const tipoColor = t => ({'Servicio':'var(--accent)','Ensayo':'var(--gold)','Ayuno':'var(--success)','Actividad':'var(--warn)'}[t]||'var(--muted)');
+const tipoBg = t => ({'Servicio':'#7B6FD422','Ensayo':'#E8C96A22','Ayuno':'#7EC8A022','Actividad':'#F0A50022'}[t]||'');
 const ROLES_EV = ['Líder','Voz','Guitarra','Bajo','Teclado/Piano','Batería','Saxofón','Presentación','Transmisión','Sonidista','Otros'];
 const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
@@ -1549,12 +1549,15 @@ const presididorRolStr = val => { if(!val) return ''; if(val.startsWith('c_')){c
 $('btn-new-ev').addEventListener('click',()=>showEvForm(null));
 $('btn-ev-back').addEventListener('click',()=>hideEvForm());
 $('ev-tipo').addEventListener('change',()=>{
-  const isAyuno = $('ev-tipo').value==='Ayuno';
-  $('ev-extra').style.display=isAyuno?'none':'block';
-  if(isAyuno){
+  const tipo = $('ev-tipo').value;
+  const sinEquipo = tipo==='Ayuno' || tipo==='Actividad';
+  $('ev-extra').style.display=sinEquipo?'none':'block';
+  if(tipo==='Ayuno'){
     // Auto-assign all musicians
     evAssigned = musicos.map(m=>({musId:m.id, rol:m.rol||'Voz'}));
     evVoz = []; evSonido = []; evMulti = []; evPulperia = [];
+  } else if(tipo==='Actividad'){
+    evAssigned=[]; evVoz=[]; evSonido=[]; evMulti=[]; evPulperia=[]; evPred=[];
   }
 });
 $('ev-orden-tipo').addEventListener('change', renderEvCanTags);
@@ -1569,8 +1572,9 @@ $('btn-save-ev').addEventListener('click', async () => {
   const titulo=$('ev-titulo').value.trim(), fecha=$('ev-fecha').value;
   if(!titulo||!fecha){alert('Título y fecha son requeridos');return;}
   const tipo=$('ev-tipo').value;
-  const todosAsignados = tipo==='Ayuno' ? musicos.map(m=>({musId:m.id, rol:m.rol||'Voz'})) : evAssigned;
-  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),director:tipo!=='Ayuno'?$('ev-presididor').value:'',predicadores:tipo!=='Ayuno'?evPred:[],asignados:todosAsignados,vozAsignados:tipo!=='Ayuno'?evVoz:[],sonidoAsignados:tipo!=='Ayuno'?evSonido:[],multiAsignados:tipo!=='Ayuno'?evMulti:[],setlist:tipo!=='Ayuno'?evSetlist:[],orden:tipo!=='Ayuno'?evOrden:[],pulperia:tipo!=='Ayuno'?evPulperia:[]};
+  const sinEquipo = tipo==='Ayuno' || tipo==='Actividad';
+  const todosAsignados = tipo==='Ayuno' ? musicos.map(m=>({musId:m.id, rol:m.rol||'Voz'})) : (sinEquipo?[]:evAssigned);
+  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),director:sinEquipo?'':$('ev-presididor').value,predicadores:sinEquipo?[]:evPred,asignados:todosAsignados,vozAsignados:sinEquipo?[]:evVoz,sonidoAsignados:sinEquipo?[]:evSonido,multiAsignados:sinEquipo?[]:evMulti,setlist:sinEquipo?[]:evSetlist,orden:sinEquipo?[]:evOrden,pulperia:sinEquipo?[]:evPulperia};
   if(editingEvId){await updateDoc(doc(db,'eventos',editingEvId),data);toast('✅ Evento actualizado');}
   else{await addDoc(collection(db,'eventos'),{...data,creadoEn:Date.now()});toast('✅ Evento guardado');}
   // Update historialCanciones only for NEWLY added canciones (not ones that were already there)
@@ -1610,7 +1614,7 @@ const showEvForm = evId => {
   $('ev-fecha').value=ev?ev.fecha:''; $('ev-tipo').value=ev?ev.tipo:'Servicio';
   $('ev-hora-ini').value=ev?ev.horaIni:''; $('ev-hora-fin').value=ev?ev.horaFin:'';
   $('ev-form-title').textContent=ev?'Editar evento':'Nuevo evento';
-  $('ev-extra').style.display=(ev&&ev.tipo==='Ayuno')?'none':'block';
+  $('ev-extra').style.display=(ev&&(ev.tipo==='Ayuno'||ev.tipo==='Actividad'))?'none':'block';
   populatePresididorSelect($('ev-presididor'),ev?ev.director:'');
   renderEvGroupListById('ev-assigned-list', evAssigned, false);
   renderEvGroupListById('ev-voz-list', evVoz, false);
@@ -2327,6 +2331,7 @@ const buildEvDetail = (ev, backFn) => {
               <option value="Servicio"${ev.tipo==='Servicio'?' selected':''}>Servicio</option>
               <option value="Ensayo"${ev.tipo==='Ensayo'?' selected':''}>Ensayo</option>
               <option value="Ayuno"${ev.tipo==='Ayuno'?' selected':''}>Ayuno</option>
+              <option value="Actividad"${ev.tipo==='Actividad'?' selected':''}>Actividad</option>
               <option value="Otro"${ev.tipo==='Otro'?' selected':''}>Otro</option>
             </select>
           </div>
@@ -2963,7 +2968,7 @@ function renderDashboard() {
   const proxEl=$('proximos-list'); proxEl.innerHTML='';
   if(!prox.length){proxEl.innerHTML='<div style="color:var(--muted);font-size:13px;padding:16px 0;text-align:center">No hay eventos próximos</div>';}
   else prox.forEach(ev=>{
-    const icon = ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':'🎵';
+    const icon = ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':ev.tipo==='Actividad'?'🎉':'🎵';
     const barColor = ev.tipo==='Servicio'?'var(--accent)':ev.tipo==='Ensayo'?'var(--gold)':'var(--success)';
     const [y,mo,d] = (ev.fecha||'').split('-');
     const mesAbrev = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mo)-1]||'';
@@ -3177,7 +3182,7 @@ const checkEventoProximo = () => {
   proximos.forEach(ev => {
     const miRol = (ev.asignados||[]).find(a=>a.musId===m.id)?.rol||'';
     const cuando = esHoy(ev.fecha)?'<span style="color:var(--danger);font-weight:700"> · HOY</span>':esMañana(ev.fecha)?'<span style="color:var(--warn);font-weight:700"> · Mañana</span>':'';
-    const icono = ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':'🎵';
+    const icono = ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':ev.tipo==='Actividad'?'🎉':'🎵';
     html += '<div style="background:var(--surface);border-radius:10px;padding:10px;margin-bottom:8px;text-align:left">';
     html += '<div style="font-weight:700;font-size:13px;color:var(--gold)">'+icono+' '+ev.titulo+cuando+'</div>';
     html += '<div style="color:var(--muted);font-size:12px;margin-top:3px">📅 '+fmtFecha(ev.fecha)+(ev.horaIni?' · ⏰ '+ev.horaIni:'')+'</div>';
