@@ -1023,6 +1023,8 @@ let calY, calM, calDates = [];
 const $ = id => document.getElementById(id);
 const fmt = d => { if(!d) return ''; const [y,m,day]=d.split('-'); return day+'/'+m+'/'+y; };
 const fmtBday = d => { if(!d) return ''; const [y,m,day]=d.split('-'); return day+'/'+m; };
+const fmtHora = h => { if(!h) return ''; const [hh,mm]=h.split(':'); const H=parseInt(hh); return (H===0?12:H>12?H-12:H)+':'+(mm||'00')+(H<12?' AM':' PM'); };
+const fmtHoraRango = (ini,fin) => { if(!ini&&!fin) return ''; return fmtHora(ini)+(fin?' - '+fmtHora(fin):''); };
 const toast = m => { const t=$('toast'); t.textContent=m; t.style.opacity=1; setTimeout(()=>t.style.opacity=0,2500); };
 const roleIcon = r => ({'Líder':'🎤','Voz':'🎙️','Guitarra':'🎸','Bajo':'🎵','Teclado/Piano':'🎹','Batería':'🥁','Saxofón':'🎷','Presentación':'📽️','Transmisión':'📡','Sonidista':'🔊'}[r]||'🎶');
 const tipoColor = t => ({'Servicio':'var(--accent)','Ensayo':'var(--gold)','Ayuno':'var(--success)','Actividad':'var(--warn)'}[t]||'var(--muted)');
@@ -1830,7 +1832,7 @@ $('btn-export-pdf').addEventListener('click', () => {
         <span class="ev-date">${d} ${mesAbrev}</span>
         <span class="ev-title">${ev.titulo}</span>
         <span class="ev-tipo">${ev.tipo}</span>
-        ${ev.horaIni?`<span class="ev-hora">${ev.horaIni}${ev.horaFin?' - '+ev.horaFin:''}</span>`:''}
+        ${ev.horaIni?`<span class="ev-hora">${fmtHoraRango(ev.horaIni,ev.horaFin)}</span>`:''}
       </div>
       <table class="ev-table">
         ${presididor?`<tr><td class="lbl">🎤 Presididor</td><td>${presididor}</td></tr>`:''}
@@ -2283,7 +2285,7 @@ const buildEvDetail = (ev, backFn) => {
   const diasSem=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   const diaNom=ev.fecha?diasSem[new Date(ev.fecha+'T12:00:00').getDay()]:'';
   const mesNom=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(fechaParts[1])-1]||'';
-  const horaStr=(ev.horaIni||ev.horaFin)?(ev.horaIni||'')+(ev.horaFin?' - '+ev.horaFin:''):'';
+  const horaStr=fmtHoraRango(ev.horaIni,ev.horaFin);
   const icons={'cancion':'🎵','oracion':'🙏','lectura':'📖','ofrendas':'💝','anuncio':'📢','otro':'✨'};
 
   // ── HEADER ──
@@ -2370,7 +2372,7 @@ const buildEvDetail = (ev, backFn) => {
         const mn=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
         const dNom=nuevaFecha?ds[new Date(nuevaFecha+'T12:00:00').getDay()]:'';
         const mNom=mn[parseInt(fp[1])-1]||'';
-        const hStr=(nuevaHoraIni||nuevaHoraFin)?(nuevaHoraIni||'')+(nuevaHoraFin?' - '+nuevaHoraFin:''):'';
+        const hStr=fmtHoraRango(nuevaHoraIni,nuevaHoraFin);
         titleEl.textContent=nuevoTitulo;
         tipoBadge.textContent=nuevoTipo;
         tipoBadge.style.background=tipoBg(nuevoTipo); tipoBadge.style.color=tipoColor(nuevoTipo);
@@ -2784,7 +2786,7 @@ function renderEventos() {
     const div=document.createElement('div');
     div.style.cssText='background:linear-gradient(135deg,var(--card) 0%,var(--surface) 100%);border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden;cursor:pointer';
     div.addEventListener('click',()=>showEvDetail(ev.id, 'eventos'));
-    const horaStr=ev.horaIni?'<div style="color:var(--muted);font-size:11px;margin-top:3px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'';
+    const horaStr=ev.horaIni?'<div style="color:var(--muted);font-size:11px;margin-top:3px">⏰ '+fmtHoraRango(ev.horaIni,ev.horaFin)+'</div>':'';
     const badges='<span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+'">'+ev.tipo+'</span>'+(ev.tipo!=='Ayuno'?' <span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:#E8C96A18;color:var(--gold)">'+(ev.orden||[]).filter(i=>i.tipo==='cancion').length+'🎵</span> <span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;background:#8C88A022;color:var(--muted)">'+(ev.asignados||[]).length+'🎸</span>':'');
     const [y,mo,d] = (ev.fecha||'').split('-');
     const mesAbrev = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][parseInt(mo)-1]||'';
@@ -2927,7 +2929,7 @@ function renderCalList(date) {
     div.innerHTML='<div style="position:absolute;left:0;top:0;bottom:0;width:4px;background:'+tipoColor(ev.tipo)+'"></div>'
       +'<div style="display:flex;align-items:center;gap:10px;cursor:pointer" class="cal-ev-header">'
         +'<div style="flex:1"><div style="font-weight:700;font-size:13px">'+ev.titulo+'</div>'
-        +(ev.horaIni?'<div style="color:var(--muted);font-size:11px;margin-top:2px">⏰ '+ev.horaIni+(ev.horaFin?' - '+ev.horaFin:'')+'</div>':'')
+        +(ev.horaIni?'<div style="color:var(--muted);font-size:11px;margin-top:2px">⏰ '+fmtHoraRango(ev.horaIni,ev.horaFin)+'</div>':'')
         +'<span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;margin-top:5px;background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+'">'+ev.tipo+'</span></div>'
         +'<span style="color:var(--muted);font-size:18px">›</span>'
       +'</div>'
@@ -2985,7 +2987,7 @@ function renderDashboard() {
       +'</div>'
       +'<div style="flex:1;min-width:0">'
         +'<div style="font-size:14px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ev.titulo+'</div>'
-        +(ev.horaIni?'<div style="font-size:11px;color:var(--muted);margin-top:3px">⏰ '+ev.horaIni+'</div>':'')
+        +(ev.horaIni?'<div style="font-size:11px;color:var(--muted);margin-top:3px">⏰ '+fmtHora(ev.horaIni)+'</div>':'')
         +'<span style="display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;margin-top:6px;background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+'">'+icon+' '+ev.tipo+'</span>'
       +'</div>';
     proxEl.appendChild(div);
@@ -3185,7 +3187,7 @@ const checkEventoProximo = () => {
     const icono = ev.tipo==='Ayuno'?'🙏':ev.tipo==='Ensayo'?'🎸':ev.tipo==='Actividad'?'🎉':'🎵';
     html += '<div style="background:var(--surface);border-radius:10px;padding:10px;margin-bottom:8px;text-align:left">';
     html += '<div style="font-weight:700;font-size:13px;color:var(--gold)">'+icono+' '+ev.titulo+cuando+'</div>';
-    html += '<div style="color:var(--muted);font-size:12px;margin-top:3px">📅 '+fmtFecha(ev.fecha)+(ev.horaIni?' · ⏰ '+ev.horaIni:'')+'</div>';
+    html += '<div style="color:var(--muted);font-size:12px;margin-top:3px">📅 '+fmtFecha(ev.fecha)+(ev.horaIni?' · ⏰ '+fmtHora(ev.horaIni):'')+'</div>';
     html += '<div style="margin-top:4px"><span class="badge" style="background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+';border:1px solid '+tipoColor(ev.tipo)+'44">'+ev.tipo+'</span>'+(miRol?' <span class="badge" style="background:#7B6FD422;color:var(--accent);border:1px solid #7B6FD444">'+miRol+'</span>':'')+'</div>';
     html += '</div>';
   });
@@ -3296,7 +3298,7 @@ const renderMiRolContent = (m) => {
         +'<div style="flex:1;min-width:0">'
           +'<div style="font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ev.titulo+'</div>'
           +'<div style="font-size:11px;font-weight:700;color:var(--accent);margin-top:2px">'+getMiRolDeEvento(m,ev)+'</div>'
-          +(ev.horaIni?'<div style="font-size:11px;color:var(--muted);margin-top:1px">⏰ '+ev.horaIni+'</div>':'')
+          +(ev.horaIni?'<div style="font-size:11px;color:var(--muted);margin-top:1px">⏰ '+fmtHoraRango(ev.horaIni,ev.horaFin)+'</div>':'')
         +'</div>'
         +estadoBadge
       +'</div>'
@@ -4143,7 +4145,7 @@ const renderAsigRapida = () => {
       +'</div>'
       +'<div style="flex:1">'
         +'<div style="font-size:14px;font-weight:700">'+ev.titulo+'</div>'
-        +'<div style="font-size:11px;color:var(--muted)">'+diaNom+(ev.horaIni?' · ⏰'+ev.horaIni:'')+'</div>'
+        +'<div style="font-size:11px;color:var(--muted)">'+diaNom+(ev.horaIni?' · ⏰ '+fmtHoraRango(ev.horaIni,ev.horaFin):'')+'</div>'
       +'</div>'
       +'<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;background:'+tipoBg(ev.tipo)+';color:'+tipoColor(ev.tipo)+'">'+ev.tipo+'</span>';
     hdr.addEventListener('click',()=>{ goTab('eventos',true); setTimeout(()=>showEvDetail(ev.id,'eventos'),100); });
@@ -4849,7 +4851,7 @@ window.showStatModal = (tipo) => {
           '<div style="font-size:8px;color:var(--muted);text-transform:uppercase;margin-top:2px">'+mesAbrev+'</div>'+
         '</div>'+
         '<div style="flex:1"><div style="font-size:14px;font-weight:700">'+ev.titulo+'</div>'+
-        (ev.horaIni?'<div style="font-size:11px;color:var(--muted);margin-top:2px">⏰ '+ev.horaIni+'</div>':'')+'</div>'+
+        (ev.horaIni?'<div style="font-size:11px;color:var(--muted);margin-top:2px">⏰ '+fmtHoraRango(ev.horaIni,ev.horaFin)+'</div>':'')+'</div>'+
         '<span style="color:var(--muted);font-size:18px">›</span></div>';
     });
     html += '</div>';
