@@ -2007,7 +2007,7 @@ function renderEvPredTags() {
   const showDropdown = () => {
     const q = searchInput.value.toLowerCase();
     const candidates = [
-      ...musicos.filter(m=>(m.roles||[m.rol]).includes('Líder') && !evPred.includes('m_'+m.id) && (!q||m.nombre.toLowerCase().includes(q))).map(m=>({id:'m_'+m.id, nombre:m.nombre, icon:roleIcon(m.rol)})),
+      ...musicos.filter(m=>!evPred.includes('m_'+m.id) && (!q||m.nombre.toLowerCase().includes(q))).map(m=>({id:'m_'+m.id, nombre:m.nombre, icon:roleIcon(m.rol)})),
       ...(cantantes||[]).filter(c=>!evPred.includes('c_'+c.id) && (!q||c.nombre.toLowerCase().includes(q))).map(c=>({id:'c_'+c.id, nombre:c.nombre, icon:'🎤'})),
     ].sort((a,b)=>a.nombre.localeCompare(b.nombre));
     dropdown.innerHTML = '';
@@ -2669,9 +2669,8 @@ const buildEvDetail = (ev, backFn) => {
             };
           } else if(g.tipo==='predicadores'){
             const currentPreds = ev.predicadores||[];
-            const lideresMusicos = musicos.filter(m=>(m.roles||[m.rol]).includes('Líder'));
             const allPreds = [
-              ...lideresMusicos,
+              ...musicos,
               ...cantantes.map(c=>({...c, id:'CANT_'+c.id, rol:'Cantante', roles:['Cantante'], _esCantante:true}))
             ];
             const selectedIds = currentPreds.map(id=>{
