@@ -4113,6 +4113,7 @@ const renderAsigRapida = () => {
 
   const grupos = [
     {icon:'🎤', label:'Presididor', tipo:'presididor'},
+    {icon:'📖', label:'Predicadores', tipo:'predicadores'},
     {icon:'🎸', label:'Música', tipo:'musicos'},
     {icon:'🎙️', label:'Voces', tipo:'voces'},
     {icon:'🔊', label:'Sonido', tipo:'sonido'},
@@ -4156,6 +4157,12 @@ const renderAsigRapida = () => {
           const p=isCant?cantantes.find(x=>x.id===realId):musicos.find(x=>x.id===realId);
           if(p) asignados=[{id:ev.director,nombre:p.nombre}];
         }
+      } else if(g.tipo==='predicadores'){
+        asignados=(ev.predicadores||[]).map(id=>{
+          const isCant=id.startsWith('c_'); const realId=id.slice(2);
+          const p=isCant?cantantes.find(x=>x.id===realId):musicos.find(x=>x.id===realId);
+          return p?{id:realId,nombre:p.nombre}:null;
+        }).filter(Boolean);
       } else if(g.tipo==='musicos'){
         asignados=(ev.asignados||[]).map(a=>{const m=musicos.find(x=>x.id===a.musId);return m?{id:a.musId,nombre:m.nombre}:null;}).filter(Boolean);
       } else if(g.tipo==='voces'){
@@ -4392,6 +4399,38 @@ const openAsigMini = (ev, grupo) => {
     saveBtn.textContent='✓ Guardar';
     saveBtn.addEventListener('click',()=>saveAndRefresh({director:sel.value}));
     content.appendChild(saveBtn);
+
+  } else if(grupo.tipo === 'predicadores'){
+    // Predicadores: todos los músicos + cantantes
+    const allPreds = [
+      ...musicos.map(m=>({...m, _esCantante:false})),
+      ...cantantes.map(c=>({...c, id:'CANT_'+c.id, rol:'Cantante', roles:['Cantante'], _esCantante:true}))
+    ].sort((a,b)=>a.nombre.localeCompare(b.nombre));
+    const currentPreds = ev.predicadores||[];
+    const selectedIds = currentPreds.map(id=>{
+      if(id.startsWith('c_')) return 'CANT_'+id.slice(2);
+      if(id.startsWith('m_')) return id.slice(2);
+      return id;
+    });
+    $('asig-mini-modal').style.display='none';
+    openMultiselect({
+      title:'📖 Predicadores',
+      sub: ev.titulo+' · '+((ev.fecha||'').split('-').reverse().slice(0,2).join('/')),
+      candidates: allPreds,
+      selectedIds,
+      isSimple: true,
+      rolesPermitidos: null,
+      onSave: async(newIds)=>{
+        const newPreds = newIds.map(id=>{
+          if(id.startsWith('CANT_')) return 'c_'+id.slice(5);
+          return 'm_'+id;
+        });
+        await updateDoc(doc(db,'eventos',ev.id),{predicadores:newPreds});
+        ev.predicadores=newPreds;
+        toast('✅ Predicadores actualizados');
+        renderAsigRapida();
+      }
+    });
 
   } else {
     // Usar multiselect fullscreen
