@@ -4151,9 +4151,16 @@ const renderAsigRapida = () => {
     hdr.addEventListener('click',()=>{ goTab('eventos',true); setTimeout(()=>showEvDetail(ev.id,'eventos'),100); });
     card.appendChild(hdr);
 
-    // Grupos
+    // Grupos — ocultar para Actividad (sin equipo)
     const gruposDiv=document.createElement('div');
     gruposDiv.style.cssText='padding:6px 14px';
+
+    if(ev.tipo==='Actividad'){
+      gruposDiv.innerHTML='<div style="text-align:center;color:var(--muted);font-size:12px;padding:10px 0">🎉 Actividad — sin equipo asignado</div>';
+      card.appendChild(gruposDiv);
+      content.appendChild(card);
+      return;
+    }
 
     grupos.forEach((g,gi)=>{
       let asignados=[];
