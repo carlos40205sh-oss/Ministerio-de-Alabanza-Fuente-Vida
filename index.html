@@ -319,8 +319,20 @@ input::placeholder{color:var(--muted);}
         </div>
       </div>
       <div class="grid2">
-        <div><label class="lbl">Hora inicio</label><input id="ev-hora-ini" type="time"/></div>
-        <div><label class="lbl">Hora fin</label><input id="ev-hora-fin" type="time"/></div>
+        <div>
+          <label class="lbl">Hora inicio</label>
+          <div style="display:flex;gap:6px">
+            <input id="ev-hora-ini-h" type="text" inputmode="numeric" placeholder="7" maxlength="2" autocomplete="off" style="flex:1;min-width:0"/>
+            <select id="ev-hora-ini-ampm" style="flex-shrink:0;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:8px 6px"><option value="AM">AM</option><option value="PM">PM</option></select>
+          </div>
+        </div>
+        <div>
+          <label class="lbl">Hora fin</label>
+          <div style="display:flex;gap:6px">
+            <input id="ev-hora-fin-h" type="text" inputmode="numeric" placeholder="9" maxlength="2" autocomplete="off" style="flex:1;min-width:0"/>
+            <select id="ev-hora-fin-ampm" style="flex-shrink:0;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:8px 6px"><option value="AM">AM</option><option value="PM">PM</option></select>
+          </div>
+        </div>
       </div>
     </div>
     <!-- Panel 1: Equipo con sub-pestañas -->
@@ -1024,6 +1036,15 @@ const $ = id => document.getElementById(id);
 const fmt = d => { if(!d) return ''; const [y,m,day]=d.split('-'); return day+'/'+m+'/'+y; };
 const fmtBday = d => { if(!d) return ''; const [y,m,day]=d.split('-'); return day+'/'+m; };
 const fmtHora = h => { if(!h) return ''; const [hh,mm]=h.split(':'); const H=parseInt(hh); return (H===0?12:H>12?H-12:H)+':'+(mm||'00')+(H<12?' AM':' PM'); };
+// Convierte "HH:MM" 24h a {h, ampm} para mostrar en campos 12h
+const horaTo12 = v => { if(!v) return {h:'',ampm:'AM'}; const [hh,mm]=v.split(':'); const H=parseInt(hh)||0; const ampm=H<12?'AM':'PM'; const h12=H===0?12:H>12?H-12:H; return {h:h12+(mm&&mm!=='00'?':'+mm:''), ampm}; };
+// Convierte h12 string + ampm a "HH:MM" 24h para guardar
+const horaFrom12 = (hStr, ampm) => { if(!hStr) return ''; hStr=hStr.trim(); let h,m='00'; if(hStr.includes(':')){ [h,m]=hStr.split(':'); } else { h=hStr; } h=parseInt(h)||0; m=String(parseInt(m)||0).padStart(2,'0'); if(ampm==='AM'){ if(h===12) h=0; } else { if(h!==12) h+=12; } return String(h).padStart(2,'0')+':'+m; };
+// Carga valor 24h en los campos 12h del formulario principal
+const setHoraCampos = (iniId, finId, horaIni, horaFin) => { const i=horaTo12(horaIni); const f=horaTo12(horaFin); $(iniId+'-h').value=i.h; $(iniId+'-ampm').value=i.ampm; $(finId+'-h').value=f.h; $(finId+'-ampm').value=f.ampm; };
+// Lee los campos 12h y devuelve valor 24h
+const getHoraCampo = (baseId) => horaFrom12($(baseId+'-h').value, $(baseId+'-ampm').value);
+const hookHoraInput = id => {}; // ya no se necesita normHora con el nuevo diseño
 const fmtHoraRango = (ini,fin) => { if(!ini&&!fin) return ''; return fmtHora(ini)+(fin?' - '+fmtHora(fin):''); };
 const toast = m => { const t=$('toast'); t.textContent=m; t.style.opacity=1; setTimeout(()=>t.style.opacity=0,2500); };
 const roleIcon = r => ({'Líder':'🎤','Voz':'🎙️','Guitarra':'🎸','Bajo':'🎵','Teclado/Piano':'🎹','Batería':'🥁','Saxofón':'🎷','Presentación':'📽️','Transmisión':'📡','Sonidista':'🔊'}[r]||'🎶');
@@ -1576,7 +1597,7 @@ $('btn-save-ev').addEventListener('click', async () => {
   const tipo=$('ev-tipo').value;
   const sinEquipo = tipo==='Ayuno' || tipo==='Actividad';
   const todosAsignados = tipo==='Ayuno' ? musicos.map(m=>({musId:m.id, rol:m.rol||'Voz'})) : (sinEquipo?[]:evAssigned);
-  const data={titulo,fecha,tipo,horaIni:$('ev-hora-ini').value,horaFin:$('ev-hora-fin').value,notas:$('ev-notas').value.trim(),director:sinEquipo?'':$('ev-presididor').value,predicadores:sinEquipo?[]:evPred,asignados:todosAsignados,vozAsignados:sinEquipo?[]:evVoz,sonidoAsignados:sinEquipo?[]:evSonido,multiAsignados:sinEquipo?[]:evMulti,setlist:sinEquipo?[]:evSetlist,orden:sinEquipo?[]:evOrden,pulperia:sinEquipo?[]:evPulperia};
+  const data={titulo,fecha,tipo,horaIni:getHoraCampo('ev-hora-ini'),horaFin:getHoraCampo('ev-hora-fin'),notas:$('ev-notas').value.trim(),director:sinEquipo?'':$('ev-presididor').value,predicadores:sinEquipo?[]:evPred,asignados:todosAsignados,vozAsignados:sinEquipo?[]:evVoz,sonidoAsignados:sinEquipo?[]:evSonido,multiAsignados:sinEquipo?[]:evMulti,setlist:sinEquipo?[]:evSetlist,orden:sinEquipo?[]:evOrden,pulperia:sinEquipo?[]:evPulperia};
   if(editingEvId){await updateDoc(doc(db,'eventos',editingEvId),data);toast('✅ Evento actualizado');}
   else{await addDoc(collection(db,'eventos'),{...data,creadoEn:Date.now()});toast('✅ Evento guardado');}
   // Update historialCanciones only for NEWLY added canciones (not ones that were already there)
@@ -1614,8 +1635,9 @@ const showEvForm = evId => {
   evMulti=ev?[...(ev.multiAsignados||[])]:[];
   ['ev-titulo','ev-notas'].forEach(id=>$(id).value=ev?ev[id==='ev-titulo'?'titulo':'notas']||'':'');
   $('ev-fecha').value=ev?ev.fecha:''; $('ev-tipo').value=ev?ev.tipo:'Servicio';
-  $('ev-hora-ini').value=ev?ev.horaIni:''; $('ev-hora-fin').value=ev?ev.horaFin:'';
+  setHoraCampos('ev-hora-ini','ev-hora-fin', ev?ev.horaIni:'', ev?ev.horaFin:'');
   $('ev-form-title').textContent=ev?'Editar evento':'Nuevo evento';
+  hookHoraInput('ev-hora-ini'); hookHoraInput('ev-hora-fin');
   $('ev-extra').style.display=(ev&&(ev.tipo==='Ayuno'||ev.tipo==='Actividad'))?'none':'block';
   populatePresididorSelect($('ev-presididor'),ev?ev.director:'');
   renderEvGroupListById('ev-assigned-list', evAssigned, false);
@@ -2339,27 +2361,35 @@ const buildEvDetail = (ev, backFn) => {
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
+          ${(()=>{ const i12=horaTo12(ev.horaIni||''); const f12=horaTo12(ev.horaFin||''); return `
           <div>
             <label style="font-size:12px;color:var(--muted);margin-bottom:3px;display:block">Hora inicio</label>
-            <input id="ei_horaIni" type="time" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 12px;width:100%;outline:none" value="${ev.horaIni||''}"/>
+            <div style="display:flex;gap:6px">
+              <input id="ei_horaIni_h" type="text" inputmode="numeric" placeholder="7" maxlength="5" autocomplete="off" value="${i12.h}" style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 8px;outline:none;box-sizing:border-box"/>
+              <select id="ei_horaIni_ampm" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 6px;outline:none"><option value="AM"${i12.ampm==='AM'?' selected':''}>AM</option><option value="PM"${i12.ampm==='PM'?' selected':''}>PM</option></select>
+            </div>
           </div>
           <div>
             <label style="font-size:12px;color:var(--muted);margin-bottom:3px;display:block">Hora fin</label>
-            <input id="ei_horaFin" type="time" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 12px;width:100%;outline:none" value="${ev.horaFin||''}"/>
-          </div>
+            <div style="display:flex;gap:6px">
+              <input id="ei_horaFin_h" type="text" inputmode="numeric" placeholder="9" maxlength="5" autocomplete="off" value="${f12.h}" style="flex:1;min-width:0;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 8px;outline:none;box-sizing:border-box"/>
+              <select id="ei_horaFin_ampm" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:14px;padding:10px 6px;outline:none"><option value="AM"${f12.ampm==='AM'?' selected':''}>AM</option><option value="PM"${f12.ampm==='PM'?' selected':''}>PM</option></select>
+            </div>
+          </div>`; })()}
         </div>
         <button id="saveEditInfo" style="background:linear-gradient(135deg,var(--accent),#4A3F9F);color:#fff;border:none;border-radius:12px;padding:14px;width:100%;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">💾 Guardar cambios</button>
       `;
       modal.appendChild(sheet);
       document.body.appendChild(modal);
+      // campos de hora ahora son 12h con select AM/PM
       modal.addEventListener('click',e=>{ if(e.target===modal) modal.remove(); });
       document.getElementById('closeEditModal').addEventListener('click',()=>modal.remove());
       document.getElementById('saveEditInfo').addEventListener('click',async()=>{
         const nuevoTitulo=document.getElementById('ei_titulo').value.trim();
         const nuevaFecha=document.getElementById('ei_fecha').value;
         const nuevoTipo=document.getElementById('ei_tipo').value;
-        const nuevaHoraIni=document.getElementById('ei_horaIni').value;
-        const nuevaHoraFin=document.getElementById('ei_horaFin').value;
+        const nuevaHoraIni=horaFrom12(document.getElementById('ei_horaIni_h').value, document.getElementById('ei_horaIni_ampm').value);
+        const nuevaHoraFin=horaFrom12(document.getElementById('ei_horaFin_h').value, document.getElementById('ei_horaFin_ampm').value);
         if(!nuevoTitulo||!nuevaFecha){ toast('⚠️ Título y fecha son requeridos'); return; }
         const saveBtn=document.getElementById('saveEditInfo');
         saveBtn.textContent='Guardando...'; saveBtn.disabled=true;
