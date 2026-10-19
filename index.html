@@ -1036,6 +1036,8 @@ const $ = id => document.getElementById(id);
 const fmt = d => { if(!d) return ''; const [y,m,day]=d.split('-'); return day+'/'+m+'/'+y; };
 const fmtBday = d => { if(!d) return ''; const [y,m,day]=d.split('-'); return day+'/'+m; };
 const fmtHora = h => { if(!h) return ''; const [hh,mm]=h.split(':'); const H=parseInt(hh); return (H===0?12:H>12?H-12:H)+':'+(mm||'00')+(H<12?' AM':' PM'); };
+// Fecha de hoy en hora local CR (evita el bug de UTC que adelanta el día a partir de las 6 PM)
+const todayCR = () => { const n=new Date(); const p=x=>String(x).padStart(2,'0'); return n.getFullYear()+'-'+p(n.getMonth()+1)+'-'+p(n.getDate()); };
 // Convierte "HH:MM" 24h a {h, ampm} para mostrar en campos 12h
 const horaTo12 = v => { if(!v) return {h:'',ampm:'AM'}; const [hh,mm]=v.split(':'); const H=parseInt(hh)||0; const ampm=H<12?'AM':'PM'; const h12=H===0?12:H>12?H-12:H; return {h:h12+(mm&&mm!=='00'?':'+mm:''), ampm}; };
 // Convierte h12 string + ampm a "HH:MM" 24h para guardar
@@ -1402,7 +1404,7 @@ function renderMusicos() {
       : '<div class="avatar">'+roleIcon(m.rol)+'</div>';
 
     // Fechas bloqueadas
-    const hoy = new Date().toISOString().slice(0,10);
+    const hoy = todayCR();
     const fechasBloq = (m.fechasBloqueadas||[]).filter(f=>f>=hoy).sort();
     const diasSem = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
     const blockedBadge = (CU&&CU.admin&&fechasBloq.length)
@@ -2845,7 +2847,7 @@ function renderCalendar() {
   const DNS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
   $('cal-hdr').innerHTML=DNS.map(d=>'<div class="cal-dn">'+d+'</div>').join('');
   const first=new Date(calY,calM,1).getDay(), days=new Date(calY,calM+1,0).getDate();
-  const todayStr=now.toISOString().slice(0,10);
+  const pad=n=>String(n).padStart(2,'0'); const todayStr=now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate());
   const grid=$('cal-grid'); grid.innerHTML='';
   calDates=[];
   for(let i=0;i<first;i++){const e=document.createElement('div');grid.appendChild(e);}
@@ -2995,7 +2997,7 @@ function renderDashboard() {
   if(typeof renderMisEventosCard === 'function') renderMisEventosCard();
   if(typeof renderBloquearCard === 'function') renderBloquearCard();
   if(typeof updateHeroAvatar === 'function') updateHeroAvatar();
-  const hoy=new Date().toISOString().slice(0,10);
+  const hoy=todayCR();
   const prox=[...eventos].filter(e=>e.fecha>=hoy).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(0,4);
   const proxEl=$('proximos-list'); proxEl.innerHTML='';
   if(!prox.length){proxEl.innerHTML='<div style="color:var(--muted);font-size:13px;padding:16px 0;text-align:center">No hay eventos próximos</div>';}
@@ -3306,7 +3308,7 @@ const renderMisEventosCard = () => {
   const m = musicos.find(x=>x.username===CU.key);
   if(!m){ statCard.style.display='none'; return; }
 
-  const hoy = new Date().toISOString().slice(0,10);
+  const hoy = todayCR();
   misEventosDelMes = eventos.filter(ev=>{
     if((ev.fecha||'') < hoy) return false;
     if(ev.tipo==='Ayuno') return true; // assigned to everyone
@@ -3865,7 +3867,7 @@ const renderBloquearCard = () => {
   if(!m){ cardEl.style.display='none'; return; }
 
   const fechasBloqueadas = m.fechasBloqueadas||[];
-  const hoy = new Date().toISOString().slice(0,10);
+  const hoy = todayCR();
   const activas = fechasBloqueadas.filter(f=>f>=hoy);
 
   cardEl.style.display='block';
@@ -4839,7 +4841,7 @@ window.openTranspositor = openTranspositor;
 
 // ── STAT MODALS ──
 window.showStatModal = (tipo) => {
-  const hoy = new Date().toISOString().slice(0,10);
+  const hoy = todayCR();
 
   if(tipo==='canciones'){
     const sorted = [...canciones].sort((a,b)=>a.titulo.localeCompare(b.titulo));
