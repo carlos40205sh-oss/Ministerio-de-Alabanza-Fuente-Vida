@@ -989,6 +989,7 @@ input::placeholder{color:var(--muted);}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+import { getMessaging, getToken, deleteToken } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 
 const FB = { apiKey:"AIzaSyC1OvY10grOXME6_Kdb28LTyyITIxxcjm0", authDomain:"ministerio-de-alabanza-ac3f2.firebaseapp.com", projectId:"ministerio-de-alabanza-ac3f2", storageBucket:"ministerio-de-alabanza-ac3f2.firebasestorage.app", messagingSenderId:"314404534308", appId:"1:314404534308:web:cbb3543a559a71c7a780b1" };
@@ -1023,6 +1024,32 @@ const registerFCMToken = async () => {
       }
     }
   } catch(e) { console.log('FCM error:', e); }
+};
+
+const resetFCMToken = async () => {
+  if(!messaging) { alert('Notificaciones no disponibles en este dispositivo.'); return; }
+  try {
+    // Delete existing token
+    await deleteToken(messaging);
+    console.log('Token deleted');
+    // Unregister old service workers
+    const regs = await navigator.serviceWorker.getRegistrations();
+    for(const r of regs) await r.unregister();
+    console.log('Service workers unregistered');
+    // Re-register fresh
+    const swReg = await navigator.serviceWorker.register('/Ministerio-de-Alabanza-Fuente-Vida/firebase-messaging-sw.js');
+    await new Promise(r => setTimeout(r, 1500));
+    const perm = await Notification.requestPermission();
+    if(perm !== 'granted') { alert('Permiso de notificaciones denegado.'); return; }
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    console.log('New FCM token:', token ? token.slice(0,20)+'...' : 'none');
+    if(token && CU) {
+      const m = musicos.find(x => x.username === CU.key);
+      if(m) await updateDoc(doc(db, 'musicos', m.id), { fcmToken: token });
+      if(CU.admin) await setDoc(doc(db, 'admins', CU.key), { fcmToken: token, nombre: CU.nombre });
+      alert('✅ Notificaciones reactivadas correctamente.');
+    }
+  } catch(e) { console.log('Reset FCM error:', e); alert('Error: ' + e.message); }
 };
 
 // ── STATE ──
@@ -1190,7 +1217,11 @@ $('btn-entrar').addEventListener('click', () => {
   } else $('login-err').style.display='block';
 });
 $('login-pass').addEventListener('keydown',e=>{if(e.key==='Enter')$('btn-entrar').click();});
-$('hdr-user').addEventListener('click',()=>{if(confirm('¿Cerrar sesión?')){try{localStorage.removeItem('min_user');}catch(e){}location.reload();}});
+$('hdr-user').addEventListener('click',()=>{
+  const opc = confirm('¿Qué deseas hacer?\n\nAceptar = Cerrar sesión\nCancelar = Reactivar notificaciones');
+  if(opc){try{localStorage.removeItem('min_user');}catch(e){}location.reload();}
+  else { resetFCMToken(); }
+});
 
 // ── NAV ──
 const goTab = (tab, pushState=true) => {
