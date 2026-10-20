@@ -1007,7 +1007,7 @@ const registerFCMToken = async () => {
     const perm = await Notification.requestPermission();
     console.log('Notification permission:', perm);
     if(perm !== 'granted') return;
-    const swReg = await navigator.serviceWorker.register('/Ministerio-de-Alabanza-Fuente-Vida/firebase-messaging-sw.js');
+    const swReg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
     const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
     console.log('FCM token:', token ? token.slice(0,20)+'...' : 'none');
     if(token && CU) {
@@ -1037,7 +1037,7 @@ const resetFCMToken = async () => {
     for(const r of regs) await r.unregister();
     console.log('Service workers unregistered');
     // Re-register fresh
-    const swReg = await navigator.serviceWorker.register('/Ministerio-de-Alabanza-Fuente-Vida/firebase-messaging-sw.js');
+    const swReg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
     await new Promise(r => setTimeout(r, 1500));
     const perm = await Notification.requestPermission();
     if(perm !== 'granted') { alert('Permiso de notificaciones denegado.'); return; }
